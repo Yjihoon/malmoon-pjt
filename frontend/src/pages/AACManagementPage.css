@@ -1,0 +1,222 @@
+/* AACManagementPage.css */
+
+/* .aac-management-container styles are now handled by .main-container in global.css */
+
+/* 각 섹션의 기본 스타일 */
+.management-section {
+  /* Most styles inherited from .card-base */
+  margin-bottom: var(--spacing-md);
+}
+
+.management-section h3 {
+  margin-top: 0;
+  padding-bottom: 10px;
+  color: var(--primary-color);
+  border-bottom: 3px solid var(--accent-color); /* 강조색 밑줄 */
+  font-size: 1.5rem;
+}
+
+.management-section h4 {
+  margin-top: 0;
+  color: var(--primary-color);
+  font-size: 1.2rem;
+}
+
+.management-section p {
+  color: var(--secondary-color);
+}
+
+/* 생성 영역 (직접 업로드 + AI 생성) */
+.creation-area {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.creation-form, .ai-creation-form {
+  flex: 1;
+  min-width: 300px;
+  /* Most styles inherited from .card-base */
+}
+
+.form-group {
+  margin-bottom: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 8px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: var(--primary-color);
+}
+
+.form-group input[type="text"],
+.form-group select {
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: var(--border-radius-sm); /* 둥근 입력창 */
+  font-size: 1rem;
+  font-family: var(--font-family-primary);
+  transition: border-color 0.2s;
+}
+
+.form-group input[type="text"]:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.form-group input[type="file"] {
+  font-size: 14px;
+  padding: 8px;
+}
+
+/* 버튼 공통 스타일 - 이제 global.css의 .btn-soft-* 클래스를 사용합니다. */
+.creation-form button, .ai-creation-form button, .bundle-create-btn {
+  /* Styles handled by global.css */
+}
+
+/* AAC 카드 목록 */
+.aac-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.aac-card {
+  /* Most styles inherited from .card-base */
+  border: 2px solid transparent; /* For selected state */
+  position: relative;
+  cursor: pointer;
+}
+.aac-card:hover {
+  /* Inherits hover effect from .card-base */
+}
+.aac-card.selected {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 10px var(--accent-color);
+}
+.aac-card img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 10px 10px 0 0;
+}
+.card-content {
+  padding: 10px;
+}
+.card-content p {
+  margin: 5px 0;
+  font-size: 1rem;
+  word-break: keep-all;
+}
+.delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--btn-soft-danger-bg);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-weight: bold;
+  line-height: 24px;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+.delete-btn:hover {
+  background-color: var(--btn-soft-danger-hover-bg);
+}
+.card-checkbox {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--accent-color);
+}
+
+/* 묶음(번들) 리스트 */
+.bundle-list {
+  list-style-type: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.bundle-list li {
+  background-color: #f1f1f1;
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+.bundle-list li:hover {
+  background-color: #e0e0e0;
+}
+.bundle-list li.active-bundle {
+  background-color: var(--accent-color);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* 묶음 상세 보기 */
+.bundle-details {
+  /* Most styles inherited from .card-base */
+  margin-top: var(--spacing-md);
+  border: 2px solid var(--accent-color);
+}
+
+.aac-card-readonly {
+  /* Most styles inherited from .card-base */
+  border: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+.aac-card-readonly img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 10px 10px 0 0;
+}
+
+/* --- 필터 목록 스타일 --- */
+.filter-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.filter-item {
+  /* Most styles inherited from .card-base */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 150px;
+  text-align: center;
+}
+
+.filter-item img {
+  width: 120px;
+  height: 120px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid #eee;
+  object-fit: cover;
+}
+
+.filter-item span {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  word-break: keep-all;
+}

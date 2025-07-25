@@ -1,0 +1,91 @@
+.matching-client-list {
+  list-style: none;
+  padding: 0;
+}
+
+.matching-client-item {
+  /* Most styles inherited from .card-base */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-sm);
+}
+
+.matching-client-info {
+  flex: 1 1 60%; /* Take up more space on larger screens */
+  margin-bottom: 10px;
+}
+
+.matching-client-info h5 {
+  font-size: 1.2rem;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+.matching-client-info p {
+  font-size: 0.95rem;
+  color: var(--secondary-color);
+  margin-bottom: 5px;
+}
+
+.matching-client-info small {
+  font-size: 0.85rem;
+  color: var(--secondary-color);
+}
+
+.matching-client-actions {
+  flex: 1 1 35%; /* Take up less space */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* Buttons are now handled by global.css .btn-soft-* classes */
+
+/* Alert styles - these might be better handled by global.css or a dedicated Alert component */
+.alert-info {
+  background-color: #e0f7fa;
+  color: #006064;
+  border: 1px solid #b2ebf2;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.alert-danger {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.alert-warning {
+  background-color: #fffde7;
+  color: #fbc02d;
+  border: 1px solid #fff59d;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .matching-client-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .matching-client-info {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .matching-client-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

@@ -1,0 +1,80 @@
+/* TherapistToolsPage.css */
+
+.tools-management-section {
+  margin-bottom: var(--spacing-md);
+}
+
+.tools-management-section h2 {
+  margin-top: 0;
+  padding-bottom: 10px;
+  color: var(--primary-color);
+  border-bottom: 3px solid var(--accent-color); /* 강조색 밑줄 */
+  font-size: 1.5rem;
+}
+
+.tools-management-section .card-body .card-title {
+  font-size: 1.2rem;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+.tools-management-section .list-group-item {
+  padding: 15px;
+  border-radius: var(--border-radius-sm);
+  margin-bottom: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.tools-management-section .list-group-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.tools-management-section .list-group-item h5 {
+  margin-bottom: 5px;
+  font-size: 1.1rem;
+  color: var(--primary-color);
+}
+
+.tools-management-section .list-group-item p {
+  font-size: 0.9rem;
+  color: var(--secondary-color);
+}
+
+.tools-management-section .badge {
+  font-size: 0.75rem;
+  padding: 5px 8px;
+  border-radius: 12px;
+}
+
+/* Tabs specific styling */
+.tools-management-section .nav-tabs {
+  border-bottom: 2px solid var(--border-color);
+}
+
+.tools-management-section .nav-link {
+  color: var(--secondary-color);
+  font-weight: 600;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px; /* Overlap with border-bottom of nav-tabs */
+  transition: all 0.3s ease;
+}
+
+.tools-management-section .nav-link.active {
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+  background-color: transparent;
+}
+
+.tools-management-section .tab-content {
+  padding-top: var(--spacing-md);
+}
+
+
+
+.tools-management-section .tab-pane .card-body {
+  padding: 0; /* Remove card-body padding if not needed, as tab-content provides padding */
+}
+
