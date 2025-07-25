@@ -1,0 +1,98 @@
+.home-page {
+  /* .home-page itself doesn't need specific styles beyond what .main-container provides */
+}
+
+.character-info-section {
+  background-color: var(--light-bg-color-3);
+  padding: var(--spacing-lg) var(--spacing-sm);
+}
+
+.character-info-section h2 {
+  /* Handled by global.css h2 */
+}
+
+.character-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--spacing-md);
+}
+
+.about-section {
+  background-color: var(--light-bg-color-4);
+  padding: var(--spacing-lg) var(--spacing-sm);
+  text-align: center;
+}
+
+.about-section h2 {
+  /* Handled by global.css h2 */
+}
+
+.about-section p {
+  max-width: 700px;
+  margin: 0 auto;
+  /* Handled by global.css p */
+}
+
+/* ImageSlider.css 스타일 */
+.slider-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: var(--spacing-lg) 0;
+}
+
+.arrow {
+  font-size: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--primary-color);
+  transition: transform 0.2s ease;
+}
+
+.arrow:hover {
+  transform: scale(1.2);
+}
+
+.slider-frame {
+  width: 400px;
+  height: 300px;
+  overflow: hidden;
+  position: relative;
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.slider-track {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+  width: 100%;
+  height: 100%;
+}
+
+.slide-image {
+  min-width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--border-radius-lg);
+}
+
+/* CharacterCard.css 스타일 */
+.character-card {
+  /* Inherits most styles from .card-base */
+  text-align: center;
+}
+
+.character-card:hover {
+  /* Inherits hover effect from .card-base */
+}
+
+.character-image {
+  width: 100px;
+  height: auto;
+  margin-bottom: var(--spacing-md);
+}

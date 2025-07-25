@@ -1,0 +1,47 @@
+.App {
+  text-align: center;
+  /* App.js에서 받은 배경색 변수를 사용합니다. 기본값도 지정해줍니다. */
+  background-color: var(--app-bg-color, var(--default-bg-color));
+  /* 배경색이 바뀔 때 0.5초 동안 부드럽게 전환되는 효과를 추가합니다. */
+  transition: background-color 0.5s ease-in-out;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- 메인 콘텐츠 및 배경 캐릭터 --- */
+.content {
+  padding-top: var(--navbar-height);
+  min-height: calc(100vh - var(--navbar-height) - var(--footer-height));
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  flex-grow: 1; /* 남은 공간을 채우도록 설정 */
+}
+
+.content::before {
+  content: '';
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 200px;
+  height: 200px;
+  /* App.js에서 전달받은 캐릭터 이미지 변수 사용 */
+  background-image: var(--bg-character);
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.6;
+  z-index: -1;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+/* --- 내비게이션 바 --- */
+/* NavBar 컴포넌트가 자체적으로 스타일을 가질 것이므로 App.css에서는 제거 */
+
+/* --- 반응형 디자인 (모바일) --- */
+@media screen and (max-width: 768px) {
+  .content::before {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}

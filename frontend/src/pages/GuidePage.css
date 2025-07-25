@@ -1,0 +1,125 @@
+/* 전체 레이아웃 */
+/* .guide-page styles are now handled by .main-container in global.css */
+
+/* 인트로 */
+.intro-section {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.intro-section .highlight {
+  color: var(--accent-color);
+  font-weight: bold;
+}
+
+.intro-section .subtitle {
+  font-size: 18px;
+  margin-top: var(--spacing-sm);
+  color: var(--secondary-color);
+}
+
+/* 주요 서비스 */
+.feature-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.feature-section h2 {
+  /* Handled by global.css h2 */
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.feature-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.feature-item h3 {
+  flex: 1;
+  margin: 0;
+  color: var(--accent-color);
+}
+
+.feature-item p {
+  flex: 3;
+  margin: 0;
+  padding-left: var(--spacing-md);
+  color: var(--primary-color);
+}
+
+/* 기관용 서비스 */
+.institution-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.institution-section h2 {
+  /* Handled by global.css h2 */
+}
+
+.institution-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.institution-card {
+  /* Inherits most styles from .card-base */
+}
+
+.institution-card h3 {
+  margin-bottom: var(--spacing-sm);
+  color: var(--accent-color);
+}
+
+/* Q&A 영역 */
+.qa-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.qa-section h2 {
+  /* Handled by global.css h2 */
+}
+
+.qa-item {
+  margin-bottom: var(--spacing-md);
+  background-color: var(--light-bg-color-2);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  border-left: 4px solid var(--accent-color);
+}
+
+.qa-item h4 {
+  margin-bottom: var(--spacing-sm);
+  color: var(--primary-color);
+}
+
+.guide-logo-wrapper {
+  text-align: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.guide-logo {
+  width: 160px;
+  height: auto;
+}
+
+/* 반응형 대응 */
+@media (max-width: 768px) {
+  .feature-item {
+    flex-direction: column;
+  }
+
+  .feature-item p {
+    padding-left: 0;
+    margin-top: var(--spacing-sm);
+  }
+
+  .feature-item h3 {
+    margin-bottom: 4px;
+  }
+}
