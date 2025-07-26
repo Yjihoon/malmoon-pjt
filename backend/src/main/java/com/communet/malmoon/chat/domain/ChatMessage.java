@@ -31,7 +31,7 @@ public class ChatMessage {
 	private Long messageId;
 
 	@Column(name = "room_id", nullable = false)
-	private Long rommId;
+	private Long roomId;
 
 	@Column(name = "sender_id", nullable = false)
 	private Long senderId;

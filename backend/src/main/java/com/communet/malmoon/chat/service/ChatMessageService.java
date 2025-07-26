@@ -60,7 +60,7 @@ public class ChatMessageService {
 	@Transactional
 	public ChatMessageResponse saveMessage(ChatMessageRequest request) {
 		ChatMessage message = ChatMessage.builder()
-			.rommId(request.getRoomId())
+			.roomId(request.getRoomId())
 			.senderId(request.getSenderId())
 			.content(request.getContent())
 			.build();
@@ -77,7 +77,7 @@ public class ChatMessageService {
 	private ChatMessageResponse toResponse(ChatMessage message) {
 		return ChatMessageResponse.builder()
 			.messageId(message.getMessageId())
-			.roomId(message.getRommId())
+			.roomId(message.getRoomId())
 			.senderId(message.getSenderId())
 			.content(message.getContent())
 			.sendAt(message.getSentAt())
