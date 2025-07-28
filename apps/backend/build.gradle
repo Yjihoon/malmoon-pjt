@@ -44,9 +44,12 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
     // validation
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    // jwt
+    implementation "com.auth0:java-jwt:3.10.3"
+    // java util
+    implementation 'com.google.guava:guava:32.1.2-jre'
 }
 
 tasks.named('test') {
