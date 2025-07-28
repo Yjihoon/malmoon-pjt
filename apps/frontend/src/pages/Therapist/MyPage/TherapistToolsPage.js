@@ -1,339 +1,545 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Alert, ListGroup, Modal, Form, Image, Badge, Tabs, Tab } from 'react-bootstrap';
-import { useAuth } from '../../../contexts/AuthContext';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Container, Row, Col, Card, Button, Alert, ListGroup, Modal, Form, Image, Badge, Tabs, Tab, InputGroup, Pagination, Spinner } from 'react-bootstrap';
+// import { useAuth } from '../../../contexts/AuthContext'; // 실제 환경에서는 이 주석을 해제하세요.
 import { v4 as uuidv4 } from 'uuid';
-import './TherapistToolsPage.css'; // 페이지 전용 스타일 임포트
+// import './TherapistToolsPage.css'; // 실제 환경에서는 이 주석을 해제하세요.
 
+// --- Mock Data and Services ---
+const useAuth = () => ({ user: { userType: 'therapist', id: 'therapist123' } });
+
+// --- Helper & Child Components ---
+
+// 1. Main AAC Tool List Component with Search and Pagination
+const AacToolList = ({ aacTools, onEdit, onDelete }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const toolsPerPage = 20;
+
+    const filteredTools = useMemo(() =>
+        aacTools.filter(tool =>
+            tool.name.toLowerCase().includes(searchTerm.toLowerCase())
+        ), [aacTools, searchTerm]
+    );
+
+    const totalPages = Math.ceil(filteredTools.length / toolsPerPage);
+    const currentTools = filteredTools.slice((currentPage - 1) * toolsPerPage, currentPage * toolsPerPage);
+
+    return (
+        <>
+            <InputGroup className="mb-3">
+                <Form.Control
+                    placeholder="AAC 도구 이름으로 검색..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1);
+                    }}
+                />
+            </InputGroup>
+            <ListGroup>
+                {currentTools.length > 0 ? currentTools.map(tool => (
+                    <ListGroup.Item key={tool.id} className="d-flex justify-content-between align-items-center">
+                        <div className="d-flex align-items-center">
+                            <Image src={tool.imageUrl || 'https://placehold.co/100x100?text=No+Image'} style={{ width: '50px', height: '50px', objectFit: 'cover' }} rounded className="me-3" />
+                            <div>
+                                <strong>{tool.name}</strong>
+                                <small className="d-block text-muted">{tool.description}</small>
+                            </div>
+                        </div>
+                        <div>
+                            <Button variant="outline-secondary" size="sm" className="me-2" onClick={() => onEdit(tool)}>편집</Button>
+                            <Button variant="outline-danger" size="sm" onClick={() => onDelete(tool.id)}>삭제</Button>
+                        </div>
+                    </ListGroup.Item>
+                )) : <p className="text-muted text-center">표시할 도구가 없습니다.</p>}
+            </ListGroup>
+            {totalPages > 1 && (
+                <Pagination className="justify-content-center mt-3">
+                    <Pagination.Prev onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} />
+                    {[...Array(totalPages).keys()].map(num => (
+                        <Pagination.Item key={num + 1} active={num + 1 === currentPage} onClick={() => setCurrentPage(num + 1)}>
+                            {num + 1}
+                        </Pagination.Item>
+                    ))}
+                    <Pagination.Next onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} />
+                </Pagination>
+            )}
+        </>
+    );
+};
+
+// 2. AAC Tool Selector for Sets with Advanced Filtering
+const AacToolSelector = ({ aacTools, selectedToolIds, onToggleTool }) => {
+    const [searchCategory, setSearchCategory] = useState('name');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const toolsPerPage = 20;
+
+    const filteredTools = useMemo(() => {
+        if (!searchTerm.trim()) {
+            return aacTools;
+        }
+        return aacTools.filter(tool => {
+            const toolValue = tool[searchCategory] ? tool[searchCategory].toLowerCase() : '';
+            return toolValue.includes(searchTerm.toLowerCase());
+        });
+    }, [aacTools, searchTerm, searchCategory]);
+
+    const totalPages = Math.ceil(filteredTools.length / toolsPerPage);
+    const currentTools = filteredTools.slice((currentPage - 1) * toolsPerPage, currentPage * toolsPerPage);
+
+    return (
+        <>
+            <InputGroup className="mb-3">
+                <Form.Select 
+                    style={{flex: '0 0 120px'}}
+                    value={searchCategory}
+                    onChange={(e) => setSearchCategory(e.target.value)}
+                >
+                    <option value="name">이름</option>
+                    <option value="situation">상황</option>
+                    <option value="action">행동</option>
+                    <option value="emotion">감정</option>
+                </Form.Select>
+                <Form.Control
+                    placeholder="선택한 기준으로 검색..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1);
+                    }}
+                />
+            </InputGroup>
+
+            {currentTools.length > 0 ? (
+                <Row xs={1} sm={2} md={4} lg={5} className="g-3" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    {currentTools.map(tool => (
+                        <Col key={tool.id}>
+                            <Card className={`h-100 text-center ${selectedToolIds.includes(tool.id) ? 'border-primary' : ''}`} onClick={() => onToggleTool(tool.id)} style={{ cursor: 'pointer' }}>
+                                <Card.Img variant="top" src={tool.imageUrl || 'https://placehold.co/150x100?text=No+Image'} style={{ height: '100px', objectFit: 'cover' }} onError={(e) => { e.target.onerror = null; e.target.src='https://placehold.co/150x100?text=Error'; }} />
+                                <Card.Body className="p-2"><Card.Text style={{ fontSize: '0.8rem' }}>{tool.name}</Card.Text></Card.Body>
+                            </Card>
+                        </Col>
+                    ))}
+                </Row>
+            ) : <p className="text-muted text-center">검색 결과가 없습니다.</p>}
+
+            {totalPages > 1 && (
+                <Pagination className="justify-content-center mt-3">
+                    <Pagination.Prev onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} />
+                    <Pagination.Next onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} />
+                </Pagination>
+            )}
+        </>
+    );
+};
+
+
+// --- Main Component ---
 function TherapistToolsPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [allIndividualTools, setAllIndividualTools] = useState([]); // 모든 개별 도구 데이터 (AAC, Filter)
-  const [allToolSets, setAllToolSets] = useState([]); // 모든 도구 묶음 (세트) 데이터
 
-  // 모달 관련 상태
-  const [showAddToolModal, setShowAddToolModal] = useState(false);
-  const [showAddToolSetModal, setShowAddToolSetModal] = useState(false);
-  const [currentTool, setCurrentTool] = useState(null); // 편집할 도구
-  const [currentToolSet, setCurrentToolSet] = useState(null); // 편집할 도구 묶음
+  // Data States
+  const [aacTools, setAacTools] = useState([]);
+  const [aacSets, setAacSets] = useState([]);
+  const [filters, setFilters] = useState([]);
+  const [toolBundles, setToolBundles] = useState([]);
 
-  // 새 도구/묶음 폼 상태
-  const [newToolForm, setNewToolForm] = useState({
-    type: 'AAC', // 'AAC' or 'Filter'
-    name: '',
-    description: '',
-    category: '',
-    imageUrl: '',
-  });
-  const [newToolSetForm, setNewToolSetForm] = useState({
-    name: '',
-    description: '',
-    toolIds: [],
-  });
+  // Modal States
+  const [showAacToolModal, setShowAacToolModal] = useState(false);
+  const [showAacSetModal, setShowAacSetModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showToolBundleModal, setShowToolBundleModal] = useState(false);
+
+  // Form & Edit States
+  const [currentAacTool, setCurrentAacTool] = useState(null);
+  const [currentAacSet, setCurrentAacSet] = useState(null);
+  const [currentFilter, setCurrentFilter] = useState(null);
+  const [currentToolBundle, setCurrentToolBundle] = useState(null);
+  const [aacCreationMethod, setAacCreationMethod] = useState('direct');
+  const [aacToolForm, setAacToolForm] = useState({ name: '', description: '', situation: '', action: '', emotion: '', imageUrl: '', status: 'public' });
+  const [aacSetForm, setAacSetForm] = useState({ name: '', description: '', toolIds: [] });
+  const [filterForm, setFilterForm] = useState({ name: '', imageUrl: '' });
+  const [toolBundleForm, setToolBundleForm] = useState({ name: '', description: '', aacSetIds: [], filterIds: [] });
+  const [imagePreview, setImagePreview] = useState('');
+
+  // AI Generation States
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiGeneratedImage, setAiGeneratedImage] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
-    const fetchTools = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        if (user && user.userType === 'therapist') {
-          // 더미 개별 도구 데이터
-          const dummyIndividualTools = [
-            { id: 'aac1', type: 'AAC', name: '그림카드 세트 A', description: '다양한 사물, 동물 그림 카드 (50장)', category: '어휘', lastModified: '2025-07-20', imageUrl: 'https://placehold.co/100x100?text=AAC_Card1' },
-            { id: 'aac2', type: 'AAC', name: '문장 구성 보드', description: '주어-동사-목적어 연습 보드', category: '문법', lastModified: '2025-07-18', imageUrl: 'https://placehold.co/100x100?text=AAC_Board' },
-            { id: 'aac3', type: 'AAC', name: '단어 확장 게임', description: '유사어/반의어 연결 게임', category: '어휘', lastModified: '2025-07-23', imageUrl: 'https://placehold.co/100x100?text=AAC_Game' },
-            { id: 'filter1', type: 'Filter', name: '강아지 귀 필터', description: '화상 캠에 강아지 귀를 추가합니다.', category: '동물', lastModified: '2025-07-22', imageUrl: 'https://placehold.co/100x100?text=Filter_Dog' },
-            { id: 'filter2', type: 'Filter', name: '왕관 필터', description: '화상 캠에 반짝이는 왕관을 추가합니다.', category: '액세서리', lastModified: '2025-07-21', imageUrl: 'https://placehold.co/100x100?text=Filter_Crown' },
-            { id: 'filter3', type: 'Filter', name: '안경 필터', description: '다양한 디자인의 안경을 씌웁니다.', category: '의상', lastModified: '2025-07-24', imageUrl: 'https://placehold.co/100x100?text=Filter_Glasses' },
-          ];
-          setAllIndividualTools(dummyIndividualTools);
-
-          // 더미 도구 묶음(세트) 데이터
-          const dummyToolSets = [
-            { id: 'set1', name: '초기 언어 발달 세션용', description: '그림카드와 문장 보드를 활용한 기초 세션', lastModified: '2025-07-25', toolIds: ['aac1', 'aac2', 'filter1'] },
-            { id: 'set2', name: '사회성 기술 훈련용', description: '감정 표현 AAC와 상황 필터', lastModified: '2025-07-24', toolIds: ['aac3', 'filter2', 'filter3'] },
-          ];
-          setAllToolSets(dummyToolSets);
-
-        } else {
-          setError('치료사 계정으로 로그인해야 수업 도구를 관리할 수 있습니다.');
-        }
-      } catch (err) {
-        setError('도구 정보를 불러오는 데 실패했습니다.');
-        console.error('도구 불러오기 오류:', err);
-      } finally {
-        setLoading(false);
-      }
+    const fetchMockData = () => {
+        setLoading(true);
+        try {
+            if (user && user.userType === 'therapist') {
+                const dummyAacTools = Array.from({ length: 25 }, (_, i) => ({
+                    id: `tool${i + 1}`, name: `도구 ${i + 1}`, description: `설명 ${i + 1}`, situation: '일상', action: '놀기', emotion: i % 2 === 0 ? '기쁨' : '행복',
+                    imageUrl: `https://placehold.co/150x100?text=Tool${i + 1}`, status: 'public'
+                }));
+                setAacTools(dummyAacTools);
+                const dummyFilters = Array.from({ length: 5 }, (_, i) => ({ id: `filter${i + 1}`, name: `필터 ${i + 1}`, imageUrl: `https://placehold.co/100x100?text=Filter${i + 1}` }));
+                setFilters(dummyFilters);
+                const dummyAacSets = [{ id: 'set1', name: '기본 과일 묶음', description: '사과, 바나나, 딸기', toolIds: ['tool1', 'tool2', 'tool3'] }, { id: 'set2', name: '탈것 묶음', description: '자동차, 비행기, 배', toolIds: ['tool4', 'tool5', 'tool6'] }];
+                setAacSets(dummyAacSets);
+                const dummyToolBundles = [{ id: 'bundle1', name: '과일가게 놀이 세트', description: '과일 묶음과 기본 필터 사용', aacSetIds: ['set1'], filterIds: ['filter1'] }, { id: 'bundle2', name: '교통수단 배우기', description: '탈것 묶음과 여러 필터 사용', aacSetIds: ['set2'], filterIds: ['filter2', 'filter3'] }];
+                setToolBundles(dummyToolBundles);
+            } else { setError('치료사 계정으로만 접근 가능합니다.'); }
+        } catch (e) { setError('데이터 로딩 중 오류가 발생했습니다.'); } finally { setLoading(false); }
     };
+    fetchMockData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    fetchTools();
-  }, [user]);
-
-  // 개별 도구 추가/편집 핸들러
-  const handleAddEditTool = () => {
-    if (currentTool) {
-      // 편집
-      setAllIndividualTools(prev => prev.map(tool => tool.id === currentTool.id ? { ...newToolForm, id: currentTool.id, lastModified: new Date().toISOString().slice(0, 10) } : tool));
-    } else {
-      // 추가
-      setAllIndividualTools(prev => [...prev, { ...newToolForm, id: uuidv4(), lastModified: new Date().toISOString().slice(0, 10) }]);
+  const handleFileChange = (e, formSetter) => {
+    const file = e.target.files[0];
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+      formSetter(prev => ({ ...prev, imageFile: file, imageUrl: previewUrl }));
     }
-    setShowAddToolModal(false);
-    setNewToolForm({
-      type: 'AAC',
-      name: '',
-      description: '',
-      category: '',
-      imageUrl: '',
+  };
+
+  const openModal = (type, item = null) => {
+    setImagePreview('');
+    setAiGeneratedImage(null);
+    setAiPrompt('');
+    switch (type) {
+        case 'aacTool':
+            setCurrentAacTool(item);
+            setAacCreationMethod('direct');
+            const toolData = item || { name: '', description: '', situation: '', action: '', emotion: '', imageUrl: '', status: 'public' };
+            setAacToolForm(toolData);
+            if (item && item.imageUrl) setImagePreview(item.imageUrl);
+            setShowAacToolModal(true);
+            break;
+        case 'aacSet':
+            setCurrentAacSet(item);
+            setAacSetForm(item || { name: '', description: '', toolIds: [] });
+            setShowAacSetModal(true);
+            break;
+        case 'filter':
+            setCurrentFilter(item);
+            const filterData = item || { name: '', imageUrl: '' };
+            setFilterForm(filterData);
+            if (item && item.imageUrl) setImagePreview(item.imageUrl);
+            setShowFilterModal(true);
+            break;
+        case 'toolBundle':
+            setCurrentToolBundle(item);
+            setToolBundleForm(item || { name: '', description: '', aacSetIds: [], filterIds: [] });
+            setShowToolBundleModal(true);
+            break;
+        default: break;
+    }
+  };
+  
+  const handleAiGenerate = async () => {
+      if (!aiPrompt) {
+          alert('프롬프트를 입력해주세요.');
+          return;
+      }
+      setIsGenerating(true);
+      setAiGeneratedImage(null);
+
+      // Simulate API call
+      setTimeout(() => {
+          const mockImageUrl = `https://placehold.co/400x300?text=${encodeURIComponent(aiPrompt)}`;
+          setAiGeneratedImage(mockImageUrl);
+          setAacToolForm({
+              name: `${aiPrompt} (AI 생성)`,
+              description: `'${aiPrompt}' 프롬프트를 기반으로 생성된 이미지입니다.`,
+              situation: 'AI 추천',
+              action: 'AI 추천',
+              emotion: '',
+              imageUrl: mockImageUrl,
+              status: 'public',
+          });
+          setIsGenerating(false);
+      }, 2000);
+  };
+
+  // --- Validation and CRUD Handlers ---
+  const validateAndRun = (fields, onValid) => {
+      for(const [key, value] of Object.entries(fields)) {
+          if(!value) {
+              alert('필수 항목을 모두 입력해주세요.');
+              return;
+          }
+      }
+      onValid();
+  }
+
+  const handleAddEditAacTool = () => {
+    const { name, description, situation, action } = aacToolForm;
+    validateAndRun({ name, description, situation, action }, () => {
+        const finalForm = { ...aacToolForm };
+        delete finalForm.imageFile;
+        if (currentAacTool) {
+            setAacTools(prev => prev.map(t => t.id === currentAacTool.id ? finalForm : t));
+        } else {
+            setAacTools(prev => [...prev, { ...finalForm, id: uuidv4() }]);
+        }
+        setShowAacToolModal(false);
     });
-    setCurrentTool(null);
   };
 
-  // 개별 도구 삭제 핸들러
-  const handleDeleteTool = (toolId) => {
-    if (window.confirm('정말로 이 도구를 삭제하시겠습니까?')) {
-      setAllIndividualTools(prev => prev.filter(tool => tool.id !== toolId));
-      // 이 도구를 포함하는 도구 묶음에서도 제거
-      setAllToolSets(prevSets => prevSets.map(set => ({ ...set, toolIds: set.toolIds.filter(id => id !== toolId) })));
+  const handleDeleteAacTool = (toolId) => {
+    if (window.confirm('정말로 이 AAC 도구를 삭제하시겠습니까?')) {
+        setAacTools(prev => prev.filter(t => t.id !== toolId));
+        setAacSets(prev => prev.map(s => ({ ...s, toolIds: s.toolIds.filter(id => id !== toolId) })));
     }
   };
 
-  // 도구 묶음 추가/편집 핸들러
-  const handleAddEditToolSet = () => {
-    if (currentToolSet) {
-      // 편집
-      setAllToolSets(prev => prev.map(set => set.id === currentToolSet.id ? { ...newToolSetForm, id: currentToolSet.id, lastModified: new Date().toISOString().slice(0, 10) } : set));
-    } else {
-      // 추가
-      setAllToolSets(prev => [...prev, { ...newToolSetForm, id: uuidv4(), lastModified: new Date().toISOString().slice(0, 10) }]);
+  const handleAddEditAacSet = () => {
+    const { name, description, toolIds } = aacSetForm;
+    if (toolIds.length === 0) {
+        alert('하나 이상의 AAC 도구를 포함해야 합니다.');
+        return;
     }
-    setShowAddToolSetModal(false);
-    setNewToolSetForm({
-      name: '',
-      description: '',
-      toolIds: [],
+    validateAndRun({ name, description }, () => {
+        if (currentAacSet) {
+            setAacSets(prev => prev.map(s => s.id === currentAacSet.id ? aacSetForm : s));
+        } else {
+            setAacSets(prev => [...prev, { ...aacSetForm, id: uuidv4() }]);
+        }
+        setShowAacSetModal(false);
     });
-    setCurrentToolSet(null);
   };
 
-  // 도구 묶음 삭제 핸들러
-  const handleDeleteToolSet = (toolSetId) => {
-    if (window.confirm('정말로 이 도구 묶음을 삭제하시겠습니까?')) {
-      setAllToolSets(prev => prev.filter(set => set.id !== toolSetId));
+  const handleDeleteAacSet = (setId) => {
+      if(window.confirm('정말로 이 AAC 묶음을 삭제하시겠습니까?')) {
+          setAacSets(prev => prev.filter(s => s.id !== setId));
+          setToolBundles(prev => prev.map(b => ({...b, aacSetIds: b.aacSetIds.filter(id => id !== setId)})))
+      }
+  };
+
+  const handleAddEditFilter = () => {
+    const { name, imageUrl } = filterForm;
+    validateAndRun({ name, imageUrl }, () => {
+        const finalForm = { ...filterForm };
+        delete finalForm.imageFile;
+        if (currentFilter) {
+            setFilters(prev => prev.map(f => f.id === currentFilter.id ? finalForm : f));
+        } else {
+            setFilters(prev => [...prev, { ...finalForm, id: uuidv4() }]);
+        }
+        setShowFilterModal(false);
+    });
+  };
+
+  const handleDeleteFilter = (filterId) => {
+      if(window.confirm('정말로 이 필터를 삭제하시겠습니까?')) {
+          setFilters(prev => prev.filter(f => f.id !== filterId));
+          setToolBundles(prev => prev.map(b => ({...b, filterIds: b.filterIds.filter(id => id !== filterId)})))
+      }
+  };
+
+  const handleAddEditToolBundle = () => {
+    const { name, description, aacSetIds, filterIds } = toolBundleForm;
+    if (aacSetIds.length === 0 && filterIds.length === 0) {
+        alert('하나 이상의 AAC 묶음 또는 필터를 포함해야 합니다.');
+        return;
     }
+    validateAndRun({ name, description }, () => {
+        if (currentToolBundle) {
+            setToolBundles(prev => prev.map(b => b.id === currentToolBundle.id ? toolBundleForm : b));
+        } else {
+            setToolBundles(prev => [...prev, { ...toolBundleForm, id: uuidv4() }]);
+        }
+        setShowToolBundleModal(false);
+    });
   };
 
-  if (loading) {
-    return (
-      <Container className="my-5 text-center">
-        <p>도구 정보를 불러오는 중입니다...</p>
-      </Container>
-    );
-  }
+  const handleDeleteToolBundle = (bundleId) => {
+      if(window.confirm('정말로 이 수업 세트를 삭제하시겠습니까?')) {
+          setToolBundles(prev => prev.filter(b => b.id !== bundleId));
+      }
+  };
 
-  if (error) {
-    return (
-      <Container className="my-5 text-center">
-        <Alert variant="danger">{error}</Alert>
-      </Container>
-    );
-  }
-
-  if (!user || user.userType !== 'therapist') {
-    return (
-      <Container className="my-5 text-center">
-        <Alert variant="warning">치료사만 접근할 수 있는 페이지입니다.</Alert>
-      </Container>
-    );
-  }
+  if (loading) return <Container className="my-5 text-center"><p>로딩 중...</p></Container>;
+  if (error) return <Container className="my-5 text-center"><Alert variant="danger">{error}</Alert></Container>;
 
   return (
-    <Container className="my-5 main-container tools-management-section">
+    <Container className="my-5">
       <h2 className="text-center mb-4">수업 도구 관리</h2>
-
-      
-
-      <Tabs defaultActiveKey="aacTools" id="uncontrolled-tab-example" className="mb-3">
+      <Tabs defaultActiveKey="aacTools" className="mb-3">
         <Tab eventKey="aacTools" title="AAC 도구">
-          <Card className="shadow-sm p-3 mb-3 card-base">
-            <Card.Body>
+          <Card className="p-3"><Card.Body>
               <Card.Title className="mb-3">AAC 도구 목록</Card.Title>
-              <Button className="btn-soft-primary mb-3" onClick={() => { setCurrentTool(null); setNewToolForm({ type: 'AAC', name: '', description: '', category: '', imageUrl: '' }); setShowAddToolModal(true); }}>새 AAC 도구 추가</Button>
-              <ListGroup>
-                {allIndividualTools.filter(tool => tool.type === 'AAC').length === 0 ? (
-                  <ListGroup.Item className="text-muted">등록된 AAC 도구가 없습니다.</ListGroup.Item>
-                ) : (
-                  allIndividualTools.filter(tool => tool.type === 'AAC').map(tool => (
-                  <Card key={tool.id} className="shadow-sm card-base mb-3">
-                    <Card.Body>
-                      <Row className="align-items-center">
-                        <Col xs={8} className="d-flex align-items-center">
-                          {tool.imageUrl && <Image src={tool.imageUrl} alt={tool.name} fluid roundedCircle style={{ width: '40px', height: '40px', objectFit: 'cover', marginRight: '10px' }} />}
-                          <div>
-                            <h5>{tool.name}</h5>
-                            <p className="mb-0 text-muted">{tool.description} ({tool.category})</p>
-                          </div>
-                        </Col>
-                        <Col xs={4} className="text-end">
-                          <Button variant="btn-soft-secondary" size="sm" className="me-2" onClick={() => { setCurrentTool(tool); setNewToolForm(tool); setShowAddToolModal(true); }}>편집</Button>
-                          <Button variant="btn-soft-danger" size="sm" onClick={() => handleDeleteTool(tool.id)}>삭제</Button>
-                        </Col>
-                      </Row>
-                    </Card.Body>
-                  </Card>
-                  ))
-                )}
-              </ListGroup>
-            </Card.Body>
-          </Card>
+              <Button className="btn-soft-primary mb-3" onClick={() => openModal('aacTool')}>새 AAC 도구 추가</Button>
+              <AacToolList aacTools={aacTools} onEdit={(tool) => openModal('aacTool', tool)} onDelete={handleDeleteAacTool} />
+          </Card.Body></Card>
         </Tab>
-        <Tab eventKey="filterTools" title="필터 도구">
-          <Card className="shadow-sm p-3 mb-3 card-base">
-            <Card.Body>
-              <Card.Title className="mb-3">필터 도구 목록</Card.Title>
-              <Button className="btn-soft-primary mb-3" onClick={() => { setCurrentTool(null); setNewToolForm({ type: 'Filter', name: '', description: '', category: '', imageUrl: '' }); setShowAddToolModal(true); }}>새 필터 도구 추가</Button>
-              <ListGroup>
-                {allIndividualTools.filter(tool => tool.type === 'Filter').length === 0 ? (
-                  <ListGroup.Item className="text-muted">등록된 필터 도구가 없습니다.</ListGroup.Item>
-                ) : (
-                  allIndividualTools.filter(tool => tool.type === 'Filter').map(tool => (
-                  <Card key={tool.id} className="shadow-sm card-base mb-3">
-                    <Card.Body>
-                      <Row className="align-items-center">
-                        <Col xs={8} className="d-flex align-items-center">
-                          {tool.imageUrl && <Image src={tool.imageUrl} alt={tool.name} fluid roundedCircle style={{ width: '40px', height: '40px', objectFit: 'cover', marginRight: '10px' }} />}
-                          <div>
-                            <h5>{tool.name}</h5>
-                            <p className="mb-0 text-muted">{tool.description} ({tool.category})</p>
-                          </div>
-                        </Col>
-                        <Col xs={4} className="text-end">
-                          <Button variant="btn-soft-secondary" size="sm" className="me-2" onClick={() => { setCurrentTool(tool); setNewToolForm(tool); setShowAddToolModal(true); }}>편집</Button>
-                          <Button variant="btn-soft-danger" size="sm" onClick={() => handleDeleteTool(tool.id)}>삭제</Button>
-                        </Col>
-                      </Row>
-                    </Card.Body>
-                  </Card>
-                  ))
-                )}
-              </ListGroup>
-            </Card.Body>
-          </Card>
+        <Tab eventKey="aacSets" title="AAC 묶음">
+             <Card className="p-3"><Card.Body>
+                <Card.Title className="mb-3">AAC 묶음 목록</Card.Title>
+                <Button className="btn-soft-primary mb-3" onClick={() => openModal('aacSet')}>새 AAC 묶음 추가</Button>
+                <ListGroup>{aacSets.map(set => (
+                    <ListGroup.Item key={set.id}><div className="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5>{set.name}</h5><p className="text-muted">{set.description}</p>
+                            <div>
+                                {set.toolIds.slice(0, 5).map(toolId => { const tool = aacTools.find(t => t.id === toolId); return tool ? <Badge pill bg="info" className="me-1" key={toolId}>{tool.name}</Badge> : null; })}
+                                {set.toolIds.length > 5 && <Badge pill bg="secondary">+{set.toolIds.length - 5}개 더</Badge>}
+                            </div>
+                        </div>
+                        <div>
+                            <Button variant="outline-secondary" size="sm" className="me-2" onClick={() => openModal('aacSet', set)}>편집</Button>
+                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteAacSet(set.id)}>삭제</Button>
+                        </div>
+                    </div></ListGroup.Item>
+                ))}</ListGroup>
+            </Card.Body></Card>
         </Tab>
-        <Tab eventKey="toolSets" title="도구 묶음">
-          <Card className="shadow-sm p-3 mb-3 card-base">
-            <Card.Body>
-              <Card.Title className="mb-3">도구 묶음 목록</Card.Title>
-              <Button className="btn-soft-primary mb-3" onClick={() => { setCurrentToolSet(null); setNewToolSetForm({ name: '', description: '', toolIds: [] }); setShowAddToolSetModal(true); }}>새 도구 묶음 추가</Button>
-              <ListGroup>
-                {allToolSets.length === 0 ? (
-                  <ListGroup.Item className="text-muted">등록된 도구 묶음이 없습니다.</ListGroup.Item>
-                ) : (
-                  allToolSets.map(toolSet => (
-                    <Card key={toolSet.id} className="shadow-sm card-base mb-3">
-                    <Card.Body>
-                      <Row className="align-items-center">
-                        <Col xs={8}>
-                          <h5>{toolSet.name}</h5>
-                          <p className="mb-1 text-muted">{toolSet.description}</p>
-                          <div>
-                            {toolSet.toolIds.map(toolId => {
-                              const tool = allIndividualTools.find(t => t.id === toolId);
-                              return tool ? <Badge key={toolId} bg={tool.type === 'AAC' ? 'info' : 'success'} className="me-1">{tool.name}</Badge> : null;
-                            })}
-                          </div>
-                        </Col>
-                        <Col xs={4} className="text-end">
-                          <Button variant="btn-soft-secondary" size="sm" className="me-2" onClick={() => { setCurrentToolSet(toolSet); setNewToolSetForm(toolSet); setShowAddToolSetModal(true); }}>편집</Button>
-                          <Button variant="btn-soft-danger" size="sm" onClick={() => handleDeleteToolSet(toolSet.id)}>삭제</Button>
-                        </Col>
-                      </Row>
-                    </Card.Body>
-                  </Card>
-                  ))
-                )}
-              </ListGroup>
-            </Card.Body>
-          </Card>
+        <Tab eventKey="filters" title="필터">
+            <Card className="p-3"><Card.Body>
+                <Card.Title className="mb-3">필터 목록</Card.Title>
+                <Button className="btn-soft-primary mb-3" onClick={() => openModal('filter')}>새 필터 추가</Button>
+                <ListGroup>{filters.map(filter => (
+                    <ListGroup.Item key={filter.id} className="d-flex justify-content-between align-items-center">
+                        <div className="d-flex align-items-center">
+                            <Image src={filter.imageUrl || 'https://placehold.co/100x100?text=No+Image'} style={{ width: '50px', height: '50px', objectFit: 'cover' }} rounded className="me-3" />
+                            <strong>{filter.name}</strong>
+                        </div>
+                        <div>
+                            <Button variant="outline-secondary" size="sm" className="me-2" onClick={() => openModal('filter', filter)}>편집</Button>
+                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteFilter(filter.id)}>삭제</Button>
+                        </div>
+                    </ListGroup.Item>
+                ))}</ListGroup>
+            </Card.Body></Card>
+        </Tab>
+        <Tab eventKey="toolBundles" title="수업 세트">
+            <Card className="p-3"><Card.Body>
+                <Card.Title className="mb-3">수업 세트 목록</Card.Title>
+                <Button className="btn-soft-primary mb-3" onClick={() => openModal('toolBundle')}>새 수업 세트 추가</Button>
+                <ListGroup>{toolBundles.map(bundle => (
+                     <ListGroup.Item key={bundle.id}><div className="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5>{bundle.name}</h5><p className="text-muted">{bundle.description}</p>
+                            <strong>포함된 AAC 묶음:</strong>
+                            <div className="mb-2">{bundle.aacSetIds.map(setId => { const set = aacSets.find(s => s.id === setId); return set ? <Badge bg="primary" className="me-1" key={setId}>{set.name}</Badge> : null; })}</div>
+                            <strong>포함된 필터:</strong>
+                            <div>{bundle.filterIds.map(filterId => { const filter = filters.find(f => f.id === filterId); return filter ? <Badge bg="success" className="me-1" key={filterId}>{filter.name}</Badge> : null; })}</div>
+                        </div>
+                        <div>
+                            <Button variant="outline-secondary" size="sm" className="me-2" onClick={() => openModal('toolBundle', bundle)}>편집</Button>
+                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteToolBundle(bundle.id)}>삭제</Button>
+                        </div>
+                    </div></ListGroup.Item>
+                ))}</ListGroup>
+            </Card.Body></Card>
         </Tab>
       </Tabs>
-
-      {/* 개별 도구 추가/편집 모달 */}
-      <Modal show={showAddToolModal} onHide={() => setShowAddToolModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>{currentTool ? '도구 편집' : '새 도구 추가'}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>도구 유형</Form.Label>
-              <Form.Select name="type" value={newToolForm.type} onChange={(e) => setNewToolForm({ ...newToolForm, type: e.target.value })}>
-                <option value="AAC">AAC</option>
-                <option value="Filter">필터</option>
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>이름</Form.Label>
-              <Form.Control type="text" name="name" value={newToolForm.name} onChange={(e) => setNewToolForm({ ...newToolForm, name: e.target.value })} />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>설명</Form.Label>
-              <Form.Control as="textarea" name="description" value={newToolForm.description} onChange={(e) => setNewToolForm({ ...newToolForm, description: e.target.value })} />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>카테고리</Form.Label>
-              <Form.Control type="text" name="category" value={newToolForm.category} onChange={(e) => setNewToolForm({ ...newToolForm, category: e.target.value })} />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>이미지 URL</Form.Label>
-              <Form.Control type="text" name="imageUrl" value={newToolForm.imageUrl} onChange={(e) => setNewToolForm({ ...newToolForm, imageUrl: e.target.value })} />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowAddToolModal(false)}>취소</Button>
-          <Button variant="primary" onClick={handleAddEditTool}>{currentTool ? '저장' : '추가'}</Button>
-        </Modal.Footer>
+      
+      {/* --- Modals --- */}
+      <Modal show={showAacToolModal} onHide={() => setShowAacToolModal(false)} centered size="lg">
+          <Modal.Header closeButton><Modal.Title>{currentAacTool ? 'AAC 도구 편집' : '새 AAC 도구 추가'}</Modal.Title></Modal.Header>
+          <Modal.Body>
+              <Form>
+                  {!currentAacTool && (<Form.Group className="mb-3"><Form.Label>생성 방식</Form.Label><div>
+                        <Form.Check inline type="radio" label="AI로 생성" name="creationMethod" value="ai" checked={aacCreationMethod === 'ai'} onChange={(e) => setAacCreationMethod(e.target.value)} />
+                        <Form.Check inline type="radio" label="직접 등록" name="creationMethod" value="direct" checked={aacCreationMethod === 'direct'} onChange={(e) => setAacCreationMethod(e.target.value)} />
+                  </div></Form.Group>)}
+                  
+                  {aacCreationMethod === 'ai' && !currentAacTool ? (
+                      <>
+                          <InputGroup className="mb-3">
+                              <Form.Control placeholder="예: 공원에서 행복하게 웃는 아이" value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} />
+                              <Button variant="outline-primary" onClick={handleAiGenerate} disabled={isGenerating}>
+                                  {isGenerating ? <Spinner as="span" animation="border" size="sm" /> : '이미지 생성'}
+                              </Button>
+                          </InputGroup>
+                          <Card className="text-center p-3" style={{minHeight: '200px'}}>
+                              {isGenerating && <Spinner animation="border" />}
+                              {aiGeneratedImage && <Image src={aiGeneratedImage} fluid />}
+                              {!isGenerating && !aiGeneratedImage && <span className="text-muted">생성된 이미지가 여기에 표시됩니다.</span>}
+                          </Card>
+                          <hr/>
+                          <p className="text-muted">AI 생성 결과가 아래에 자동으로 입력됩니다. 수정이 가능합니다.</p>
+                          {/* Form fields will be populated after generation */}
+                          <Row>
+                              <Col md={8}>
+                                <Form.Group className="mb-3"><Form.Label>이름</Form.Label><Form.Control type="text" value={aacToolForm.name} onChange={(e) => setAacToolForm({ ...aacToolForm, name: e.target.value })} /></Form.Group>
+                                <Form.Group className="mb-3"><Form.Label>설명</Form.Label><Form.Control as="textarea" rows={2} value={aacToolForm.description} onChange={(e) => setAacToolForm({ ...aacToolForm, description: e.target.value })} /></Form.Group>
+                                <Row>
+                                    <Col><Form.Group className="mb-3"><Form.Label>상황</Form.Label><Form.Control type="text" value={aacToolForm.situation} onChange={(e) => setAacToolForm({ ...aacToolForm, situation: e.target.value })} /></Form.Group></Col>
+                                    <Col><Form.Group className="mb-3"><Form.Label>행동</Form.Label><Form.Control type="text" value={aacToolForm.action} onChange={(e) => setAacToolForm({ ...aacToolForm, action: e.target.value })} /></Form.Group></Col>
+                                    <Col><Form.Group className="mb-3"><Form.Label>감정 (선택)</Form.Label><Form.Control type="text" value={aacToolForm.emotion} onChange={(e) => setAacToolForm({ ...aacToolForm, emotion: e.target.value })} /></Form.Group></Col>
+                                </Row>
+                              </Col>
+                          </Row>
+                      </>
+                  ) : (
+                      <Row>
+                          <Col md={8}>
+                              <Form.Group className="mb-3"><Form.Label>이름</Form.Label><Form.Control type="text" value={aacToolForm.name} onChange={(e) => setAacToolForm({ ...aacToolForm, name: e.target.value })} /></Form.Group>
+                              <Form.Group className="mb-3"><Form.Label>설명</Form.Label><Form.Control as="textarea" rows={2} value={aacToolForm.description} onChange={(e) => setAacToolForm({ ...aacToolForm, description: e.target.value })} /></Form.Group>
+                              <Row>
+                                  <Col><Form.Group className="mb-3"><Form.Label>상황</Form.Label><Form.Control type="text" value={aacToolForm.situation} onChange={(e) => setAacToolForm({ ...aacToolForm, situation: e.target.value })} /></Form.Group></Col>
+                                  <Col><Form.Group className="mb-3"><Form.Label>행동</Form.Label><Form.Control type="text" value={aacToolForm.action} onChange={(e) => setAacToolForm({ ...aacToolForm, action: e.target.value })} /></Form.Group></Col>
+                                  <Col><Form.Group className="mb-3"><Form.Label>감정 (선택)</Form.Label><Form.Control type="text" value={aacToolForm.emotion} onChange={(e) => setAacToolForm({ ...aacToolForm, emotion: e.target.value })} /></Form.Group></Col>
+                              </Row>
+                               <Form.Group className="mb-3"><Form.Label>상태</Form.Label><Form.Select value={aacToolForm.status} onChange={(e) => setAacToolForm({...aacToolForm, status: e.target.value})}><option value="public">공개</option><option value="private">비공개</option></Form.Select></Form.Group>
+                          </Col>
+                          <Col md={4}>
+                              <Form.Group className="mb-3"><Form.Label>이미지</Form.Label><Form.Control type="file" accept="image/*" onChange={(e) => handleFileChange(e, setAacToolForm)} />
+                                  {imagePreview && <Image src={imagePreview} className="mt-2" fluid thumbnail />}
+                              </Form.Group>
+                          </Col>
+                      </Row>
+                  )}
+              </Form>
+          </Modal.Body>
+          <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowAacToolModal(false)}>취소</Button>
+              <Button variant="primary" onClick={handleAddEditAacTool}>{currentAacTool ? '저장' : '추가'}</Button>
+          </Modal.Footer>
       </Modal>
 
-      {/* 도구 묶음 추가/편집 모달 */}
-      <Modal show={showAddToolSetModal} onHide={() => setShowAddToolSetModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>{currentToolSet ? '도구 묶음 편집' : '새 도구 묶음 추가'}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>묶음 이름</Form.Label>
-              <Form.Control type="text" name="name" value={newToolSetForm.name} onChange={(e) => setNewToolSetForm({ ...newToolSetForm, name: e.target.value })} />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>설명</Form.Label>
-              <Form.Control as="textarea" name="description" value={newToolSetForm.description} onChange={(e) => setNewToolSetForm({ ...newToolSetForm, description: e.target.value })} />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>포함할 개별 도구</Form.Label>
-              <ListGroup style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                {allIndividualTools.map(tool => (
-                  <ListGroup.Item key={tool.id} action onClick={() => {
-                    setNewToolSetForm(prev => ({
-                      ...prev,
-                      toolIds: prev.toolIds.includes(tool.id)
-                        ? prev.toolIds.filter(id => id !== tool.id)
-                        : [...prev.toolIds, tool.id]
-                    }));
-                  }} active={newToolSetForm.toolIds.includes(tool.id)}>
-                    {tool.name} ({tool.type})
-                  </ListGroup.Item>
-                ))}
-              </ListGroup>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowAddToolSetModal(false)}>취소</Button>
-          <Button variant="primary" onClick={handleAddEditToolSet}>{currentToolSet ? '저장' : '추가'}</Button>
-        </Modal.Footer>
+      <Modal show={showAacSetModal} onHide={() => setShowAacSetModal(false)} centered size="xl">
+          <Modal.Header closeButton><Modal.Title>{currentAacSet ? 'AAC 묶음 편집' : '새 AAC 묶음 추가'}</Modal.Title></Modal.Header>
+          <Modal.Body>
+              <Form.Group className="mb-3"><Form.Label>묶음 이름</Form.Label><Form.Control type="text" value={aacSetForm.name} onChange={(e) => setAacSetForm({...aacSetForm, name: e.target.value})} /></Form.Group>
+              <Form.Group className="mb-3"><Form.Label>설명</Form.Label><Form.Control as="textarea" value={aacSetForm.description} onChange={(e) => setAacSetForm({...aacSetForm, description: e.target.value})} /></Form.Group>
+              <hr />
+              <AacToolSelector aacTools={aacTools} selectedToolIds={aacSetForm.toolIds} onToggleTool={(toolId) => { setAacSetForm(prev => ({ ...prev, toolIds: prev.toolIds.includes(toolId) ? prev.toolIds.filter(id => id !== toolId) : [...prev.toolIds, toolId] })); }} />
+          </Modal.Body>
+          <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowAacSetModal(false)}>취소</Button>
+              <Button variant="primary" onClick={handleAddEditAacSet}>{currentAacSet ? '저장' : '추가'}</Button>
+          </Modal.Footer>
+      </Modal>
+
+      <Modal show={showFilterModal} onHide={() => setShowFilterModal(false)} centered>
+          <Modal.Header closeButton><Modal.Title>{currentFilter ? '필터 편집' : '새 필터 추가'}</Modal.Title></Modal.Header>
+          <Modal.Body>
+              <Form.Group className="mb-3"><Form.Label>필터 이름</Form.Label><Form.Control type="text" value={filterForm.name} onChange={(e) => setFilterForm({...filterForm, name: e.target.value})} /></Form.Group>
+              <Form.Group className="mb-3"><Form.Label>이미지</Form.Label><Form.Control type="file" accept="image/*" onChange={(e) => handleFileChange(e, setFilterForm)} />{imagePreview && <Image src={imagePreview} className="mt-2" fluid thumbnail />}</Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowFilterModal(false)}>취소</Button>
+              <Button variant="primary" onClick={handleAddEditFilter}>{currentFilter ? '저장' : '추가'}</Button>
+          </Modal.Footer>
+      </Modal>
+
+      <Modal show={showToolBundleModal} onHide={() => setShowToolBundleModal(false)} centered size="lg">
+          <Modal.Header closeButton><Modal.Title>{currentToolBundle ? '수업 세트 편집' : '새 수업 세트 추가'}</Modal.Title></Modal.Header>
+          <Modal.Body>
+              <Form.Group className="mb-3"><Form.Label>세트 이름</Form.Label><Form.Control type="text" value={toolBundleForm.name} onChange={(e) => setToolBundleForm({...toolBundleForm, name: e.target.value})} /></Form.Group>
+              <Form.Group className="mb-3"><Form.Label>설명</Form.Label><Form.Control as="textarea" value={toolBundleForm.description} onChange={(e) => setToolBundleForm({...toolBundleForm, description: e.target.value})} /></Form.Group>
+              <Row>
+                  <Col md={6}><Form.Group><Form.Label>포함할 AAC 묶음 (다중 선택 가능)</Form.Label><ListGroup style={{maxHeight: '200px', overflowY: 'auto'}}>{aacSets.map(set => (<ListGroup.Item key={set.id} action active={toolBundleForm.aacSetIds.includes(set.id)} onClick={() => { setToolBundleForm(prev => ({...prev, aacSetIds: prev.aacSetIds.includes(set.id) ? prev.aacSetIds.filter(id => id !== set.id) : [...prev.aacSetIds, set.id]})) }}>{set.name}</ListGroup.Item>))}</ListGroup></Form.Group></Col>
+                  <Col md={6}><Form.Group><Form.Label>포함할 필터 (다중 선택 가능)</Form.Label><ListGroup style={{maxHeight: '200px', overflowY: 'auto'}}>{filters.map(filter => (<ListGroup.Item key={filter.id} action active={toolBundleForm.filterIds.includes(filter.id)} onClick={() => { setToolBundleForm(prev => ({...prev, filterIds: prev.filterIds.includes(filter.id) ? prev.filterIds.filter(id => id !== filter.id) : [...prev.filterIds, filter.id]})) }}>{filter.name}</ListGroup.Item>))}</ListGroup></Form.Group></Col>
+              </Row>
+          </Modal.Body>
+          <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowToolBundleModal(false)}>취소</Button>
+              <Button variant="primary" onClick={handleAddEditToolBundle}>{currentToolBundle ? '저장' : '추가'}</Button>
+          </Modal.Footer>
       </Modal>
     </Container>
   );
