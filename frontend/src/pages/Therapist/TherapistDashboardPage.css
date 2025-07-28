@@ -1,0 +1,25 @@
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+}
+
+.dashboard-grid .section-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Ensures buttons are at the bottom */
+  height: 100%;
+}
+
+.dashboard-grid .section-container h3 {
+  margin-bottom: var(--spacing-sm);
+  /* font-size is handled by global.css h3 */
+}
+
+.dashboard-grid .section-container p {
+  flex-grow: 1; /* Allows paragraph to take up available space */
+  margin-bottom: var(--spacing-md);
+}
+
+/* Buttons are now handled by global.css .btn-soft-* classes */
