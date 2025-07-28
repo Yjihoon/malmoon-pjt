@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.communet.malmoon.common.auth.CurrentMember;
 import com.communet.malmoon.member.domain.Member;
 import com.communet.malmoon.member.dto.request.MemberJoinReq;
+import com.communet.malmoon.member.dto.request.MemberMeChangeReq;
+import com.communet.malmoon.member.dto.request.MemberPasswordChangeReq;
 import com.communet.malmoon.member.dto.request.TherapistJoinReq;
 import com.communet.malmoon.member.dto.response.MemberEmailRes;
 import com.communet.malmoon.member.service.MemberService;
@@ -56,5 +59,20 @@ public class MemberController {
 	@GetMapping("/members/me")
 	public ResponseEntity<?> getMe(@CurrentMember Member member) {
 		return ResponseEntity.ok(memberService.getMe(member));
+	}
+
+	@PatchMapping("/members/me")
+	public ResponseEntity<?> changeMe(MemberMeChangeReq memberMeChangeReq, @CurrentMember Member member) {
+		memberService.changeMe(memberMeChangeReq, member);
+		return ResponseEntity.ok().build();
+	}
+
+	@PatchMapping("/members/me/password")
+	public ResponseEntity<?> changePassword(
+		@RequestBody @Valid MemberPasswordChangeReq req,
+		@CurrentMember Member member
+	) {
+		memberService.changePassword(req, member);
+		return ResponseEntity.ok().build();
 	}
 }

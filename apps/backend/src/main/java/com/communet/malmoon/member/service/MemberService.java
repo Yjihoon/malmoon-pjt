@@ -1,13 +1,18 @@
 package com.communet.malmoon.member.service;
 
+import java.util.List;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.communet.malmoon.member.domain.Career;
 import com.communet.malmoon.member.domain.Member;
 import com.communet.malmoon.member.domain.MemberStatusType;
 import com.communet.malmoon.member.domain.MemberType;
 import com.communet.malmoon.member.domain.Therapist;
 import com.communet.malmoon.member.dto.request.MemberJoinReq;
+import com.communet.malmoon.member.dto.request.MemberMeChangeReq;
+import com.communet.malmoon.member.dto.request.MemberPasswordChangeReq;
 import com.communet.malmoon.member.dto.request.TherapistJoinReq;
 import com.communet.malmoon.member.dto.response.MemberMeRes;
 import com.communet.malmoon.member.exception.DuplicateEmailException;
@@ -105,5 +110,46 @@ public class MemberService {
 			.tel2(member.getTel2())
 			.careers(careerRepository.findByTherapist_Id(member.getMemberId()))
 			.build();
+	}
+
+	public void changeMe(MemberMeChangeReq memberMeChangeReq, Member member) {
+		if (memberMeChangeReq.getNickname() != null) {
+			member.setNickname(memberMeChangeReq.getNickname());
+		}
+		if (memberMeChangeReq.getTel1() != null) {
+			member.setTel1(memberMeChangeReq.getTel1());
+		}
+		if (memberMeChangeReq.getTel2() != null) {
+			member.setTel2(memberMeChangeReq.getTel2());
+		}
+		// if (memberMeChangeReq.getProfileImageUrl() != null) {
+		// 	member.setProfileImageUrl(memberMeChangeReq.getProfileImageUrl());
+		// }
+		if (memberMeChangeReq.getCareers() != null) {
+			Therapist therapist = therapistRepository.findById(member.getMemberId())
+				.orElseThrow(() -> new IllegalArgumentException("일반 회원은 경력을 수정할 수 없습니다."));
+
+			List<Career> existingCareers = therapist.getCareers();
+			existingCareers.addAll(memberMeChangeReq.getCareers());
+		}
+
+		memberRepository.save(member);
+	}
+
+	public void changePassword(MemberPasswordChangeReq req, Member member) {
+		// 현재 비밀번호 확인
+		if (!passwordEncoder.matches(req.getCurrentPassword(), member.getPassword())) {
+			throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+		}
+
+		// 같은 비밀번호로 변경 시도 방지
+		if (passwordEncoder.matches(req.getNewPassword(), member.getPassword())) {
+			throw new IllegalArgumentException("기존과 동일한 비밀번호로 변경할 수 없습니다.");
+		}
+
+		// 새 비밀번호 암호화 후 저장
+		String encodedNewPassword = passwordEncoder.encode(req.getNewPassword());
+		member.setPassword(encodedNewPassword);
+		memberRepository.save(member);
 	}
 }

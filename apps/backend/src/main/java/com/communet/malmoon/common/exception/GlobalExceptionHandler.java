@@ -15,8 +15,13 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
 	}
 
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<?> handleIllegalArgument(IllegalArgumentException e) {
+		return ResponseEntity.badRequest().body(e.getMessage());
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<String> handleAllExceptions(Exception e) {
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("서버 내부 오류 발생");
+		return ResponseEntity.internalServerError().body("서버 내부 오류 발생");
 	}
 }

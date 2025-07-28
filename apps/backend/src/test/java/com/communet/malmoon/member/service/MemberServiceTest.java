@@ -4,20 +4,26 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDate;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.communet.malmoon.member.domain.Member;
 import com.communet.malmoon.member.domain.MemberStatusType;
 import com.communet.malmoon.member.domain.MemberType;
 import com.communet.malmoon.member.domain.Therapist;
 import com.communet.malmoon.member.dto.request.MemberJoinReq;
+import com.communet.malmoon.member.dto.request.MemberPasswordChangeReq;
 import com.communet.malmoon.member.dto.request.TherapistJoinReq;
+import com.communet.malmoon.member.dto.response.MemberMeRes;
 import com.communet.malmoon.member.exception.DuplicateEmailException;
+import com.communet.malmoon.member.repository.CareerRepository;
 import com.communet.malmoon.member.repository.MemberRepository;
 import com.communet.malmoon.member.repository.TherapistRepository;
 
@@ -34,6 +40,9 @@ class MemberServiceTest {
 
 	@Autowired
 	private TherapistRepository therapistRepository;
+
+	@MockitoBean
+	private CareerRepository careerRepository;
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
@@ -138,5 +147,30 @@ class MemberServiceTest {
 
 		// then
 		assertEquals(MemberStatusType.WITHDRAWN, member.getStatus());
+	}
+
+	@Test
+	void getMe_withRoleClient_shouldReturnMemberMeResWithoutCareers() {
+		Member member = Member.builder()
+			.email("client@example.com")
+			.password(passwordEncoder.encode("password"))
+			.role(MemberType.ROLE_CLIENT)
+			.name("클라이언트")
+			.nickname("client")
+			.birthDate(LocalDate.of(1990, 1, 1))
+			.tel1("010")
+			.tel2("1234")
+			.role(MemberType.ROLE_CLIENT)
+			.status(MemberStatusType.ACTIVE)
+			.build();
+
+		memberRepository.save(member);
+
+		MemberMeRes result = memberService.getMe(member);
+
+		assertEquals("client@example.com", result.getEmail());
+		assertEquals("클라이언트", result.getName());
+		assertEquals("client", result.getNickname());
+		assertNull(result.getCareers());
 	}
 }
