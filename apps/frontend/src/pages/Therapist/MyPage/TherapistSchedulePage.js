@@ -18,7 +18,12 @@ function TherapistSchedulePage() {
   const [showToolSelectionModal, setShowToolSelectionModal] = useState(false);
   const [currentSessionSchedule, setCurrentSessionSchedule] = useState(null); // 현재 수업 시작하려는 일정 정보
   const [selectedToolsForSession, setSelectedToolsForSession] = useState([]); // 현재 세션에 선택된 도구 ID 목록
-  const [modalInnerTabKey, setModalInnerTabKey] = useState('aac'); // 도구 선택 모달 내 탭 상태
+  const [modalInnerTabKey, setModalInnerTabKey] = useState('aacSets'); // 도구 선택 모달 내 탭 상태
+  const [fairyTaleSearchQuery, setFairyTaleSearchQuery] = useState('');
+  const [selectedFairyTale, setSelectedFairyTale] = useState(null); // { id, title, totalPages }
+  const [fairyTaleStartPage, setFairyTaleStartPage] = useState(1);
+  const [fairyTaleEndPage, setFairyTaleEndPage] = useState(1);
+  const [fairyTales, setFairyTales] = useState([]); // Dummy fairy tale data
 
   // RTC 방 생성 및 세션 활성화 관련 더미 상태
   const [sessionRoomId, setSessionRoomId] = useState(null);
@@ -104,6 +109,14 @@ function TherapistSchedulePage() {
           ];
           setAllToolSets(dummyToolSets);
 
+          // 더미 동화 데이터
+          const dummyFairyTales = [
+            { id: 'ft1', title: '아기 돼지 삼형제', totalPages: 15, description: '늑대를 피해 집을 짓는 아기 돼지들의 이야기' },
+            { id: 'ft2', title: '흥부와 놀부', totalPages: 20, description: '착한 흥부와 욕심 많은 놀부의 이야기' },
+            { id: 'ft3', title: '빨간 모자', totalPages: 10, description: '할머니 댁에 가는 빨간 모자와 늑대의 이야기' },
+          ];
+          setFairyTales(dummyFairyTales);
+
         } else {
           setError('치료사 계정으로 로그인해야 치료 일정을 관리할 수 있습니다.');
         }
@@ -184,7 +197,11 @@ function TherapistSchedulePage() {
     alert(`'${currentSessionSchedule.clientName}'님과의 수업방이 생성되었습니다!\n방 ID: ${roomId}\n선택된 도구: ${selectedToolsForSession.map(id => allIndividualTools.find(t => t.id === id)?.name || id).join(', ')}`);
     
     // 실제로는 여기에 RTC 방으로 리다이렉트하는 로직이 들어갑니다.
-    navigate(`/session/${roomId}?tools=${selectedToolsForSession.join(',')}`);
+    let navPath = `/session/${roomId}?tools=${selectedToolsForSession.join(',')}`;
+    if (selectedFairyTale) {
+      navPath += `&fairyTaleId=${selectedFairyTale.id}&startPage=${fairyTaleStartPage}&endPage=${fairyTaleEndPage}`;
+    }
+    navigate(navPath);
     // 또는 현재 페이지에서 RTC 컴포넌트를 조건부 렌더링할 수 있습니다.
   };
 
@@ -211,6 +228,22 @@ function TherapistSchedulePage() {
       </Container>
     );
   }
+
+  // 동화 불러오기 핸들러 (더미)
+  const handleFairyTaleLoad = () => {
+    const foundFairyTale = fairyTales.find(ft => ft.title.includes(fairyTaleSearchQuery));
+    if (foundFairyTale) {
+      setSelectedFairyTale(foundFairyTale);
+      setFairyTaleStartPage(1);
+      setFairyTaleEndPage(foundFairyTale.totalPages);
+      
+    } else {
+      setSelectedFairyTale(null);
+      setFairyTaleStartPage(1);
+      setFairyTaleEndPage(1);
+      alert('해당 동화를 찾을 수 없습니다.');
+    }
+  };
 
   const aacTools = allIndividualTools.filter(tool => tool.type === 'AAC');
   const filterTools = allIndividualTools.filter(tool => tool.type === 'Filter');
@@ -297,7 +330,7 @@ function TherapistSchedulePage() {
               className="mb-2"
               justify
             >
-              <Tab eventKey="aac" title="AAC 도구">
+              <Tab eventKey="aacSets" title="AAC 묶음">
                 <ListGroup style={{ maxHeight: '250px', overflowY: 'auto' }}>
                   {aacTools.length === 0 ? (
                     <ListGroup.Item className="text-muted">등록된 AAC 도구가 없습니다.</ListGroup.Item>
@@ -347,7 +380,7 @@ function TherapistSchedulePage() {
                   )}
                 </ListGroup>
               </Tab>
-              <Tab eventKey="toolSets" title="도구 묶음">
+              <Tab eventKey="sessionSets" title="수업 세트">
                  <ListGroup style={{ maxHeight: '250px', overflowY: 'auto' }}>
                   {allToolSets.length === 0 ? (
                     <ListGroup.Item className="text-muted">등록된 도구 묶음이 없습니다.</ListGroup.Item>
@@ -386,6 +419,58 @@ function TherapistSchedulePage() {
                   )}
                  </ListGroup>
               </Tab>
+              <Tab eventKey="fairyTale" title="동화 선택">
+                <div className="p-3">
+                  <Form.Group className="mb-3">
+                    <Form.Label>동화 제목 검색</Form.Label>
+                    <div className="d-flex">
+                      <Form.Control
+                        type="text"
+                        placeholder="동화 제목을 입력하세요"
+                        value={fairyTaleSearchQuery}
+                        onChange={(e) => setFairyTaleSearchQuery(e.target.value)}
+                        className="me-2"
+                      />
+                      <Button variant="primary" onClick={handleFairyTaleLoad}>
+                        동화 불러오기
+                      </Button>
+                    </div>
+                  </Form.Group>
+
+                  {selectedFairyTale && (
+                    <Card className="mt-3 p-3 shadow-sm">
+                      <Card.Title>{selectedFairyTale.title}</Card.Title>
+                      <Card.Text>총 페이지: {selectedFairyTale.totalPages} 페이지</Card.Text>
+                      <Row>
+                        <Col>
+                          <Form.Group className="mb-3">
+                            <Form.Label>시작 페이지</Form.Label>
+                            <Form.Control
+                              type="number"
+                              value={fairyTaleStartPage}
+                              onChange={(e) => setFairyTaleStartPage(Math.max(1, Math.min(parseInt(e.target.value), selectedFairyTale.totalPages)))}
+                              min={1}
+                              max={selectedFairyTale.totalPages}
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col>
+                          <Form.Group className="mb-3">
+                            <Form.Label>끝 페이지</Form.Label>
+                            <Form.Control
+                              type="number"
+                              value={fairyTaleEndPage}
+                              onChange={(e) => setFairyTaleEndPage(Math.max(1, Math.min(parseInt(e.target.value), selectedFairyTale.totalPages)))}
+                              min={fairyTaleStartPage}
+                              max={selectedFairyTale.totalPages}
+                            />
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                    </Card>
+                  )}
+                </div>
+              </Tab>
             </Tabs>
             <div className="mt-3">
               <p>현재 수업에 선택된 도구 ({selectedToolsForSession.length}개):</p>
@@ -411,6 +496,14 @@ function TherapistSchedulePage() {
                   })
                 )}
               </div>
+              {selectedFairyTale && (
+                <div className="mt-2">
+                  <p>선택된 동화:</p>
+                  <Badge bg="info">
+                    {selectedFairyTale.title} ({fairyTaleStartPage}p ~ {fairyTaleEndPage}p)
+                  </Badge>
+                </div>
+              )}
             </div>
           </Form.Group>
         </Modal.Body>
@@ -418,7 +511,7 @@ function TherapistSchedulePage() {
           <Button variant="secondary" onClick={() => setShowToolSelectionModal(false)}>
             취소
           </Button>
-          <Button variant="primary" onClick={handleCreateSessionRoom} disabled={selectedToolsForSession.length === 0}>
+          <Button variant="primary" onClick={handleCreateSessionRoom} disabled={selectedToolsForSession.length === 0 && !selectedFairyTale}>
             수업 시작 (방 생성)
           </Button>
         </Modal.Footer>
