@@ -2,11 +2,14 @@ package com.communet.malmoon.member.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.communet.malmoon.common.auth.CurrentMember;
+import com.communet.malmoon.member.domain.Member;
 import com.communet.malmoon.member.dto.request.MemberJoinReq;
 import com.communet.malmoon.member.dto.request.TherapistJoinReq;
 import com.communet.malmoon.member.service.MemberService;
@@ -33,5 +36,11 @@ public class MemberController {
 	public ResponseEntity<?> joinTherapist(@RequestBody @Valid TherapistJoinReq therapistJoinReq) {
 		memberService.joinTherapist(therapistJoinReq);
 		return ResponseEntity.status(HttpStatus.CREATED).build();
+	}
+
+	@DeleteMapping("/members")
+	public ResponseEntity<?> withdraw(@CurrentMember Member member) {
+		memberService.withdraw(member);
+		return ResponseEntity.noContent().build();
 	}
 }

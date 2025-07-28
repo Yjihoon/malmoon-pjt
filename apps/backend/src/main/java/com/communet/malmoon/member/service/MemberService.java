@@ -75,4 +75,9 @@ public class MemberService {
 	public boolean checkEmail(String email) {
 		return memberRepository.existsByEmail(email);
 	}
+
+	@Transactional
+	public void withdraw(Member member) {
+		member.setStatus(MemberStatusType.WITHDRAWN);
+	}
 }

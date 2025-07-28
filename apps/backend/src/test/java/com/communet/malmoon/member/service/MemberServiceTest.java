@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.communet.malmoon.member.domain.Member;
+import com.communet.malmoon.member.domain.MemberStatusType;
 import com.communet.malmoon.member.domain.MemberType;
 import com.communet.malmoon.member.domain.Therapist;
 import com.communet.malmoon.member.dto.request.MemberJoinReq;
@@ -124,5 +125,18 @@ class MemberServiceTest {
 		dupReq.setTel2("01087654321");
 
 		assertThrows(DuplicateEmailException.class, () -> memberService.join(dupReq));
+	}
+
+	@Test
+	void withdraw_회원탈퇴시_상태가_WITHDRAWN으로_변경된다() {
+		// given
+		Member member = new Member();
+		member.setStatus(MemberStatusType.ACTIVE); // 초기 상태
+
+		// when
+		memberService.withdraw(member);
+
+		// then
+		assertEquals(MemberStatusType.WITHDRAWN, member.getStatus());
 	}
 }
