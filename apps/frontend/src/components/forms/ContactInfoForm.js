@@ -4,31 +4,31 @@ import { Form, FloatingLabel } from 'react-bootstrap';
 function ContactInfoForm({ formData, handleChange, errors }) {
   return (
     <>
-      <FloatingLabel controlId="floatingInputPhone" label="휴대폰 번호" className="mb-3">
+      <FloatingLabel controlId="floatingInputTel1" label="전화번호 (필수)" className="mb-3">
         <Form.Control
-          type="tel" // 전화번호 타입
-          name="phone"
+          type="tel"
+          name="tel1"
           placeholder="010-1234-5678"
-          value={formData.phone || ''}
+          value={formData.tel1 || ''}
           onChange={handleChange}
-          isInvalid={!!errors.phone}
+          isInvalid={!!errors.tel1}
         />
         <Form.Control.Feedback type="invalid">
-          {errors.phone}
+          {errors.tel1}
         </Form.Control.Feedback>
       </FloatingLabel>
 
-      <FloatingLabel controlId="floatingInputAddress" label="주소 (선택 사항)" className="mb-3">
+      <FloatingLabel controlId="floatingInputTel2" label="휴대폰 (선택)" className="mb-3">
         <Form.Control
-          type="text"
-          name="address"
-          placeholder="예: 서울시 강남구"
-          value={formData.address || ''}
+          type="tel"
+          name="tel2"
+          placeholder="010-0000-0000"
+          value={formData.tel2 || ''}
           onChange={handleChange}
-          isInvalid={!!errors.address} // 주소가 필수라면 유효성 검사 추가
+          isInvalid={!!errors.tel2}
         />
         <Form.Control.Feedback type="invalid">
-          {errors.address}
+          {errors.tel2}
         </Form.Control.Feedback>
       </FloatingLabel>
     </>

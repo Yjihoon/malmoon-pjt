@@ -9,7 +9,7 @@ function GuidePage() {
         <img src={logoImage} alt="로고" className="guide-logo" />
       </div>
       <section className="intro-section">
-        <h1>언어 소통 약자를 위한 <span className="highlight">토키토키</span></h1>
+        <h1>언어 소통 약자를 위한 <span className="highlight">말문</span></h1>
         <p className="subtitle">누구나 간편하게 이용가능</p>
         <p>시간, 장소 제약 없이 스마트폰으로 훈련할 수 있으며<br />매회 치료의 효과를 편리하게 확인 가능합니다.</p>
       </section>
@@ -37,7 +37,7 @@ function GuidePage() {
       </section>
 
       <section className="institution-section">
-        <h2>언어 재활기관 및 치료사를 위한 토키토키</h2>
+        <h2>언어 재활기관 및 치료사를 위한 말문</h2>
         <div className="institution-grid">
           <div className="institution-card card-base">
             <h3>효과적인 스케줄 관리</h3>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Form, FloatingLabel } from 'react-bootstrap';
 
-// props로 formData (객체), handleChange (함수), errors (객체)를 받습니다.
+// props로 formData, handleChange, errors 받음
 function BasicInfoForm({ formData, handleChange, errors }) {
   return (
     <>
@@ -12,7 +12,7 @@ function BasicInfoForm({ formData, handleChange, errors }) {
           placeholder="name@example.com"
           value={formData.email || ''}
           onChange={handleChange}
-          isInvalid={!!errors.email} // 에러가 있으면 빨간색 테두리
+          isInvalid={!!errors.email}
         />
         <Form.Control.Feedback type="invalid">
           {errors.email}
@@ -30,6 +30,34 @@ function BasicInfoForm({ formData, handleChange, errors }) {
         />
         <Form.Control.Feedback type="invalid">
           {errors.name}
+        </Form.Control.Feedback>
+      </FloatingLabel>
+
+      <FloatingLabel controlId="floatingNickname" label="닉네임" className="mb-3">
+        <Form.Control
+          type="text"
+          name="nickname"
+          placeholder="닉네임을 입력하세요"
+          value={formData.nickname || ''}
+          onChange={handleChange}
+          isInvalid={!!errors.nickname}
+        />
+        <Form.Control.Feedback type="invalid">
+          {errors.nickname}
+        </Form.Control.Feedback>
+      </FloatingLabel>
+
+      <FloatingLabel controlId="floatingBirthDate" label="생년월일" className="mb-3">
+        <Form.Control
+          type="date"
+          name="birth_date"
+          placeholder="YYYY-MM-DD"
+          value={formData.birth_date || ''}
+          onChange={handleChange}
+          isInvalid={!!errors.birth_date}
+        />
+        <Form.Control.Feedback type="invalid">
+          {errors.birth_date}
         </Form.Control.Feedback>
       </FloatingLabel>
 
