@@ -9,7 +9,9 @@ import com.communet.malmoon.member.domain.MemberType;
 import com.communet.malmoon.member.domain.Therapist;
 import com.communet.malmoon.member.dto.request.MemberJoinReq;
 import com.communet.malmoon.member.dto.request.TherapistJoinReq;
+import com.communet.malmoon.member.dto.response.MemberMeRes;
 import com.communet.malmoon.member.exception.DuplicateEmailException;
+import com.communet.malmoon.member.repository.CareerRepository;
 import com.communet.malmoon.member.repository.MemberRepository;
 import com.communet.malmoon.member.repository.TherapistRepository;
 
@@ -22,6 +24,7 @@ public class MemberService {
 
 	private final MemberRepository memberRepository;
 	private final TherapistRepository therapistRepository;
+	private final CareerRepository careerRepository;
 	private final PasswordEncoder passwordEncoder;
 
 	public void join(MemberJoinReq memberJoinReq) {
@@ -67,6 +70,7 @@ public class MemberService {
 			.therapist_id(member.getMemberId())
 			.careerYears(therapistJoinReq.getCareerYears())
 			//.qualificationImage()
+			.careers(therapistJoinReq.getCareers())
 			.build();
 
 		therapistRepository.save(therapist);
@@ -79,5 +83,27 @@ public class MemberService {
 	@Transactional
 	public void withdraw(Member member) {
 		member.setStatus(MemberStatusType.WITHDRAWN);
+	}
+
+	public MemberMeRes getMe(Member member) {
+		if (member.getRole() == MemberType.ROLE_CLIENT) {
+			return MemberMeRes.builder()
+				.email(member.getEmail())
+				.name(member.getName())
+				.nickname(member.getNickname())
+				.birthDate(member.getBirthDate())
+				.tel1(member.getTel1())
+				.tel2(member.getTel2())
+				.build();
+		}
+		return MemberMeRes.builder()
+			.email(member.getEmail())
+			.name(member.getName())
+			.nickname(member.getNickname())
+			.birthDate(member.getBirthDate())
+			.tel1(member.getTel1())
+			.tel2(member.getTel2())
+			.careers(careerRepository.findByTherapist_Id(member.getMemberId()))
+			.build();
 	}
 }

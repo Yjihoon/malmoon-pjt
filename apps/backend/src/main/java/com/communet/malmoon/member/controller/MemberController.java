@@ -52,4 +52,9 @@ public class MemberController {
 		boolean exists = memberService.checkEmail(email);
 		return ResponseEntity.ok(new MemberEmailRes(exists));
 	}
+
+	@GetMapping("/members/me")
+	public ResponseEntity<?> getMe(@CurrentMember Member member) {
+		return ResponseEntity.ok(memberService.getMe(member));
+	}
 }

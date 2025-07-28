@@ -1,8 +1,13 @@
 package com.communet.malmoon.member.domain;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,4 +31,7 @@ public class Therapist {
 	// @OneToOne(fetch = FetchType.LAZY)
 	// @JoinColumn(name = "qualification_image_id")
 	// private File qualificationImage;
+
+	@OneToMany(mappedBy = "therapist", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<Career> careers = new ArrayList<>();
 }
