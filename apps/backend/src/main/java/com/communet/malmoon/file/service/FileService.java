@@ -1,14 +1,17 @@
 package com.communet.malmoon.file.service;
 
+import org.springframework.web.multipart.MultipartFile;
+
 /**
  * 파일 관련 기능을 정의하는 인터페이스입니다.
  */
 public interface FileService {
 	/**
-	 * 파일 ID를 통해 S3에서 접근 가능한 URL을 반환합니다.
+	 * 파일 업로드
 	 *
-	 * @param fileId 파일 식별자
-	 * @return 이미지 URL
+	 * @param directory 업로드 대상 디렉토리 (aac, profile 등)
+	 * @param file MultipartFile 업로드할 파일
+	 * @return 업로드된 S3 URL
 	 */
-	String getFileUrl(Long fileId);
+	String uploadFile(String directory, MultipartFile file);
 }
