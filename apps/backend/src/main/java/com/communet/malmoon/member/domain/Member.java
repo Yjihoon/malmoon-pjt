@@ -1,4 +1,66 @@
 package com.communet.malmoon.member.domain;
 
-public class Member {
+import java.time.LocalDate;
+
+import com.communet.malmoon.common.entity.BaseEntity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Table(name = "member")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Member extends BaseEntity {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "member_id", nullable = false, updatable = false)
+	private Long memberId;
+
+	@Column(name = "email", columnDefinition = "varchar(30)",  nullable = false, unique = true)
+	private String email;
+
+	@Column(name = "password", columnDefinition = "varchar(512)", nullable = false)
+	private String password;
+
+	@Column(name = "name", columnDefinition = "varchar(30)", nullable = false)
+	private String name;
+
+	@Column(name = "nickname", columnDefinition = "varchar(30)", nullable = false)
+	private String nickname;
+
+	@Column(name = "birth_date", nullable = false)
+	private LocalDate birthDate;
+
+	@Column(name = "tel1", columnDefinition = "varchar(20)", nullable = false)
+	private String tel1;
+
+	@Column(name = "tel2", columnDefinition = "varchar(20)", nullable = true)
+	private String tel2;
+
+	@Column(name = "role", nullable = false, updatable = false)
+	@Enumerated(EnumType.STRING)
+	private MemberType role;
+
+	@Column(name = "status", columnDefinition = "varchar(10)", nullable = false)
+	@Enumerated(EnumType.STRING)
+	private MemberStatusType status;
+
+	// @OneToOne(fetch = FetchType.LAZY)
+	// @JoinColumn(name = "profile_image_id")
+	// private File profileImage;
 }
