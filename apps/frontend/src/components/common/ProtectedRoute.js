@@ -14,7 +14,7 @@ function ProtectedRoute({ allowedRoles }) {
 
   // 2. allowedRoles가 정의되어 있다면, 사용자 타입이 허용된 역할에 포함되는지 확인
   //    예: <ProtectedRoute allowedRoles={['therapist']}>
-  //        <Route path="/therapist/dashboard" element={<TherapistDashboardPage />} />
+  
   //        </ProtectedRoute>
   if (allowedRoles && !allowedRoles.includes(userType)) {
     // 허용되지 않은 역할이라면 홈 페이지나 접근 거부 페이지로 리다이렉트

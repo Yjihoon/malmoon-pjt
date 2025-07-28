@@ -11,19 +11,13 @@ import './App.css';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/Auth/LoginPage';
 import SignUpPage from './pages/Auth/SignUpPage';
-
-import MyInfoPage from "./pages/MyInfoPage";
-import AACManagementPage from "./pages/AACManagementPage";
-import GuidePage from "./pages/GuidePage.jsx";
+import GuidePage from './pages/GuidePage';
+import MyInfoPage from './pages/MyInfoPage';
 
 
 
 import NavBar from './components/navigation/NavBar';
 import Footer from "./components/navigation/Footer";
-
-// 대시보드 페이지 임포트
-import TherapistDashboardPage from './pages/Therapist/TherapistDashboardPage';
-import UserDashboardPage from './pages/User/UserDashboardPage';
 
 // ProtectedRoute 컴포넌트 임포트
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -119,13 +113,11 @@ function App() {
               <Route path="/info" element={<h1>안내</h1>} />
               <Route path="/test" element={<h1>간이 언어평가</h1>} />
               <Route path="/my-info" element={<MyInfoPage />} />
-              <Route path="/manage-aac" element={<AACManagementPage />} />
               <Route path="/guide" element={<GuidePage />} />
 
               {/* 보호된 라우트 그룹 */}
               {/* 치료사만 접근 가능한 라우트 */}
               <Route element={<ProtectedRoute allowedRoles={['therapist']} />}>
-                <Route path="/therapist/dashboard" element={<TherapistDashboardPage />} />
                 <Route path="/therapist/mypage/info" element={<TherapistMyInfoPage />} />
                 <Route path="/therapist/mypage/matching" element={<TherapistMatchingPage />} />
                 <Route path="/therapist/mypage/tools" element={<TherapistToolsPage />} />
@@ -138,7 +130,6 @@ function App() {
 
               {/* 사용자만 접근 가능한 라우트 */}
               <Route element={<ProtectedRoute allowedRoles={['user']} />}>
-                <Route path="/user/dashboard" element={<UserDashboardPage />} />
                 <Route path="/user/mypage/info" element={<UserMyInfoPage />} />
                 <Route path="/user/mypage/matching" element={<UserMatchingPage />} />
                 <Route path="/user/mypage/schedule" element={<UserSchedulePage />} />
