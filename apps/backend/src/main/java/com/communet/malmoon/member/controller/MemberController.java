@@ -3,15 +3,18 @@ package com.communet.malmoon.member.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.communet.malmoon.common.auth.CurrentMember;
 import com.communet.malmoon.member.domain.Member;
 import com.communet.malmoon.member.dto.request.MemberJoinReq;
 import com.communet.malmoon.member.dto.request.TherapistJoinReq;
+import com.communet.malmoon.member.dto.response.MemberEmailRes;
 import com.communet.malmoon.member.service.MemberService;
 
 import jakarta.validation.Valid;
@@ -42,5 +45,11 @@ public class MemberController {
 	public ResponseEntity<?> withdraw(@CurrentMember Member member) {
 		memberService.withdraw(member);
 		return ResponseEntity.noContent().build();
+	}
+
+	@GetMapping("/members/email")
+	public ResponseEntity<?> checkEmail(@RequestParam String email) {
+		boolean exists = memberService.checkEmail(email);
+		return ResponseEntity.ok(new MemberEmailRes(exists));
 	}
 }
