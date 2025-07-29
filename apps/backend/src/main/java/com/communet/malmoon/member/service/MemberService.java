@@ -1,7 +1,11 @@
 package com.communet.malmoon.member.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import com.communet.malmoon.member.dto.request.*;
+import com.communet.malmoon.member.dto.response.CareerRes;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -10,10 +14,6 @@ import com.communet.malmoon.member.domain.Member;
 import com.communet.malmoon.member.domain.MemberStatusType;
 import com.communet.malmoon.member.domain.MemberType;
 import com.communet.malmoon.member.domain.Therapist;
-import com.communet.malmoon.member.dto.request.MemberJoinReq;
-import com.communet.malmoon.member.dto.request.MemberMeChangeReq;
-import com.communet.malmoon.member.dto.request.MemberPasswordChangeReq;
-import com.communet.malmoon.member.dto.request.TherapistJoinReq;
 import com.communet.malmoon.member.dto.response.MemberMeRes;
 import com.communet.malmoon.member.exception.DuplicateEmailException;
 import com.communet.malmoon.member.repository.CareerRepository;
@@ -23,6 +23,7 @@ import com.communet.malmoon.member.repository.TherapistRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberService {
@@ -89,13 +90,16 @@ public class MemberService {
 		memberRepository.save(member);
 
 		Therapist therapist = Therapist.builder()
-			.therapistId(member.getMemberId())
-			.careerYears(therapistJoinReq.getCareerYears())
-			//.qualificationImage()
-			.careers(therapistJoinReq.getCareers())
-			.build();
+				.therapistId(member.getMemberId())
+				.careerYears(therapistJoinReq.getCareerYears())
+				//.qualificationImage()
+				.build();
 
 		therapistRepository.save(therapist);
+		for (Career career : therapistJoinReq.getCareers()) {
+			career.setTherapist(therapist);
+		}
+        careerRepository.saveAll(therapistJoinReq.getCareers());
 	}
 
 	/**
@@ -133,6 +137,18 @@ public class MemberService {
 				.tel2(member.getTel2())
 				.build();
 		}
+
+		List<Career> careers = careerRepository.findByTherapist_TherapistId(member.getMemberId());
+		List<CareerRes> careerResList = careers.stream()
+				.map(c -> CareerRes.builder()
+						.careerId(c.getCareerId())
+						.company(c.getCompany())
+						.position(c.getPosition())
+						.startDate(c.getStartDate())
+						.endDate((c.getEndDate()))
+						.build())
+				.toList();
+
 		return MemberMeRes.builder()
 			.email(member.getEmail())
 			.name(member.getName())
@@ -140,7 +156,7 @@ public class MemberService {
 			.birthDate(member.getBirthDate())
 			.tel1(member.getTel1())
 			.tel2(member.getTel2())
-			.careers(careerRepository.findByTherapist_TherapistId(member.getMemberId()))
+			.careers(careerResList)
 			.build();
 	}
 
@@ -149,10 +165,15 @@ public class MemberService {
 	 * - 닉네임, 전화번호 등 변경 가능
 	 * - 치료사 경력 추가 시 처리
 	 * @param memberMeChangeReq 수정할 정보 DTO
-	 * @param member 현재 로그인한 회원
+	 * @param memberArg 현재 로그인한 회원
 	 * @throws IllegalArgumentException 일반 회원이 경력을 수정하려 할 경우 발생
 	 */
-	public void changeMe(MemberMeChangeReq memberMeChangeReq, Member member) {
+	@Transactional
+	public void changeMe(MemberMeChangeReq memberMeChangeReq, Member memberArg) {
+
+		Member member = memberRepository.findById(memberArg.getMemberId())
+				.orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
 		if (memberMeChangeReq.getNickname() != null) {
 			member.setNickname(memberMeChangeReq.getNickname());
 		}
@@ -169,11 +190,19 @@ public class MemberService {
 			Therapist therapist = therapistRepository.findById(member.getMemberId())
 				.orElseThrow(() -> new IllegalArgumentException("일반 회원은 경력을 수정할 수 없습니다."));
 
-			List<Career> existingCareers = therapist.getCareers();
-			existingCareers.addAll(memberMeChangeReq.getCareers());
+			careerRepository.deleteByTherapist_TherapistId(member.getMemberId());
+			List<Career> careers = new ArrayList<>();
+			for (CareerReq careerReq : memberMeChangeReq.getCareers()) {
+				careers.add(Career.builder()
+						.company(careerReq.getCompany())
+						.position(careerReq.getPosition())
+						.startDate(careerReq.getStartDate())
+						.endDate(careerReq.getEndDate())
+						.therapist(therapist)
+						.build());
+			}
+			careerRepository.saveAll(careers);
 		}
-
-		memberRepository.save(member);
 	}
 
 	public void changePassword(MemberPasswordChangeReq req, Member member) {

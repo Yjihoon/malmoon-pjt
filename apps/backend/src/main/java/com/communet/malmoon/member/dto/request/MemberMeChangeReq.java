@@ -13,6 +13,5 @@ public class MemberMeChangeReq {
 	private String nickname;
 	private String tel1;
 	private String tel2;
-	private String profileImageUrl;
-	private List<Career> careers; // 치료사만 수정 가능
+	private List<CareerReq> careers; // 치료사만 수정 가능
 }

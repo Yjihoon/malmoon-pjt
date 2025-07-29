@@ -93,7 +93,7 @@ public class MemberController {
 	 * @return 200 OK
 	 */
 	@PatchMapping("/members/me")
-	public ResponseEntity<?> changeMe(MemberMeChangeReq memberMeChangeReq, @CurrentMember Member member) {
+	public ResponseEntity<?> changeMe(@RequestBody MemberMeChangeReq memberMeChangeReq, @CurrentMember Member member) {
 		memberService.changeMe(memberMeChangeReq, member);
 		return ResponseEntity.ok().build();
 	}

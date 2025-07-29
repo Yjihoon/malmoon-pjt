@@ -17,5 +17,5 @@ public class MemberMeRes {
 	private LocalDate birthDate;
 	private String tel1;
 	private String tel2;
-	private List<Career> careers;
+	private List<CareerRes> careers;
 }

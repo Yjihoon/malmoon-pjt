@@ -33,7 +33,12 @@ public class Therapist {
 	// @JoinColumn(name = "qualification_image_id")
 	// private File qualificationImage;
 
-	@OneToMany(mappedBy = "therapist", cascade = CascadeType.ALL, orphanRemoval = true)
-	@Builder.Default
-	private List<Career> careers = new ArrayList<>();
+//	@OneToMany(mappedBy = "therapist", cascade = CascadeType.ALL, orphanRemoval = true)
+//	@Builder.Default
+//	private List<Career> careers = new ArrayList<>();
+//
+//	public void addCareer(Career career) {
+//		this.careers.add(career);
+//		career.setTherapist(this);
+//	}
 }

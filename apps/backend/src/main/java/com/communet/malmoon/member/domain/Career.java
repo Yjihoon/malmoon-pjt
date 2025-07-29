@@ -2,6 +2,7 @@ package com.communet.malmoon.member.domain;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -44,5 +45,6 @@ public class Career {
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "therapist_id")
+	@JsonIgnore
 	private Therapist therapist;
 }
