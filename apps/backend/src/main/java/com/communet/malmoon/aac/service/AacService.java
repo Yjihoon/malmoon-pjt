@@ -15,6 +15,9 @@ import com.communet.malmoon.file.service.FileService;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * AAC 관련 비즈니스 로직을 처리하는 서비스입니다.
+ */
 @Service
 @RequiredArgsConstructor
 public class AacService {
@@ -23,10 +26,11 @@ public class AacService {
 	private final FileService fileService;
 
 	/**
-	 * DEFAULT, PUBLIC 상태인 AAC 목록을 조건과 페이징 기준으로 조회합니다.
+	 * 필터 조건과 페이징 정보를 기반으로 DEFAULT 또는 PUBLIC 상태의 AAC 항목을 조회합니다.
+	 * 각 항목에는 S3 이미지 URL이 포함되어 반환됩니다.
 	 *
-	 * @param req 필터 및 페이지 조건
-	 * @return 페이지 단위 AAC 응답 목록
+	 * @param req 필터 조건 (situation, action, emotion) 및 페이지 정보
+	 * @return 조건에 맞는 AAC 항목 페이지 (이미지 URL 포함)
 	 */
 	public Page<AacGetRes> getAacList(AacGetReq req) {
 		Pageable pageable = PageRequest.of(req.getPage(), req.getSize(), Sort.by(Sort.Direction.DESC, "createdAt"));
