@@ -273,7 +273,14 @@ function TherapistSchedulePage() {
             <Row className="h-100"> {/* 높이 100% */}
                 {/* 좌측: 캘린더 영역 */}
                 <Col md={7} className="calendar-panel d-flex flex-column p-4">
-                    <h2 className="mb-4">나의 치료 일정</h2>
+                    <div className="title-container mb-4">
+                        <h2 className="page-title">나의 치료 일정</h2>
+                        <div className="btn-container">
+                            <Button variant="primary" onClick={() => navigate('/therapist/register-schedule')}>
+                                일정 등록하기
+                            </Button>
+                        </div>
+                    </div>
                     {isSessionActive && (
                         <Alert variant="success" className="mb-4 d-flex justify-content-between align-items-center">
                             현재 수업이 진행 중입니다! 방 ID: `{sessionRoomId}`

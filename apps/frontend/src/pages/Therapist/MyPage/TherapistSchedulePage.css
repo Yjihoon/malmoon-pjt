@@ -1,5 +1,22 @@
 /* TherapistSchedulePage.css */
 
+.title-container {
+    position: relative;
+    width: 100%;
+}
+
+.title-container .page-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+}
+
+.title-container .btn-container {
+    display: flex;
+    justify-content: flex-end;
+}
+
 /* 전체 페이지 컨테이너 */
 .therapist-schedule-page-container {
     height: 100vh; /* viewport height의 100%를 차지 */

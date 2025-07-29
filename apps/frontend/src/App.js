@@ -28,6 +28,7 @@ import TherapistMyInfoPage from './pages/Therapist/MyPage/TherapistMyInfoPage';
 
 // 마이페이지 - 치료 일정 페이지 임포트
 import TherapistSchedulePage from './pages/Therapist/MyPage/TherapistSchedulePage';
+import TherapistRegisterSchedulePage from './pages/Therapist/MyPage/TherapistRegisterSchedulePage';
 
 
 // 마이페이지 - 매칭 페이지 임포트
@@ -122,6 +123,7 @@ function App() {
                 <Route path="/therapist/mypage/matching" element={<TherapistMatchingPage />} />
                 <Route path="/therapist/mypage/tools" element={<TherapistToolsPage />} />
                 <Route path="/therapist/mypage/schedule" element={<TherapistSchedulePage />} />
+                <Route path="/therapist/register-schedule" element={<TherapistRegisterSchedulePage />} />
                 <Route path="/therapist/profile-settings" element={<h1>치료사 프로필 설정 페이지 (구현 예정)</h1>} />
                 
                 {/* ✨ 새로 추가: RTC 세션 룸 라우트 (치료사 전용) ✨ */}
