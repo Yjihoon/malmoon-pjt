@@ -4,5 +4,6 @@ package com.communet.malmoon.storybook.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import com.communet.malmoon.storybook.domain.Storybook;
 
+
 public interface StorybookRepository extends JpaRepository<Storybook, Long> {
 }

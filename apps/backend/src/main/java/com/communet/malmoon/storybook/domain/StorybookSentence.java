@@ -22,5 +22,7 @@ public class StorybookSentence {
     private String srcTextId; // 문단id
     private int page; // 페이지
     private int sentenceNumber; // 문장번호
+
+    @Column(length = 2000)
     private String sentence; // 문장텍스트
 }

@@ -54,9 +54,26 @@ public class StorybookService {
      * 문단 텍스트를 문장 단위로 분리하는 메서드
      */
     private List<String> splitSentences(String text) {
-        return Arrays.stream(text.split("(?<=[.!?。！？])\\s+")) // 마침표, 느낌표, 물음표 뒤 공백 기준 분리
+        return Arrays.stream(text.split("(?<=[.!?。！？])\\s+")) // 문장 단위 split
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
+                .filter(s -> isValidSentence(s))  // ✅ 필터 조건 추가
                 .toList();
     }
+
+    private boolean isValidSentence(String s) {
+        s = s.trim(); // ✅ 공백 제거 확실히 한 후 체크
+        // 기준 1: 길이가 너무 짧으면 제외 (예: 8글자 이하)
+        if (s.length() < 8) return false;
+
+        // 기준 2: 공백 기준 단어 수가 너무 적으면 제외 (예: 2단어 이하)
+        int wordCount = s.split("\\s+").length;
+        if (wordCount < 2) return false;
+
+        // 기준 3: 숫자나 기호만 있는 경우도 제외 가능
+        if (s.matches("^[\\p{Punct}\\d\\s]+$")) return false;
+
+        return true;
+    }
+
 }
