@@ -1,4 +1,3 @@
-// TherapistSignUp.jsx
 import React, { useState } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 import CommonSignUpForm from '../../components/signup/CommonSignUpForm';
@@ -12,7 +11,7 @@ function TherapistSignUp() {
     profile_image_id: 1,
     name: '',
     nickname: '',
-    birth_date: '',
+    birthDate: '', // ✅ 변경된 부분
     email: '',
     password: '',
     passwordConfirm: '',
@@ -22,7 +21,7 @@ function TherapistSignUp() {
     district: '',
     dong: '',
     detail: '',
-    qualification_image_file: null, // 수정된 부분
+    qualification_image_file: null,
     careerYears: 0,
     careerHistory: [
       {
@@ -74,7 +73,7 @@ function TherapistSignUp() {
     if (!f.profile_image_id) err.profile_image_id = '프로필 이미지를 선택해주세요.';
     if (!f.name) err.name = '이름은 필수입니다.';
     if (!f.nickname) err.nickname = '닉네임은 필수입니다.';
-    if (!f.birth_date) err.birth_date = '생년월일은 필수입니다.';
+    if (!f.birthDate) err.birthDate = '생년월일은 필수입니다.'; // ✅ 변경된 부분
     if (!f.email) err.email = '이메일은 필수입니다.';
     if (!f.password || f.password.length < 6) err.password = '비밀번호는 6자 이상이어야 합니다.';
     if (f.password !== f.passwordConfirm) err.passwordConfirm = '비밀번호가 일치하지 않습니다.';
