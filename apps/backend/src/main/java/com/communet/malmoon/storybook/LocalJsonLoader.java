@@ -43,6 +43,5 @@ public class LocalJsonLoader implements CommandLineRunner {
             }
         }
 
-        System.out.printf("\n전체 처리 결과: 총 %d개 중 %d개 성공, %d개 실패\n", files.length, success, fail);
     }
 }
