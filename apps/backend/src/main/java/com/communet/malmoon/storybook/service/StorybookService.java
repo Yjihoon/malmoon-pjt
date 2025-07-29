@@ -2,6 +2,7 @@ package com.communet.malmoon.storybook.service;
 
 // StorbookRequestDto를 받아서 문장을 분리하고 Storybook과 StorybookSentence를 저장하는 로직
 
+import com.communet.malmoon.storybook.dto.ClassificationListResponseDto; // 책 카테고리 리스트 응답 dto
 import com.communet.malmoon.storybook.domain.Storybook; // DB 테이블 클래스
 import com.communet.malmoon.storybook.domain.StorybookSentence; // DB 테이블 클래스
 import com.communet.malmoon.storybook.dto.StorybookRequestDto; // DTO
@@ -49,6 +50,7 @@ public class StorybookService {
             }
         }
     }
+
     /**
      * 문단 텍스트를 문장 단위로 분리하는 메서드
      */
@@ -74,5 +76,9 @@ public class StorybookService {
 
         return true;
     }
-
+    
+    // 책 카테고리 응답 로직 처리
+    public ClassificationListResponseDto getAllClassifications() {
+        return new ClassificationListResponseDto(storybookRepository.findDistinctClassifications());
+    }
 }
