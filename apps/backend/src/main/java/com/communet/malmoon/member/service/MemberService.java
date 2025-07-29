@@ -72,7 +72,7 @@ public class MemberService {
 		memberRepository.save(member);
 
 		Therapist therapist = Therapist.builder()
-			.therapist_id(member.getMemberId())
+			.therapistId(member.getMemberId())
 			.careerYears(therapistJoinReq.getCareerYears())
 			//.qualificationImage()
 			.careers(therapistJoinReq.getCareers())
@@ -108,7 +108,7 @@ public class MemberService {
 			.birthDate(member.getBirthDate())
 			.tel1(member.getTel1())
 			.tel2(member.getTel2())
-			.careers(careerRepository.findByTherapist_Id(member.getMemberId()))
+			.careers(careerRepository.findByTherapist_TherapistId(member.getMemberId()))
 			.build();
 	}
 
