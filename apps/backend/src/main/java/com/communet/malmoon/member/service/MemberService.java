@@ -32,6 +32,14 @@ public class MemberService {
 	private final CareerRepository careerRepository;
 	private final PasswordEncoder passwordEncoder;
 
+	/**
+	 * 일반 회원 가입 처리
+	 * 1. 이메일 중복 검사
+	 * 2. 비밀번호 암호화
+	 * 3. 회원 엔티티 생성 및 저장
+	 * @param memberJoinReq 회원 가입 요청 DTO
+	 * @throws DuplicateEmailException 이메일 중복 시 예외 발생
+	 */
 	public void join(MemberJoinReq memberJoinReq) {
 		if (checkEmail(memberJoinReq.getEmail())) {
 			throw new DuplicateEmailException("이미 사용 중인 이메일입니다.");
@@ -51,6 +59,15 @@ public class MemberService {
 		memberRepository.save(member);
 	}
 
+	/**
+	 * 치료사 회원 가입 처리 (트랜잭션 적용)
+	 * 1. 이메일 중복 검사
+	 * 2. 비밀번호 암호화
+	 * 3. 회원 엔티티 저장
+	 * 4. 치료사 엔티티 생성 및 저장
+	 * @param therapistJoinReq 치료사 가입 요청 DTO
+	 * @throws DuplicateEmailException 이메일 중복 시 예외 발생
+	 */
 	@Transactional
 	public void joinTherapist(TherapistJoinReq therapistJoinReq) {
 		if (checkEmail(therapistJoinReq.getEmail())) {
@@ -81,15 +98,30 @@ public class MemberService {
 		therapistRepository.save(therapist);
 	}
 
+	/**
+	 * 이메일 중복 체크
+	 * @param email 체크할 이메일
+	 * @return 이미 존재하면 true, 아니면 false
+	 */
 	public boolean checkEmail(String email) {
 		return memberRepository.existsByEmail(email);
 	}
 
+	/**
+	 * 회원 탈퇴 처리 (상태값 변경)
+	 * @param member 탈퇴할 회원 엔티티
+	 */
 	@Transactional
 	public void withdraw(Member member) {
 		member.setStatus(MemberStatusType.WITHDRAWN);
 	}
 
+	/**
+	 * 내 정보 조회
+	 * - 일반 회원과 치료사 정보를 구분하여 반환
+	 * @param member 현재 로그인한 회원
+	 * @return 회원 상세 정보 응답 DTO
+	 */
 	public MemberMeRes getMe(Member member) {
 		if (member.getRole() == MemberType.ROLE_CLIENT) {
 			return MemberMeRes.builder()
@@ -112,6 +144,14 @@ public class MemberService {
 			.build();
 	}
 
+	/**
+	 * 내 정보 수정
+	 * - 닉네임, 전화번호 등 변경 가능
+	 * - 치료사 경력 추가 시 처리
+	 * @param memberMeChangeReq 수정할 정보 DTO
+	 * @param member 현재 로그인한 회원
+	 * @throws IllegalArgumentException 일반 회원이 경력을 수정하려 할 경우 발생
+	 */
 	public void changeMe(MemberMeChangeReq memberMeChangeReq, Member member) {
 		if (memberMeChangeReq.getNickname() != null) {
 			member.setNickname(memberMeChangeReq.getNickname());

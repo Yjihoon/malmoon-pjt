@@ -19,6 +19,16 @@ public class AuthService {
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
 
+	/**
+	 * 로그인 처리
+	 * 1. 이메일로 회원 조회
+	 * 2. 비밀번호 검증
+	 * 3. JWT 토큰 생성 후 반환
+	 * @param memberLoginReq 로그인 요청 DTO(email, password)
+	 * @return JWT 액세스 토큰 문자열
+	 * @throws UsernameNotFoundException 사용자가 없으면 발생
+	 * @throws BadCredentialsException 비밀번호가 틀리면 발생
+	 */
 	public String login(MemberLoginReq memberLoginReq) {
 
 		Member member = memberRepository.getByEmail(memberLoginReq.getEmail())

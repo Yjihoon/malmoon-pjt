@@ -32,41 +32,78 @@ public class MemberController {
 
 	private final MemberService memberService;
 
+	/**
+	 * 일반 회원 가입 API
+	 * @param memberJoinReq 회원 가입 요청 DTO
+	 * @return 201 CREATED
+	 */
 	@PostMapping("/members")
 	public ResponseEntity<?> join(@RequestBody @Valid MemberJoinReq memberJoinReq) {
 		memberService.join(memberJoinReq);
 		return ResponseEntity.status(HttpStatus.CREATED).build();
 	}
 
+	/**
+	 * 치료사 회원 가입 API
+	 * @param therapistJoinReq 치료사 가입 요청 DTO
+	 * @return 201 CREATED
+	 */
 	@PostMapping("/therapists")
 	public ResponseEntity<?> joinTherapist(@RequestBody @Valid TherapistJoinReq therapistJoinReq) {
 		memberService.joinTherapist(therapistJoinReq);
 		return ResponseEntity.status(HttpStatus.CREATED).build();
 	}
 
+	/**
+	 * 회원 탈퇴 API
+	 * @param member 현재 로그인한 회원 (커스텀 어노테이션으로 주입됨)
+	 * @return 204 NO CONTENT
+	 */
 	@DeleteMapping("/members")
 	public ResponseEntity<?> withdraw(@CurrentMember Member member) {
 		memberService.withdraw(member);
 		return ResponseEntity.noContent().build();
 	}
 
+	/**
+	 * 이메일 중복 확인 API
+	 * @param email 중복 확인할 이메일
+	 * @return 이메일 중복 여부 (`true`이면 중복됨)
+	 */
 	@GetMapping("/members/email")
 	public ResponseEntity<?> checkEmail(@RequestParam String email) {
 		boolean exists = memberService.checkEmail(email);
 		return ResponseEntity.ok(new MemberEmailRes(exists));
 	}
 
+	/**
+	 * 내 정보 조회 API
+	 * @param member 현재 로그인한 회원
+	 * @return 회원 정보 응답 DTO
+	 */
 	@GetMapping("/members/me")
 	public ResponseEntity<?> getMe(@CurrentMember Member member) {
 		return ResponseEntity.ok(memberService.getMe(member));
 	}
 
+	/**
+	 * 내 정보 수정 API
+	 * @param memberMeChangeReq 수정할 정보 요청 DTO
+	 * @param member 현재 로그인한 회원
+	 * @return 200 OK
+	 */
 	@PatchMapping("/members/me")
 	public ResponseEntity<?> changeMe(MemberMeChangeReq memberMeChangeReq, @CurrentMember Member member) {
 		memberService.changeMe(memberMeChangeReq, member);
 		return ResponseEntity.ok().build();
 	}
 
+	/**
+	 * 비밀번호 변경 API
+	 * @param req 비밀번호 변경 요청 DTO (현재 비밀번호, 새 비밀번호)
+	 * @param member 현재 로그인한 회원
+	 * @return 200 OK
+	 */
 	@PatchMapping("/members/me/password")
 	public ResponseEntity<?> changePassword(
 		@RequestBody @Valid MemberPasswordChangeReq req,
