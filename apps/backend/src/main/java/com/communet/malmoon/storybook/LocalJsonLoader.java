@@ -17,7 +17,7 @@ public class LocalJsonLoader implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        File file = new File("src/main/resources/jsons/03_01T_01S_9788961915632.json");
+        File file = new File("src/main/resources/03_01T_01S_9788961915632.json");
 
         ObjectMapper mapper = new ObjectMapper();
         StorybookRequestDto dto = mapper.readValue(file, StorybookRequestDto.class);

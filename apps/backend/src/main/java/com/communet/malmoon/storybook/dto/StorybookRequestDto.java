@@ -18,8 +18,10 @@ public class StorybookRequestDto {
 
     @Data
     public static class ParagraphInfo {
-        private String srcTextId;
+        private String srcTextID;
         private String srcText;
         private int srcPage;
+        private int srcSentenceEA;
+        private int srcWordEA;
     }
 }

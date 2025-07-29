@@ -40,7 +40,7 @@ public class StorybookService {
             for (int i = 0; i < sentences.size(); i++) {
                 StorybookSentence sentence = StorybookSentence.builder()
                         .storybook(storybook)
-                        .srcTextId(paragraph.getSrcTextId())
+                        .srcTextId(paragraph.getSrcTextID())
                         .page(paragraph.getSrcPage())
                         .sentenceNumber(i + 1)  // 문장번호 1부터 시작
                         .sentence(sentences.get(i))
