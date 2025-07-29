@@ -4,14 +4,14 @@ import static org.springframework.http.MediaType.*;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Calendar;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,9 +99,12 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 			if (email != null) {
 				Optional<Member> member = memberRepository.getByEmail(email);
 				if(member.isPresent()) {
+					String role = decodedJWT.getClaim("role").asString();
+					Collection<? extends GrantedAuthority> authorities =
+							List.of(new SimpleGrantedAuthority(role));
 					MemberDetails userDetails = new MemberDetails(member.get());
 					UsernamePasswordAuthenticationToken jwtAuthentication = new UsernamePasswordAuthenticationToken(email,
-						null, userDetails.getAuthorities());
+						null, authorities);
 					jwtAuthentication.setDetails(userDetails);
 					return jwtAuthentication;
 				}
