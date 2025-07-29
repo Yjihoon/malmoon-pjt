@@ -7,5 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.communet.malmoon.member.domain.Career;
 
 public interface CareerRepository extends JpaRepository<Career, Long> {
-	List<Career> findByTherapist_Id(Long therapistId);
+	List<Career> findByTherapist_TherapistId(Long therapistId);
+	void deleteByTherapist_TherapistId(Long therapistId);
 }

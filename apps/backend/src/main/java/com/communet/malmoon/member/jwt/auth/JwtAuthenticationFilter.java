@@ -4,14 +4,14 @@ import static org.springframework.http.MediaType.*;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Calendar;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +30,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * 요청 헤더에 jwt 토큰이 있는 경우, 토큰 검증 및 인증 처리 로직 정의.
+ * 요청 헤더에 JWT 토큰이 있는 경우:
+ *  - 토큰 유효성 검사
+ *  - 사용자 정보 추출
+ *  - Spring Security 인증 객체(SecurityContextHolder)에 설정
+ *
+ * 인증 실패 시 401 Unauthorized 응답 반환
  */
 public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
@@ -41,6 +46,9 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 		this.memberRepository = memberRepository;
 	}
 
+	/**
+	 * 필터 체인 실행 전 JWT 헤더가 존재하면 인증 시도
+	 */
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 		throws ServletException, IOException {
@@ -76,6 +84,9 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 		filterChain.doFilter(request, response);
 	}
 
+	/**
+	 * JWT 토큰에서 사용자 정보를 추출하여 Authentication 객체 생성
+	 */
 	@Transactional(readOnly = true)
 	public Authentication getAuthentication(HttpServletRequest request) throws Exception {
 		String token = request.getHeader(JwtTokenUtil.HEADER_STRING);
@@ -88,9 +99,12 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 			if (email != null) {
 				Optional<Member> member = memberRepository.getByEmail(email);
 				if(member.isPresent()) {
+					String role = decodedJWT.getClaim("role").asString();
+					Collection<? extends GrantedAuthority> authorities =
+							List.of(new SimpleGrantedAuthority(role));
 					MemberDetails userDetails = new MemberDetails(member.get());
 					UsernamePasswordAuthenticationToken jwtAuthentication = new UsernamePasswordAuthenticationToken(email,
-						null, userDetails.getAuthorities());
+						null, authorities);
 					jwtAuthentication.setDetails(userDetails);
 					return jwtAuthentication;
 				}
