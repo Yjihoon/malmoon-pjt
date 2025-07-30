@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 import CommonSignUpForm from '../../components/signup/CommonSignUpForm';
 import TherapistExtraForm from '../../components/signup/TherapistExtraForm';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './SignupPage.css';
+import { useDuplicateCheck } from '../../components/signup/useDuplicateCheck';
 
 function TherapistSignUp() {
   const [formData, setFormData] = useState({
     profile_image_id: 1,
     name: '',
     nickname: '',
-    birthDate: '', // ✅ 변경된 부분
+    birthDate: '',
     email: '',
     password: '',
     passwordConfirm: '',
@@ -39,18 +40,54 @@ function TherapistSignUp() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const {
+    checkEmail,
+    checking,
+    isDuplicate,
+    message,
+    setIsDuplicate,
+    setMessage, // ✅ 추가
+  } = useDuplicateCheck();
+
+  const prevEmailRef = useRef(formData.email);
+  useEffect(() => {
+    if (formData.email !== prevEmailRef.current) {
+      setIsDuplicate(null);
+      setMessage('');
+      prevEmailRef.current = formData.email;
+    }
+  }, [formData.email]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      [name]: undefined,
+      ...(name === 'city' || name === 'district' || name === 'dong' ? { address: undefined } : {}),
+    }));
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleAddressChange = (updated) => {
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      address: undefined,
+    }));
+
     setFormData((prev) => ({ ...prev, ...updated }));
   };
 
   const handleCareerChange = (index, field, value) => {
     const updated = [...formData.careerHistory];
     updated[index][field] = value;
+
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      [`career-${index}-${field}`]: undefined,
+    }));
+
     setFormData((prev) => ({ ...prev, careerHistory: updated }));
   };
 
@@ -73,7 +110,20 @@ function TherapistSignUp() {
     if (!f.profile_image_id) err.profile_image_id = '프로필 이미지를 선택해주세요.';
     if (!f.name) err.name = '이름은 필수입니다.';
     if (!f.nickname) err.nickname = '닉네임은 필수입니다.';
-    if (!f.birthDate) err.birthDate = '생년월일은 필수입니다.'; // ✅ 변경된 부분
+
+    // ✅ 생년월일 검사 (1900년 이후)
+    if (!f.birthDate) {
+      err.birthDate = '생년월일은 필수입니다.';
+    } else {
+      const inputDate = new Date(f.birthDate);
+      const minDate = new Date('1900-01-01');
+      if (isNaN(inputDate.getTime())) {
+        err.birthDate = '유효한 날짜를 입력해주세요.';
+      } else if (inputDate < minDate) {
+        err.birthDate = '1900년 1월 1일 이후로 설정해주세요.';
+      }
+    }
+
     if (!f.email) err.email = '이메일은 필수입니다.';
     if (!f.password || f.password.length < 6) err.password = '비밀번호는 6자 이상이어야 합니다.';
     if (f.password !== f.passwordConfirm) err.passwordConfirm = '비밀번호가 일치하지 않습니다.';
@@ -99,6 +149,15 @@ function TherapistSignUp() {
     setSuccess(false);
 
     if (!validate()) return;
+
+    if (isDuplicate === null) {
+      alert('이메일 중복 확인을 해주세요.');
+      return;
+    }
+    if (isDuplicate === true) {
+      alert('이미 사용 중인 이메일입니다.');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -136,7 +195,8 @@ function TherapistSignUp() {
   return (
     <div className="signup-page-wrapper">
       <div className="signup-form-container">
-        <Form onSubmit={handleSubmit}>
+        {/* ✅ 브라우저 기본 유효성 검사를 비활성화 */}
+        <Form onSubmit={handleSubmit} noValidate>
           <div className="form-title">치료사 회원가입</div>
 
           {serverError && <Alert variant="danger">{serverError}</Alert>}
@@ -148,6 +208,7 @@ function TherapistSignUp() {
               handleChange={handleChange}
               handleAddressChange={handleAddressChange}
               errors={errors}
+              duplicateCheckProps={{ checkEmail, checking, isDuplicate, message }}
             />
           </div>
 

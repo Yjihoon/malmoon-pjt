@@ -45,6 +45,7 @@ application.properties
 application.yml
 
 ### IntelliJ IDEA ###
+application.properties
 .idea/
 *.iml
 *.iws
@@ -117,3 +118,5 @@ Thumbs.db
 
 ### Lombok 설정 ###
 lombok.config
+
+##

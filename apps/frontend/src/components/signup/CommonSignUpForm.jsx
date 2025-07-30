@@ -2,15 +2,29 @@ import React from 'react';
 import { Form, FloatingLabel, Button } from 'react-bootstrap';
 import ProfileImageSelect from './ProfileImageSelect';
 import AddressSelector from './AddressSelector';
-import { useDuplicateCheck } from './useDuplicateCheck';
 
-function CommonSignUpForm({ formData, handleChange, handleAddressChange, errors }) {
+function CommonSignUpForm({
+  formData,
+  handleChange,
+  handleAddressChange,
+  errors,
+  duplicateCheckProps,
+}) {
   const {
     checkEmail,
     checking,
     isDuplicate,
     message,
-  } = useDuplicateCheck();
+  } = duplicateCheckProps || {};
+
+  // 오늘 날짜
+  const today = new Date().toISOString().split('T')[0];
+
+  // 이메일 형식 검사 함수
+  const isValidEmailFormat = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
 
   return (
     <>
@@ -42,7 +56,7 @@ function CommonSignUpForm({ formData, handleChange, handleAddressChange, errors 
         <Form.Control.Feedback type="invalid">{errors.nickname}</Form.Control.Feedback>
       </FloatingLabel>
 
-      {/* 생년월일 (birthDate로 수정됨) */}
+      {/* 생년월일 */}
       <FloatingLabel label="생년월일" className="mb-3">
         <Form.Control
           type="date"
@@ -50,12 +64,14 @@ function CommonSignUpForm({ formData, handleChange, handleAddressChange, errors 
           value={formData.birthDate || ''}
           onChange={handleChange}
           isInvalid={!!errors.birthDate}
+          min="1900-01-01"
+          max={today}
         />
         <Form.Control.Feedback type="invalid">{errors.birthDate}</Form.Control.Feedback>
       </FloatingLabel>
 
       {/* 이메일 */}
-      <div className="mb-3 d-flex gap-2">
+      <div className="mb-1 d-flex gap-2">
         <FloatingLabel label="이메일" className="flex-grow-1">
           <Form.Control
             name="email"
@@ -67,13 +83,20 @@ function CommonSignUpForm({ formData, handleChange, handleAddressChange, errors 
         </FloatingLabel>
         <Button
           variant="outline-secondary"
-          disabled={checking || !formData.email}
+          disabled={checking || !formData.email || !isValidEmailFormat(formData.email)}
           onClick={() => checkEmail(formData.email)}
         >
           {checking ? '확인 중...' : '중복 확인'}
         </Button>
       </div>
-      {message && (
+
+      {/* 이메일 형식이 잘못된 경우 안내 */}
+      {formData.email && !isValidEmailFormat(formData.email) && (
+        <div className="text-danger mb-2">이메일 형식을 확인해주세요.</div>
+      )}
+
+      {/* 이메일 중복 여부 메시지 */}
+      {message && isValidEmailFormat(formData.email) && (
         <div className={`mb-3 ${isDuplicate ? 'text-danger' : 'text-success'}`}>
           {message}
         </div>
@@ -103,7 +126,7 @@ function CommonSignUpForm({ formData, handleChange, handleAddressChange, errors 
         <Form.Control.Feedback type="invalid">{errors.passwordConfirm}</Form.Control.Feedback>
       </FloatingLabel>
 
-      {/* 전화번호1 */}
+      {/* 전화번호 1 */}
       <FloatingLabel label="전화번호 1" className="mb-3">
         <Form.Control
           name="tel1"
@@ -114,7 +137,7 @@ function CommonSignUpForm({ formData, handleChange, handleAddressChange, errors 
         <Form.Control.Feedback type="invalid">{errors.tel1}</Form.Control.Feedback>
       </FloatingLabel>
 
-      {/* 전화번호2 */}
+      {/* 전화번호 2 (선택) */}
       <FloatingLabel label="전화번호 2 (선택)" className="mb-3">
         <Form.Control
           name="tel2"
