@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
+
 public interface StorybookRepository extends JpaRepository<Storybook, Long> {
     @Query("SELECT DISTINCT s.classification FROM Storybook s")
     List<String> findDistinctClassifications();
