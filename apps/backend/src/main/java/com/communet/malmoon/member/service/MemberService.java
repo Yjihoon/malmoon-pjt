@@ -3,17 +3,13 @@ package com.communet.malmoon.member.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.communet.malmoon.member.domain.*;
 import com.communet.malmoon.member.dto.request.*;
 import com.communet.malmoon.member.dto.response.CareerRes;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.communet.malmoon.member.domain.Career;
-import com.communet.malmoon.member.domain.Member;
-import com.communet.malmoon.member.domain.MemberStatusType;
-import com.communet.malmoon.member.domain.MemberType;
-import com.communet.malmoon.member.domain.Therapist;
 import com.communet.malmoon.member.dto.response.MemberMeRes;
 import com.communet.malmoon.member.exception.DuplicateEmailException;
 import com.communet.malmoon.member.repository.CareerRepository;
@@ -45,6 +41,13 @@ public class MemberService {
 		if (checkEmail(memberJoinReq.getEmail())) {
 			throw new DuplicateEmailException("이미 사용 중인 이메일입니다.");
 		}
+		Address address = Address.builder()
+				.city(memberJoinReq.getCity())
+				.district(memberJoinReq.getDistrict())
+				.dong(memberJoinReq.getDong())
+				.detail(memberJoinReq.getDetail())
+				.build();
+
 		Member member = Member.builder()
 			.email(memberJoinReq.getEmail())
 			.password(passwordEncoder.encode(memberJoinReq.getPassword()))
@@ -55,6 +58,7 @@ public class MemberService {
 			.tel2(memberJoinReq.getTel2())
 			.role(MemberType.ROLE_CLIENT)
 			.status(MemberStatusType.ACTIVE)
+			.address(address)
 			.build();
 
 		memberRepository.save(member);
@@ -75,6 +79,13 @@ public class MemberService {
 			throw new DuplicateEmailException("이미 사용 중인 이메일입니다.");
 		}
 
+		Address address = Address.builder()
+				.city(therapistJoinReq.getCity())
+				.district(therapistJoinReq.getDistrict())
+				.dong(therapistJoinReq.getDong())
+				.detail(therapistJoinReq.getDetail())
+				.build();
+
 		Member member = Member.builder()
 			.email(therapistJoinReq.getEmail())
 			.password(passwordEncoder.encode(therapistJoinReq.getPassword()))
@@ -85,6 +96,7 @@ public class MemberService {
 			.tel2(therapistJoinReq.getTel2())
 			.role(MemberType.ROLE_THERAPIST)
 			.status(MemberStatusType.ACTIVE)
+			.address(address)
 			.build();
 
 		memberRepository.save(member);
@@ -93,13 +105,10 @@ public class MemberService {
 				.therapistId(member.getMemberId())
 				.careerYears(therapistJoinReq.getCareerYears())
 				//.qualificationImage()
+				.careers(therapistJoinReq.getCareers())
 				.build();
 
 		therapistRepository.save(therapist);
-		for (Career career : therapistJoinReq.getCareers()) {
-			career.setTherapist(therapist);
-		}
-        careerRepository.saveAll(therapistJoinReq.getCareers());
 	}
 
 	/**
@@ -198,10 +207,9 @@ public class MemberService {
 						.position(careerReq.getPosition())
 						.startDate(careerReq.getStartDate())
 						.endDate(careerReq.getEndDate())
-						.therapist(therapist)
 						.build());
 			}
-			careerRepository.saveAll(careers);
+			therapist.setCareers(careers);
 		}
 	}
 

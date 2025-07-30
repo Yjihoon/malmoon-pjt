@@ -66,6 +66,10 @@ class MemberServiceTest {
 		req.setBirthDate(LocalDate.of(1990, 1, 1));
 		req.setTel1("01012345678");
 		req.setTel2("01087654321");
+		req.setCity("서울");
+		req.setDistrict("강남");
+		req.setDong("금호동");
+		req.setDetail("삼성아파트");
 
 		// when
 		memberService.join(req);
@@ -75,6 +79,8 @@ class MemberServiceTest {
 		assertNotNull(saved);
 		assertEquals("tester", saved.getNickname());
 		assertTrue(passwordEncoder.matches("password123", saved.getPassword()));
+		assertEquals("서울", saved.getAddress().getCity());
+		assertEquals("삼성아파트", saved.getAddress().getDetail());
 	}
 
 	@Test
@@ -91,6 +97,10 @@ class MemberServiceTest {
 		req.setTel1("01012345678");
 		req.setTel2("01087654321");
 		req.setCareerYears(7);
+		req.setCity("서울");
+		req.setDistrict("강남");
+		req.setDong("금호동");
+		req.setDetail("삼성아파트");
 
 		// when
 		memberService.joinTherapist(req);

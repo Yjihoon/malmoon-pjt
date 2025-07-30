@@ -4,14 +4,7 @@ import java.time.LocalDate;
 
 import com.communet.malmoon.common.entity.BaseEntity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -49,7 +42,7 @@ public class Member extends BaseEntity {
 	@Column(name = "tel1", columnDefinition = "varchar(20)", nullable = false)
 	private String tel1;
 
-	@Column(name = "tel2", columnDefinition = "varchar(20)", nullable = true)
+	@Column(name = "tel2", columnDefinition = "varchar(20)")
 	private String tel2;
 
 	@Column(name = "role", nullable = false, updatable = false)
@@ -60,7 +53,10 @@ public class Member extends BaseEntity {
 	@Enumerated(EnumType.STRING)
 	private MemberStatusType status;
 
-	// @OneToOne(fetch = FetchType.LAZY)
-	// @JoinColumn(name = "profile_image_id")
-	// private File profileImage;
+	@Column(name = "profile", columnDefinition = "INT")
+	private Integer profile;
+
+	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	@JoinColumn(name = "address_id")
+	private Address address;
 }
