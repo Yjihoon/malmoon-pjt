@@ -21,6 +21,11 @@ public class AuthController {
 
 	private final AuthService authService;
 
+	/**
+	 * 로그인 API
+	 * @param memberLoginReq 사용자로부터 받은 로그인 요청 정보(email, password)
+	 * @return JWT access token을 담은 응답 객체
+	 */
 	@PostMapping("/login")
 	public ResponseEntity<?> login(@RequestBody MemberLoginReq memberLoginReq) {
 		String accessToken = authService.login(memberLoginReq);

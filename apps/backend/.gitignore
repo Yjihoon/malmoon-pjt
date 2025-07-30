@@ -3,6 +3,8 @@
 # Generated via gitignore.io + 정리 및 확장
 # ============================================
 
+application.properties
+
 ### Java ###
 *.class
 *.log

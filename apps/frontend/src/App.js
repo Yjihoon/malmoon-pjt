@@ -40,6 +40,9 @@ import UserMyInfoPage from './pages/User/MyPage/UserMyInfoPage';
 import UserMatchingPage from './pages/User/MyPage/UserMatchingPage';
 import UserSchedulePage from './pages/User/MyPage/UserSchedulePage';
 
+// 회원가입
+import UserSignUp from './pages/signup/UserSignUp';
+import TherapistSignUp from './pages/signup/TherapistSignUp';
 
 // 로고 이미지 import
 import logoImage from "./logoimage/logo.png";
@@ -115,6 +118,8 @@ function App() {
               <Route path="/test" element={<h1>간이 언어평가</h1>} />
               <Route path="/my-info" element={<MyInfoPage />} />
               <Route path="/guide" element={<GuidePage />} />
+              <Route path="/signup/user" element={<UserSignUp />} />
+              <Route path="/signup/therapist" element={<TherapistSignUp />} />
 
               {/* 보호된 라우트 그룹 */}
               {/* 치료사만 접근 가능한 라우트 */}

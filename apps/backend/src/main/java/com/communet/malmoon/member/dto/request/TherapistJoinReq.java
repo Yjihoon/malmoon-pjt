@@ -17,8 +17,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TherapistJoinReq extends MemberJoinReq {
-	@NotBlank(message = "자격증 등록은 필수입니다.")
-	private String qualification;
+//	@NotBlank(message = "자격증 등록은 필수입니다.")
+//	private String qualification;
 	@NotNull(message = "경력 입력은 필수입니다.")
 	private Integer careerYears;
 	private List<Career> careers = new ArrayList<>();

@@ -11,6 +11,7 @@ import com.communet.malmoon.member.domain.Member;
 
 import lombok.Getter;
 
+// Spring Security에서 사용자의 인증 정보를 담기 위한 클래스
 public class MemberDetails implements UserDetails {
 
 	@Getter

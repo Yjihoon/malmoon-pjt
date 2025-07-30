@@ -1,53 +1,35 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import './AuthPages.css'; // 공통 인증 페이지 CSS 파일
-
-// 새로 생성된 폼 컴포넌트 임포트
-import TherapistSignUpForm from '../../components/forms/TherapistSignUpForm';
-import UserSignUpForm from '../../components/forms/UserSignUpForm';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import './AuthPages.css';
+import therapistImage from '../../assets/therapist.png';
+import userImage from '../../assets/user.png';
 
 function SignUpPage() {
-  const [userType, setUserType] = useState(null); // 'therapist' 또는 'user'
+  const navigate = useNavigate();
 
   const handleUserTypeSelect = (type) => {
-    setUserType(type);
+    navigate(`/signup/${type}`);
   };
 
   return (
     <div className="auth-page-wrapper">
       <div className="auth-form-card section-container">
         <h2 className="text-center mb-4">회원가입</h2>
-        {!userType ? (
-          <div className="signup-type-selection">
-            <button
-              className="btn-primary type-button"
-              onClick={() => handleUserTypeSelect('therapist')}
-            >
-              치료사로 가입
-            </button>
-            <button
-              className="btn-secondary type-button"
-              onClick={() => handleUserTypeSelect('user')}
-            >
-              사용자로 가입
-            </button>
+
+        <div className="signup-type-row">
+          <div className="signup-card" onClick={() => handleUserTypeSelect('therapist')}>
+            <img src={therapistImage} alt="치료사" className="signup-image" />
+            <button className="btn btn-light mt-3">치료사로 가입</button>
           </div>
-        ) : (
-          <>
-            {userType === 'therapist' ? (
-              <TherapistSignUpForm />
-            ) : (
-              <UserSignUpForm />
-            )}
-            <div className="text-center mt-3">
-              <button className="back-button" onClick={() => setUserType(null)}>
-                &larr; 다시 선택하기
-              </button>
-            </div>
-          </>
-        )}
+
+          <div className="signup-card" onClick={() => handleUserTypeSelect('user')}>
+            <img src={userImage} alt="사용자" className="signup-image" />
+            <button className="btn btn-light mt-3">사용자로 가입</button>
+          </div>
+        </div>
+
         <p className="auth-link-text text-center mt-4">
-          이미 계정이 있으신가요? <Link to="/login">로그인</Link>
+          이미 계정이 있으신가요? <a href="/login">로그인</a>
         </p>
       </div>
     </div>

@@ -24,7 +24,8 @@ import lombok.Setter;
 @Builder
 public class Therapist {
 	@Id
-	private Long therapist_id;
+	@Column(name = "therapist_id")
+	private Long therapistId;
 	@Column(name = "careerYears", columnDefinition = "int",  nullable = false)
 	private Integer careerYears;
 
@@ -32,6 +33,12 @@ public class Therapist {
 	// @JoinColumn(name = "qualification_image_id")
 	// private File qualificationImage;
 
-	@OneToMany(mappedBy = "therapist", cascade = CascadeType.ALL, orphanRemoval = true)
-	private List<Career> careers = new ArrayList<>();
+//	@OneToMany(mappedBy = "therapist", cascade = CascadeType.ALL, orphanRemoval = true)
+//	@Builder.Default
+//	private List<Career> careers = new ArrayList<>();
+//
+//	public void addCareer(Career career) {
+//		this.careers.add(career);
+//		career.setTherapist(this);
+//	}
 }
