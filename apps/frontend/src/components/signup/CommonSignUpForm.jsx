@@ -8,7 +8,7 @@ function CommonSignUpForm({
   handleChange,
   handleAddressChange,
   errors,
-  duplicateCheckProps, // ✅ 이메일 중복 확인 관련 props 전달받음
+  duplicateCheckProps,
 }) {
   const {
     checkEmail,
@@ -17,8 +17,14 @@ function CommonSignUpForm({
     message,
   } = duplicateCheckProps || {};
 
-  // ✅ 오늘 날짜를 YYYY-MM-DD 형식으로 가져옴
+  // 오늘 날짜
   const today = new Date().toISOString().split('T')[0];
+
+  // 이메일 형식 검사 함수
+  const isValidEmailFormat = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
 
   return (
     <>
@@ -65,7 +71,7 @@ function CommonSignUpForm({
       </FloatingLabel>
 
       {/* 이메일 */}
-      <div className="mb-3 d-flex gap-2">
+      <div className="mb-1 d-flex gap-2">
         <FloatingLabel label="이메일" className="flex-grow-1">
           <Form.Control
             name="email"
@@ -77,13 +83,20 @@ function CommonSignUpForm({
         </FloatingLabel>
         <Button
           variant="outline-secondary"
-          disabled={checking || !formData.email}
+          disabled={checking || !formData.email || !isValidEmailFormat(formData.email)}
           onClick={() => checkEmail(formData.email)}
         >
           {checking ? '확인 중...' : '중복 확인'}
         </Button>
       </div>
-      {message && (
+
+      {/* 이메일 형식이 잘못된 경우 안내 */}
+      {formData.email && !isValidEmailFormat(formData.email) && (
+        <div className="text-danger mb-2">이메일 형식을 확인해주세요.</div>
+      )}
+
+      {/* 이메일 중복 여부 메시지 */}
+      {message && isValidEmailFormat(formData.email) && (
         <div className={`mb-3 ${isDuplicate ? 'text-danger' : 'text-success'}`}>
           {message}
         </div>
@@ -113,7 +126,7 @@ function CommonSignUpForm({
         <Form.Control.Feedback type="invalid">{errors.passwordConfirm}</Form.Control.Feedback>
       </FloatingLabel>
 
-      {/* 전화번호1 */}
+      {/* 전화번호 1 */}
       <FloatingLabel label="전화번호 1" className="mb-3">
         <Form.Control
           name="tel1"
@@ -124,7 +137,7 @@ function CommonSignUpForm({
         <Form.Control.Feedback type="invalid">{errors.tel1}</Form.Control.Feedback>
       </FloatingLabel>
 
-      {/* 전화번호2 */}
+      {/* 전화번호 2 (선택) */}
       <FloatingLabel label="전화번호 2 (선택)" className="mb-3">
         <Form.Control
           name="tel2"

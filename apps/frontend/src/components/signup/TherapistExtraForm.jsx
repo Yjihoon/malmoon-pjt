@@ -16,6 +16,11 @@ function TherapistExtraForm({
       ...prev,
       qualification_image_file: file,
     }));
+
+    // ✅ 파일 선택 시 에러 제거
+    if (errors.qualification_image_file) {
+      errors.qualification_image_file = undefined;
+    }
   };
 
   const today = new Date().toISOString().split('T')[0];
@@ -24,6 +29,7 @@ function TherapistExtraForm({
     <>
       <h5 className="mt-4 mb-3 text-start">치료사 추가 정보</h5>
 
+      {/* 자격증 업로드 */}
       <Form.Group className="mb-3 text-start">
         <Form.Label>자격증 이미지 업로드</Form.Label>
         <Form.Control
@@ -37,6 +43,7 @@ function TherapistExtraForm({
         </Form.Control.Feedback>
       </Form.Group>
 
+      {/* 총 경력 연차 */}
       <Form.Group className="mb-4 text-start">
         <Form.Label>총 경력 연차</Form.Label>
         <Form.Control
@@ -52,10 +59,12 @@ function TherapistExtraForm({
         </Form.Control.Feedback>
       </Form.Group>
 
+      {/* 경력 리스트 */}
       <div className="mb-3">
         <h6 className="mb-2 text-start">경력사항</h6>
         {formData.careerHistory.map((career, index) => (
           <div key={index} className="career-item mb-4 p-3 border rounded">
+            {/* 기관명 / 직책 */}
             <div className="career-row mb-2 d-flex">
               <Form.Group className="flex-grow-1 me-2">
                 <Form.Label>기관명</Form.Label>
@@ -88,6 +97,7 @@ function TherapistExtraForm({
               </Form.Group>
             </div>
 
+            {/* 시작일 / 종료일 */}
             <div className="career-row mb-2 d-flex align-items-end">
               <Form.Group className="me-2">
                 <Form.Label>시작일</Form.Label>
@@ -117,6 +127,7 @@ function TherapistExtraForm({
                 />
               </Form.Group>
 
+              {/* 삭제 버튼 */}
               {formData.careerHistory.length > 1 && (
                 <div>
                   <Button
@@ -132,6 +143,7 @@ function TherapistExtraForm({
         ))}
       </div>
 
+      {/* 추가 버튼 */}
       <div className="text-start">
         <Button variant="outline-primary" onClick={handleAddCareer}>
           + 경력 추가
