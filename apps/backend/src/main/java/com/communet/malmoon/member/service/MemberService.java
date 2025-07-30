@@ -59,6 +59,7 @@ public class MemberService {
 			.role(MemberType.ROLE_CLIENT)
 			.status(MemberStatusType.ACTIVE)
 			.address(address)
+			.profile(memberJoinReq.getProfile())
 			.build();
 
 		memberRepository.save(member);
@@ -97,6 +98,7 @@ public class MemberService {
 			.role(MemberType.ROLE_THERAPIST)
 			.status(MemberStatusType.ACTIVE)
 			.address(address)
+			.profile(therapistJoinReq.getProfile())
 			.build();
 
 		memberRepository.save(member);
