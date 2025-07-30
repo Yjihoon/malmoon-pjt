@@ -6,6 +6,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import com.communet.malmoon.aac.dto.request.AacCreateReq;
@@ -34,7 +37,7 @@ public class FastApiClient {
 	 */
 	public String requestPreviewImage(AacCreateReq request) {
 		try {
-			String url = fastApiProperties.getUrl() + "api/v1/aacs/generate";
+			String url = fastApiProperties.getUrl() + "/api/v1/aacs/generate";
 
 			HttpHeaders headers = new HttpHeaders();
 			headers.setContentType(MediaType.APPLICATION_JSON);
@@ -54,8 +57,20 @@ public class FastApiClient {
 			}
 
 			return body.get("preview_url").asText();
+		} catch (HttpClientErrorException e) {
+			log.warn("FastAPI 요청 4xx 에러: {}", e.getResponseBodyAsString(), e);
+			throw new AacException(AacErrorCode.FASTAPI_CLIENT_ERROR);
+
+		} catch (HttpServerErrorException e) {
+			log.error("FastAPI 서버 5xx 에러: {}", e.getResponseBodyAsString(), e);
+			throw new AacException(AacErrorCode.FASTAPI_SERVER_ERROR);
+
+		} catch (ResourceAccessException e) {
+			log.error("FastAPI 네트워크 오류: {}", e.getMessage(), e);
+			throw new AacException(AacErrorCode.FASTAPI_TIMEOUT);
+
 		} catch (Exception e) {
-			log.error("FastAPI 요청 실패: {}", e.getMessage(), e);
+			log.error("FastAPI 처리 중 알 수 없는 오류: {}", e.getMessage(), e);
 			throw new AacException(AacErrorCode.GENERATION_FAILED);
 		}
 
