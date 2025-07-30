@@ -41,10 +41,6 @@ reports/
 # Java heap dump
 *.hprof
 
-# Spring Boot 설정
-application.properties
-application.yml
-
 ### IntelliJ IDEA ###
 .idea/
 *.iml
@@ -118,5 +114,3 @@ Thumbs.db
 
 ### Lombok 설정 ###
 lombok.config
-
-##

@@ -35,7 +35,7 @@ def generate_preview_image(req: AacImageRequest) -> str:
         f.write(base64.b64decode(base64_data))
 
     print(f"✅ 생성된 임시 파일 경로: {temp_path}")
-    return f"/static/tmp/{filename}"
+    return f"/static/temp/{filename}"
 
 
 def build_prompt(req: AacImageRequest) -> str:
@@ -117,4 +117,4 @@ def confirm_image_upload(filename: str) -> str:
         raise FileNotFoundError("임시 이미지 파일이 존재하지 않습니다.")
 
     # 이 부분에서 S3 업로드 처리 후, S3 URL 반환하는 로직 구현 가능
-    return f"/static/tmp/{filename}"
+    return f"/static/temp/{filename}"
