@@ -4,12 +4,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.communet.malmoon.aac.dto.request.AacCreateReq;
 import com.communet.malmoon.aac.dto.request.AacGetReq;
+import com.communet.malmoon.aac.dto.response.AacCreateRes;
 import com.communet.malmoon.aac.dto.response.AacGetRes;
 import com.communet.malmoon.aac.service.AacService;
+import com.communet.malmoon.common.auth.CurrentMember;
+import com.communet.malmoon.member.domain.Member;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -48,6 +54,18 @@ public class AacController {
 		} catch (Exception e) {
 			log.error("AAC 목록 조회 중 예외 발생: {}", e.getMessage(), e);
 			return ResponseEntity.internalServerError().build();
+		}
+	}
+
+	@PostMapping("/generate")
+	@Operation(summary = "AAC 이모지 생성", description = "상황, 감정, 동작을 기반으로 AAC 이미지 생성을 요청합니다.")
+	public ResponseEntity<AacCreateRes> generateAacImage(@RequestBody AacCreateReq request,
+		@CurrentMember Member member) {
+		try {
+			String previewUrl = aacService.requestPreviewFromFastApi(request);
+
+		} catch () {
+
 		}
 	}
 }
