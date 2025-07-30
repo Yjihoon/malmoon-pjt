@@ -14,8 +14,6 @@ import com.communet.malmoon.aac.dto.request.AacGetReq;
 import com.communet.malmoon.aac.dto.response.AacCreateRes;
 import com.communet.malmoon.aac.dto.response.AacGetRes;
 import com.communet.malmoon.aac.service.AacService;
-import com.communet.malmoon.common.auth.CurrentMember;
-import com.communet.malmoon.member.domain.Member;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -47,25 +45,21 @@ public class AacController {
 	@GetMapping
 	public ResponseEntity<Page<AacGetRes>> getAacList(
 		@Parameter(description = "AAC 필터 조건 및 페이징 정보") @ModelAttribute AacGetReq req) {
-		try {
-			log.info("AAC 목록 조회 요청: {}", req);
-			Page<AacGetRes> result = aacService.getAacList(req);
-			return ResponseEntity.ok(result);
-		} catch (Exception e) {
-			log.error("AAC 목록 조회 중 예외 발생: {}", e.getMessage(), e);
-			return ResponseEntity.internalServerError().build();
-		}
+		Page<AacGetRes> result = aacService.getAacList(req);
+		return ResponseEntity.ok(result);
 	}
 
+	/**
+	 * AAC 이미지 생성 (FastAPI 연동)
+	 *
+	 * @param request 상황/감정/동작 등 생성 요청 데이터
+	 * @return 생성된 이미지 preview URL
+	 */
 	@PostMapping("/generate")
 	@Operation(summary = "AAC 이모지 생성", description = "상황, 감정, 동작을 기반으로 AAC 이미지 생성을 요청합니다.")
-	public ResponseEntity<AacCreateRes> generateAacImage(@RequestBody AacCreateReq request,
-		@CurrentMember Member member) {
-		try {
-			String previewUrl = aacService.requestPreviewFromFastApi(request);
-
-		} catch () {
-
-		}
+	public ResponseEntity<AacCreateRes> generateAacImage(@RequestBody AacCreateReq request) {
+		String previewUrl = aacService.requestPreviewFromFastApi(request);
+		AacCreateRes response = AacCreateRes.of(previewUrl);
+		return ResponseEntity.ok(response);
 	}
 }
