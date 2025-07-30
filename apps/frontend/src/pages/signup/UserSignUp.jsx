@@ -8,7 +8,7 @@ import { useDuplicateCheck } from '../../components/signup/useDuplicateCheck';
 
 function UserSignUp() {
   const [formData, setFormData] = useState({
-    profile_image_id: 1,
+    profile: 1, // ✅ 이름 변경됨
     name: '',
     nickname: '',
     birthDate: '',
@@ -78,11 +78,10 @@ function UserSignUp() {
     const err = {};
     const f = formData;
 
-    if (!f.profile_image_id) err.profile_image_id = '프로필 이미지를 선택해주세요.';
+    if (!f.profile) err.profile = '프로필 이미지를 선택해주세요.'; // ✅ 수정됨
     if (!f.name) err.name = '이름은 필수입니다.';
     if (!f.nickname) err.nickname = '닉네임은 필수입니다.';
 
-    // ✅ 생년월일 유효성 검사
     if (!f.birthDate) {
       err.birthDate = '생년월일은 필수입니다.';
     } else {
@@ -142,7 +141,6 @@ function UserSignUp() {
   return (
     <div className="signup-page-wrapper">
       <div className="signup-form-container">
-        {/* ✅ 브라우저 기본 유효성 검사를 끔 */}
         <Form onSubmit={handleSubmit} noValidate>
           <div className="form-title">사용자 회원가입</div>
 

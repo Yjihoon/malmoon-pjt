@@ -47,9 +47,10 @@ function AddressSelector({ address, onChange, error }) {
   };
 
   const handleDetailChange = (e) => {
+    const value = e.target.value.slice(0, 30); // ✅ 30자 제한
     onChange({
       ...address,
-      detail: e.target.value,
+      detail: value,
     });
   };
 
@@ -97,11 +98,12 @@ function AddressSelector({ address, onChange, error }) {
         </Col>
       </Row>
 
-      {/* 상세 주소 입력 필드 */}
+      {/* 상세 주소 입력 필드 (30자 제한 적용됨) */}
       <Form.Control
         type="text"
         placeholder="상세 주소 (예: 아파트 이름, 동/호수)"
         value={address.detail}
+        maxLength={30}
         onChange={handleDetailChange}
       />
 
