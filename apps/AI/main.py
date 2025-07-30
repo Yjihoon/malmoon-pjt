@@ -9,7 +9,7 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="apps/AI/static"), name="static")
 
 # AAC 라우터 등록
-app.include_router(aac_router.router, prefix="/aac", tags=["AAC"])
+app.include_router(aac_router.router, prefix="/api/v1/aacs", tags=["AAC"])
 
 @app.get("/")
 def root():
