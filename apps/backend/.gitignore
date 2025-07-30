@@ -40,6 +40,10 @@ reports/
 # Java heap dump
 *.hprof
 
+# Spring Boot 설정
+application.properties
+application.yml
+
 ### IntelliJ IDEA ###
 .idea/
 *.iml
