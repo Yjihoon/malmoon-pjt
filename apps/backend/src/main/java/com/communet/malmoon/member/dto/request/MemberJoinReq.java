@@ -32,4 +32,13 @@ public class MemberJoinReq {
 	@NotBlank(message = "전화번호는 하나 이상 입력이 필수입니다.")
 	private String tel1;
 	private String tel2;
+	@NotNull(message = "프로필을 선택해주세요")
+	private Integer profile;
+	@NotBlank(message = "시를 선택해주세요")
+	private String city;
+	@NotBlank(message = "구를 선택해주세요")
+	private String district;
+	@NotBlank(message = "동를 선택해주세요")
+	private String dong;
+	private String detail;
 }

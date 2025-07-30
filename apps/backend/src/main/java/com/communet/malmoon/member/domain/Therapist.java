@@ -3,12 +3,7 @@ package com.communet.malmoon.member.domain;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,12 +28,7 @@ public class Therapist {
 	// @JoinColumn(name = "qualification_image_id")
 	// private File qualificationImage;
 
-//	@OneToMany(mappedBy = "therapist", cascade = CascadeType.ALL, orphanRemoval = true)
-//	@Builder.Default
-//	private List<Career> careers = new ArrayList<>();
-//
-//	public void addCareer(Career career) {
-//		this.careers.add(career);
-//		career.setTherapist(this);
-//	}
+	@OneToMany(cascade = CascadeType.ALL)
+	@Builder.Default
+	private List<Career> careers = new ArrayList<>();
 }
