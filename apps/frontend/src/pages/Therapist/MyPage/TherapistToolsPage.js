@@ -579,6 +579,6 @@ function TherapistToolsPage() {
         </Modal>
     </Container>
     );
-}
+};
 
 export default TherapistToolsPage;
