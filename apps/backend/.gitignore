@@ -4,6 +4,7 @@
 # ============================================
 
 application.properties
+apps/backend/src/main/resources/application.properties
 
 ### Java ###
 *.class
@@ -45,7 +46,6 @@ application.properties
 application.yml
 
 ### IntelliJ IDEA ###
-application.properties
 .idea/
 *.iml
 *.iws
