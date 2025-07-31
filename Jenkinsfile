@@ -16,6 +16,11 @@ pipeline {
         }
 
         stage('Frontend Build') {
+            agent {
+                docker {
+                    image 'node:18-alpine'  // 🟢 Node.js 포함된 Docker 이미지
+                }
+            }
             steps {
                 dir("${REACT_DIR}") {
                     echo '⚙️ React 빌드 시작'
