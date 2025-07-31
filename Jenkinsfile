@@ -1,13 +1,9 @@
 pipeline {
     agent any
 
-    options {
-        skipDefaultCheckout(true) // 자동 checkout 방지
-    }
-
     environment {
-        IMAGE_NAME = '정형진/docker-frontend' // 실제 DockerHub 계정/이미지명
-        CONTAINER_NAME = 'frontend-container'
+        IMAGE_NAME = 'my-frontend-image'       // 로컬 전용 Docker 이미지 이름
+        CONTAINER_NAME = 'frontend-container'  // 실행할 컨테이너 이름
     }
 
     stages {
