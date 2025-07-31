@@ -7,6 +7,13 @@ pipeline {
     }
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                echo '🧼 이전 작업공간 정리 중...'
+                cleanWs()
+            }
+        }
+
         stage('Git Checkout') {
             steps {
                 echo '✅ GitLab에서 프로젝트 코드 가져오는 중...'
