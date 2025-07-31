@@ -1,10 +1,15 @@
 package com.communet.malmoon.storybook.dto;
 
-import lombok.Data;
+import lombok.Getter;
+
 import java.util.List;
 
-@Data
+/**
+ * JSON 입력을 받기 위한 DTO
+ */
+@Getter
 public class StorybookRequestDto {
+
     private String title;
     private String author;
     private String illustrator;
@@ -16,7 +21,7 @@ public class StorybookRequestDto {
     private int paragraphInfoCount;
     private List<ParagraphInfo> paragraphInfo;
 
-    @Data
+    @Getter
     public static class ParagraphInfo {
         private String srcTextID;
         private String srcText;
