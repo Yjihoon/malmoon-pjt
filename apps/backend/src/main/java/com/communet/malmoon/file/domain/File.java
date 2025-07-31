@@ -32,7 +32,7 @@ public class File {
 	@Column(name = "file_type")
 	private FileType fileType;
 
-	@Column(name = "filename", nullable = false, length = 100)
+	@Column(name = "filename", nullable = false, length = 500)
 	private String filename;
 
 	@Column(name = "is_deleted", nullable = false)

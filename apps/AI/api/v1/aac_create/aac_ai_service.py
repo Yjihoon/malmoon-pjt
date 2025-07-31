@@ -42,7 +42,24 @@ def build_prompt(req: AacImageRequest) -> str:
     """
     요청 객체를 바탕으로 Gemini에 전달할 텍스트 프롬프트 생성
     """
-    return f"Create a high-quality 2D emoji-style illustration showing a person expressing '{req.emotion}' while performing '{req.action}' in the context of '{req.situation}'. Use soft outlines and clean colors."
+    situation = req.situation
+    action = req.action
+    emotion = req.emotion or "neutral"
+    reason = req.reason
+
+    base_prompt = (
+        f"Create a simple 2D emoji-style illustration in a clear AAC symbol format. "
+        f"The background should visually represent the '{situation}' situation. "
+        f"A person should be shown clearly performing the action '{action}', "
+        f"with a facial expression that conveys the '{emotion}' emotion. "
+        "Use soft outlines, flat and clean colors, and a consistent illustration style inspired by Korean AAC symbols. "
+        "Avoid speech bubbles or text. The image should be intuitive and optimized for use in a real-time WebRTC speech therapy interface."
+    )
+
+    if reason:
+        base_prompt += f" Additional context: {reason}."
+
+    return base_prompt
 
 
 def call_gemini_image_api(prompt: str) -> dict:
@@ -106,15 +123,3 @@ def extract_gemini_image_and_text(response_json: dict) -> dict:
         "text": text_output,
         "image_base64": image_base64
     }
-
-def confirm_image_upload(filename: str) -> str:
-    """
-    이후 S3 업로드 시 사용할 함수 (임시 이미지 → S3 이동)
-    현재는 임시 경로 반환
-    """
-    full_path = TEMP_IMAGE_DIR / filename
-    if not full_path.exists():
-        raise FileNotFoundError("임시 이미지 파일이 존재하지 않습니다.")
-
-    # 이 부분에서 S3 업로드 처리 후, S3 URL 반환하는 로직 구현 가능
-    return f"/static/temp/{filename}"

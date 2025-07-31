@@ -9,11 +9,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.communet.malmoon.aac.dto.request.AacConfirmReq;
 import com.communet.malmoon.aac.dto.request.AacCreateReq;
 import com.communet.malmoon.aac.dto.request.AacGetReq;
 import com.communet.malmoon.aac.dto.response.AacCreateRes;
 import com.communet.malmoon.aac.dto.response.AacGetRes;
 import com.communet.malmoon.aac.service.AacService;
+import com.communet.malmoon.common.auth.CurrentMember;
+import com.communet.malmoon.member.domain.Member;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -61,5 +64,16 @@ public class AacController {
 		String previewUrl = aacService.requestPreviewFromFastApi(request);
 		AacCreateRes response = AacCreateRes.of(previewUrl);
 		return ResponseEntity.ok(response);
+	}
+
+	@PostMapping("/confirm")
+	@Operation(summary = "AAC 생성 확정", description = "FastAPI에서 생성된 임시 이미지를 S3에 저장하고 AAC로 확정합니다.")
+	public ResponseEntity<AacCreateRes> confirmAacImage(
+		@RequestBody AacConfirmReq request,
+		@CurrentMember Member member) {
+
+		aacService.confirmAndSaveAac(request, member.getMemberId());
+
+		return ResponseEntity.ok().build();
 	}
 }

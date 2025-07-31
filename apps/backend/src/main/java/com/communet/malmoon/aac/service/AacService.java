@@ -1,5 +1,10 @@
 package com.communet.malmoon.aac.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -7,6 +12,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.communet.malmoon.aac.domain.Aac;
+import com.communet.malmoon.aac.dto.request.AacConfirmReq;
 import com.communet.malmoon.aac.dto.request.AacCreateReq;
 import com.communet.malmoon.aac.dto.request.AacGetReq;
 import com.communet.malmoon.aac.dto.response.AacGetRes;
@@ -15,19 +21,26 @@ import com.communet.malmoon.aac.exception.AacException;
 import com.communet.malmoon.aac.repository.AacRepository;
 import com.communet.malmoon.aac.repository.AacSpecification;
 import com.communet.malmoon.external.fastapi.FastApiClient;
+import com.communet.malmoon.file.domain.FileType;
+import com.communet.malmoon.file.dto.response.FileUploadRes;
+import com.communet.malmoon.file.repository.FileRepository;
 import com.communet.malmoon.file.service.FileService;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * AAC 관련 비즈니스 로직을 처리하는 서비스입니다.
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AacService {
 
 	private final AacRepository aacRepository;
 	private final FileService fileService;
+	private final FileRepository fileRepository;
 	private final FastApiClient fastApiClient;
 
 	/**
@@ -66,4 +79,53 @@ public class AacService {
 		return fastApiClient.requestPreviewImage(request);
 	}
 
+	@Transactional
+	public void confirmAndSaveAac(AacConfirmReq request, Long memberId) {
+		// 1. 파일 경로 재구성
+		String filename = Path.of(request.getImagePath()).getFileName().toString(); // abc123.png
+		Path tempImagePath = Paths.get("apps/AI/static/temp", filename).normalize();
+		System.out.println(tempImagePath);
+
+		if (!Files.exists(tempImagePath)) {
+			throw new AacException(AacErrorCode.TEMP_IMAGE_NOT_FOUND);
+		}
+
+		String directory = String.valueOf(FileType.AAC);
+
+		// 2. S3 업로드
+		FileUploadRes fileUploadRes;
+		try {
+			fileUploadRes = fileService.uploadFile(directory, tempImagePath.toFile());
+		} catch (Exception e) {
+			log.error("📁 파일 업로드 및 저장 실패", e);
+			throw new AacException(AacErrorCode.FILE_UPLOAD_FAILED);
+		}
+
+		// 3. 임시 이미지 삭제
+		try {
+			Files.delete(tempImagePath);
+		} catch (IOException e) {
+			log.warn("❗ 임시 이미지 삭제 실패: {}", tempImagePath, e);
+			throw new AacException(AacErrorCode.TEMP_IMAGE_DELETE_FAILED);
+		}
+
+		memberId = 1L;
+		try {
+			aacRepository.save(Aac.builder()
+				.name(request.getName())
+				.situation(request.getSituation())
+				.action(request.getAction())
+				.emotion(request.getEmotion())
+				.description(request.getDescription())
+				.fileId(fileUploadRes.getFileId())
+				.therapistId(memberId)
+				.status(request.getStatus())
+				.build());
+
+			System.out.println(fileUploadRes.getFileId());
+		} catch (Exception e) {
+			log.error("🧩 AAC 저장 실패", e);
+			throw new AacException(AacErrorCode.AAC_SAVE_FAILED);
+		}
+	}
 }
