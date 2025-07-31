@@ -1,8 +1,12 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true) // ← 이게 핵심!
+    }
+
     environment {
-        IMAGE_NAME = 'your-dockerhub-id/your-project'  // 원하면 EC2 전용 이름도 가능
+        IMAGE_NAME = 'your-dockerhub-id/your-project'
         CONTAINER_NAME = 'your-app-container'
     }
 
@@ -14,11 +18,7 @@ pipeline {
             }
         }
 
-        stage('Git Checkout') {
-            steps {
-                echo '✅ GitLab에서 프로젝트 코드 가져오는 중...'
-            }
-        }
+        // Git Checkout 명시적으로 하지 않음
 
         stage('Docker Build') {
             steps {
