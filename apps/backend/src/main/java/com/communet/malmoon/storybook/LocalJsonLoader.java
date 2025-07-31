@@ -1,47 +1,41 @@
 package com.communet.malmoon.storybook;
 
 import com.communet.malmoon.storybook.dto.StorybookRequestDto;
-import com.communet.malmoon.storybook.service.StorybookService;
+import com.communet.malmoon.storybook.service.StorybookDataLoadService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
+/**
+ * 로컬 JSON 파일들을 읽어와서 DB에 저장하는 유틸리티
+ * - 앱 실행 시 자동 실행됨 (CommandLineRunner)
+ */
 @Component
 @RequiredArgsConstructor
 public class LocalJsonLoader implements CommandLineRunner {
 
-    private final StorybookService storybookService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final StorybookDataLoadService dataLoadService;
+
+    private static final String JSON_DIR = "src/main/resources/jsons";
 
     @Override
     public void run(String... args) throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
-
-        File folder = new File("src/main/resources/jsons"); // 📂 여러 JSON이 있는 폴더
-        File[] files = folder.listFiles((dir, name) -> name.endsWith(".json"));
-
-        if (files == null || files.length == 0) {
-            System.out.println("⚠️ JSON 파일이 없습니다.");
-            return;
-        }
-
-        int success = 0;
-        int fail = 0;
-
-        for (File file : files) {
-            try {
-                StorybookRequestDto dto = mapper.readValue(file, StorybookRequestDto.class);
-                storybookService.save(dto);
-                success++;
-                System.out.println("✅ 저장 완료: " + file.getName());
-            } catch (Exception e) {
-                fail++;
-                System.out.println("❌ 저장 실패: " + file.getName());
-                e.printStackTrace();
-            }
-        }
-        System.out.printf("\n전체 처리 결과: 총 %d개 중 %d개 성공, %d개 실패\n", files.length, success, fail);
+        Files.list(Paths.get(JSON_DIR))
+                .filter(path -> path.toString().endsWith(".json"))
+                .forEach(path -> {
+                    try {
+                        StorybookRequestDto dto = objectMapper.readValue(path.toFile(), StorybookRequestDto.class);
+                        dataLoadService.save(dto);
+                        System.out.println("✅ 저장 완료: " + dto.getTitle());
+                    } catch (Exception e) {
+                        System.err.println("❌ 저장 실패: " + path.getFileName() + " → " + e.getMessage());
+                    }
+                });
     }
 }

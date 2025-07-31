@@ -17,10 +17,8 @@ function CommonSignUpForm({
     message,
   } = duplicateCheckProps || {};
 
-  // 오늘 날짜
   const today = new Date().toISOString().split('T')[0];
 
-  // 이메일 형식 검사 함수
   const isValidEmailFormat = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
@@ -28,16 +26,18 @@ function CommonSignUpForm({
 
   return (
     <>
+      {/* 프로필 선택 */}
       <ProfileImageSelect
-        value={formData.profile_image_id || 1}
-        onChange={(value) => handleChange({ target: { name: 'profile_image_id', value } })}
-        error={errors.profile_image_id}
+        value={formData.profile || 1}
+        onChange={(value) => handleChange({ target: { name: 'profile', value } })}
+        error={errors.profile}
       />
 
-      {/* 이름 */}
+      {/* 이름 (30자 제한) */}
       <FloatingLabel label="이름" className="mb-3">
         <Form.Control
           name="name"
+          maxLength={30}
           value={formData.name || ''}
           onChange={handleChange}
           isInvalid={!!errors.name}
@@ -45,10 +45,11 @@ function CommonSignUpForm({
         <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
       </FloatingLabel>
 
-      {/* 닉네임 */}
+      {/* 닉네임 (30자 제한) */}
       <FloatingLabel label="닉네임" className="mb-3">
         <Form.Control
           name="nickname"
+          maxLength={30}
           value={formData.nickname || ''}
           onChange={handleChange}
           isInvalid={!!errors.nickname}
@@ -70,13 +71,18 @@ function CommonSignUpForm({
         <Form.Control.Feedback type="invalid">{errors.birthDate}</Form.Control.Feedback>
       </FloatingLabel>
 
-      {/* 이메일 */}
+      {/* 이메일 (30자 제한, 영어/숫자/@._-만 허용) */}
       <div className="mb-1 d-flex gap-2">
         <FloatingLabel label="이메일" className="flex-grow-1">
           <Form.Control
             name="email"
+            maxLength={30}
             value={formData.email || ''}
-            onChange={handleChange}
+            onChange={(e) => {
+              const val = e.target.value;
+              const filtered = val.replace(/[^a-zA-Z0-9@._-]/g, ''); // 허용 문자만
+              handleChange({ target: { name: 'email', value: filtered } });
+            }}
             isInvalid={!!errors.email}
           />
           <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
@@ -90,12 +96,10 @@ function CommonSignUpForm({
         </Button>
       </div>
 
-      {/* 이메일 형식이 잘못된 경우 안내 */}
       {formData.email && !isValidEmailFormat(formData.email) && (
         <div className="text-danger mb-2">이메일 형식을 확인해주세요.</div>
       )}
 
-      {/* 이메일 중복 여부 메시지 */}
       {message && isValidEmailFormat(formData.email) && (
         <div className={`mb-3 ${isDuplicate ? 'text-danger' : 'text-success'}`}>
           {message}
@@ -126,27 +130,35 @@ function CommonSignUpForm({
         <Form.Control.Feedback type="invalid">{errors.passwordConfirm}</Form.Control.Feedback>
       </FloatingLabel>
 
-      {/* 전화번호 1 */}
+      {/* 전화번호 1 (숫자만, 15자 제한) */}
       <FloatingLabel label="전화번호 1" className="mb-3">
         <Form.Control
           name="tel1"
+          maxLength={15}
           value={formData.tel1 || ''}
-          onChange={handleChange}
+          onChange={(e) => {
+            const onlyNums = e.target.value.replace(/[^0-9]/g, '');
+            handleChange({ target: { name: 'tel1', value: onlyNums } });
+          }}
           isInvalid={!!errors.tel1}
         />
         <Form.Control.Feedback type="invalid">{errors.tel1}</Form.Control.Feedback>
       </FloatingLabel>
 
-      {/* 전화번호 2 (선택) */}
+      {/* 전화번호 2 (선택, 숫자만, 15자 제한) */}
       <FloatingLabel label="전화번호 2 (선택)" className="mb-3">
         <Form.Control
           name="tel2"
+          maxLength={15}
           value={formData.tel2 || ''}
-          onChange={handleChange}
+          onChange={(e) => {
+            const onlyNums = e.target.value.replace(/[^0-9]/g, '');
+            handleChange({ target: { name: 'tel2', value: onlyNums } });
+          }}
         />
       </FloatingLabel>
 
-      {/* 주소 */}
+      {/* 주소 선택 */}
       <AddressSelector
         address={{
           city: formData.city || '',
