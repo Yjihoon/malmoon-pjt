@@ -18,7 +18,8 @@ pipeline {
         stage('Frontend Build') {
             agent {
                 docker {
-                    image 'node:18-alpine'  // 🟢 Node.js 포함된 Docker 이미지
+                    image 'node:18-alpine'
+                    args '-u root'  // 퍼미션 문제 방지용
                 }
             }
             steps {
