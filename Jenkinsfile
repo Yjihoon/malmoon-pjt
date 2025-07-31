@@ -43,7 +43,7 @@ pipeline {
         stage('Docker Build') {
             steps {
                 echo '🐳 Docker 이미지 빌드 중...'
-                sh 'docker build -t ${DOCKER_IMAGE_NAME} .'
+                sh 'sudo docker build -t ${DOCKER_IMAGE_NAME} .'
             }
         }
     }
