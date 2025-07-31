@@ -1,17 +1,11 @@
 package com.communet.malmoon.member.controller;
 
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.communet.malmoon.common.auth.CurrentMember;
 import com.communet.malmoon.member.domain.Member;
@@ -25,6 +19,7 @@ import com.communet.malmoon.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -51,8 +46,10 @@ public class MemberController {
 	 * @return 201 CREATED
 	 */
 	@PostMapping("/therapists")
-	public ResponseEntity<?> joinTherapist(@RequestBody @Valid TherapistJoinReq therapistJoinReq) {
-		memberService.joinTherapist(therapistJoinReq);
+	public ResponseEntity<?> joinTherapist(
+			@Valid TherapistJoinReq therapistJoinReq,
+			@RequestPart(value = "qualification") MultipartFile qualification) {
+		memberService.joinTherapist(therapistJoinReq, qualification);
 		return ResponseEntity.status(HttpStatus.CREATED).build();
 	}
 
