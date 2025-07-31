@@ -31,9 +31,12 @@ public class StorybookSentenceService {
 
     // 3. 제목에 따른 페이지 범위 조회
     public PageRangeResponseDto getPageRangeByTitle(String title) {
-        Object[] result = sentenceRepository.findMinAndMaxPageByTitle(title);
-        int minPage = ((Number) result[0]).intValue();
-        int maxPage = ((Number) result[1]).intValue();
+        Object result = sentenceRepository.findMinAndMaxPageByTitle(title);
+        Object[] row = (Object[]) result;
+
+        int minPage = ((Number) row[0]).intValue();
+        int maxPage = ((Number) row[1]).intValue();
+
         return new PageRangeResponseDto(minPage, maxPage);
     }
 

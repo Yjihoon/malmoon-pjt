@@ -1,9 +1,9 @@
-// frontend/src/pages/Therapist/TherapistSessionRoom.js
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Container, Row, Col, Card, Button, Alert, ListGroup, Image } from 'react-bootstrap';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import './TherapistSessionRoom.css';
 import { signalingService } from '../../services/signalingService';
+import axios from 'axios';
 
 // STUN 서버 설정
 const pcConfig = {
@@ -27,25 +27,10 @@ function TherapistSessionRoom() {
   const localStreamRef = useRef(null);
   const pcRef = useRef(null); // RTCPeerConnection 참조
 
-  // 더미 데이터
-  const dummyFairyTales = [
-    {
-      id: 'ft1',
-      title: '아기 돼지 삼형제',
-      totalPages: 3,
-      pages: [
-        { page: 1, content: ['옛날 옛날 아주 먼 옛날에, 아기 돼지 삼형제가 살았어요.', '첫째 돼지는 게을러서 지푸라기로 집을 지었어요.', '둘째 돼지는 조금 더 부지런해서 나무로 집을 지었죠.'] },
-        { page: 2, content: ['어느 날, 무서운 늑대가 나타나 첫째 돼지의 집을 후 불어 날려버렸어요.', '첫째 돼지는 둘째 돼지의 집으로 도망쳤어요.', '늑대는 다시 둘째 돼지의 집을 후 불어 날려버렸죠.'] },
-        { page: 3, content: ['셋째 돼지는 아주 부지런하고 똑똑해서 벽돌로 튼튼한 집을 지었어요.', '늑대는 셋째 돼지의 집을 아무리 불어도 날려버릴 수 없었어요.', '결국 늑대는 굴뚝으로 들어오려다 뜨거운 물에 빠져 도망갔답니다.', '아기 돼지 삼형제는 행복하게 살았어요.'] },
-      ],
-    },
-  ];
-  const dummyAllIndividualTools = [
-    { id: 'aac1', type: 'AAC', name: '그림카드 세트 A', description: '다양한 사물, 동물 그림 카드 (50장)', category: '어휘', lastModified: '2025-07-20', imageUrl: 'https://via.placeholder.com/100x100?text=AAC_Card1' },
-    { id: 'filter1', type: 'Filter', name: '강아지 귀 필터', description: '화상 캠에 강아지 귀를 추가합니다.', category: '동물', lastModified: '2025-07-22', imageUrl: 'https://via.placeholder.com/100x100?text=Filter_Dog' },
-  ];
-
-  const [selectedFairyTale, setSelectedFairyTale] = useState(null);
+  // 도구 및 동화책 데이터 상태
+  const [sessionTools, setSessionTools] = useState([]);
+  const [fairyTaleInfo, setFairyTaleInfo] = useState(null); // { title, classification, startPage, endPage }
+  const [fairyTaleContent, setFairyTaleContent] = useState({}); // { pageNumber: [sentences] }
   const [currentFairyTalePage, setCurrentFairyTalePage] = useState(1);
   const [selectedSentence, setSelectedSentence] = useState('');
 
@@ -120,7 +105,6 @@ function TherapistSessionRoom() {
         }
         localStreamRef.current = stream;
 
-        // PeerConnection 초기화
         pcRef.current = createPeerConnection();
         if (pcRef.current && localStreamRef.current) {
           localStreamRef.current.getTracks().forEach(track => {
@@ -146,18 +130,67 @@ function TherapistSessionRoom() {
     };
   }, [roomId, createPeerConnection, handleSignalingMessage]);
 
-  // URL에서 도구 및 동화 로딩을 위한 효과
+  // URL에서 도구 및 동화 정보 로딩
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
-    const fairyTaleId = queryParams.get('fairyTaleId');
-    if (fairyTaleId) {
-      const foundFairyTale = dummyFairyTales.find(ft => ft.id === fairyTaleId);
-      if (foundFairyTale) {
-        setSelectedFairyTale(foundFairyTale);
-        setCurrentFairyTalePage(queryParams.get('startPage') ? parseInt(queryParams.get('startPage'), 10) : 1);
-      }
+    const tools = queryParams.get('tools')?.split(',') || [];
+    setSessionTools(tools);
+
+    const title = queryParams.get('fairyTaleTitle');
+    const classification = queryParams.get('fairyTaleClassification');
+    const startPage = queryParams.get('startPage');
+    const endPage = queryParams.get('endPage');
+
+    if (title && classification && startPage && endPage) {
+      setFairyTaleInfo({
+        title,
+        classification,
+        startPage: parseInt(startPage, 10),
+        endPage: parseInt(endPage, 10),
+      });
+      setCurrentFairyTalePage(parseInt(startPage, 10));
     }
   }, [location.search]);
+
+  const [isFetchingSentences, setIsFetchingSentences] = useState(false);
+
+  // Effect to clear fairyTaleContent when fairyTaleInfo changes
+  useEffect(() => {
+    setFairyTaleContent({}); // Clear content when fairy tale info changes
+    setSelectedSentence(''); // Clear selected sentence too
+  }, [fairyTaleInfo]); // Run when fairyTaleInfo changes
+
+  // Effect to fetch sentences
+  useEffect(() => {
+    if (!fairyTaleInfo || !fairyTaleInfo.title || isFetchingSentences) return;
+
+    const fetchSentences = async (page) => {
+      if (fairyTaleContent[page]) return; // Already fetched for this page
+
+      setIsFetchingSentences(true); // Set fetching status to true
+      try {
+        const response = await axios.get('/api/v1/storybooks/sentences', {
+          params: {
+            classification: fairyTaleInfo.classification,
+            title: fairyTaleInfo.title,
+            page: page,
+          },
+        });
+        setFairyTaleContent(prev => ({
+          ...prev,
+          [page]: Array.from(new Set(response.data.sentences.map(s => s.sentence)))
+        }));
+      } catch (error) {
+        console.error(`Error fetching page ${page}:`, error);
+      } finally {
+        setIsFetchingSentences(false); // Reset fetching status
+      }
+    };
+
+    fetchSentences(currentFairyTalePage);
+
+  }, [fairyTaleInfo, currentFairyTalePage, isFetchingSentences]); // Dependencies: only run when these change
+
 
   const startCall = async () => {
     if (pcRef.current) {
@@ -194,7 +227,6 @@ function TherapistSessionRoom() {
 
   const endSession = () => {
     if (window.confirm('정말로 수업을 종료하시겠습니까?')) {
-      // 정리는 useEffect 반환 함수에서 처리됩니다.
       navigate('/therapist/mypage/schedule');
     }
   };
@@ -204,8 +236,17 @@ function TherapistSessionRoom() {
       setActiveToolTab(toolType);
   };
 
-  const aacTools = dummyAllIndividualTools.filter(tool => tool.type === 'AAC');
-  const filterTools = dummyAllIndividualTools.filter(tool => tool.type === 'Filter');
+  const handleNextPage = () => {
+    if (fairyTaleInfo && currentFairyTalePage < fairyTaleInfo.endPage) {
+      setCurrentFairyTalePage(prev => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (fairyTaleInfo && currentFairyTalePage > fairyTaleInfo.startPage) {
+      setCurrentFairyTalePage(prev => prev - 1);
+    }
+  };
 
   return (
     <Container fluid className="session-room-container">
@@ -260,10 +301,12 @@ function TherapistSessionRoom() {
                     <i className="bi bi-stars"></i>
                     <span>필터</span>
                 </Button>
-                <Button variant={activeToolTab === 'fairyTale' ? "info" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('fairyTale')}>
-                    <i className="bi bi-book-fill"></i>
-                    <span>동화</span>
-                </Button>
+                {fairyTaleInfo && (
+                  <Button variant={activeToolTab === 'fairyTale' ? "info" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('fairyTale')}>
+                      <i className="bi bi-book-fill"></i>
+                      <span>동화</span>
+                  </Button>
+                )}
                 <Button variant="danger" className="control-button ms-auto" onClick={endSession}>
                     <i className="bi bi-x-circle-fill" style={{ fontSize: '1.5em' }}></i>
                     <span>수업 종료</span>
@@ -281,9 +324,43 @@ function TherapistSessionRoom() {
               </Card.Header>
               <Card.Body className="p-2">
                 <ListGroup variant="flush">
-                  {activeToolTab === 'aac' && ( aacTools.length > 0 ? aacTools.map(tool => ( <ListGroup.Item key={tool.id} action> <div className="d-flex align-items-center"> <Image src={tool.imageUrl} alt={tool.name} fluid roundedCircle style={{ width: '40px', height: '40px', objectFit: 'cover', marginRight: '10px' }} /> <div> <strong>{tool.name}</strong> <small className="d-block text-muted">{tool.description}</small> </div> </div> </ListGroup.Item> )) : <Alert variant="info" className="text-center m-2">등록된 AAC 도구가 없습니다.</Alert> )}
-                  {activeToolTab === 'filter' && ( filterTools.length > 0 ? filterTools.map(tool => ( <ListGroup.Item key={tool.id} action> <div className="d-flex align-items-center"> <Image src={tool.imageUrl} alt={tool.name} fluid roundedCircle style={{ width: '40px', height: '40px', objectFit: 'cover', marginRight: '10px' }} /> <div> <strong>{tool.name}</strong> <small className="d-block text-muted">{tool.description}</small> </div> </div> </ListGroup.Item> )) : <Alert variant="info" className="text-center m-2">등록된 필터 도구가 없습니다.</Alert> )}
-                  {activeToolTab === 'fairyTale' && ( selectedFairyTale ? ( <div className="p-2"> <h6 className="text-center mb-3">{selectedFairyTale.title} (페이지 {currentFairyTalePage}/{selectedFairyTale.totalPages})</h6> <ListGroup className="mb-3"> {selectedFairyTale.pages.find(p => p.page === currentFairyTalePage)?.content.map((sentence, index) => ( <ListGroup.Item key={index} action onClick={() => setSelectedSentence(prev => prev === sentence ? '' : sentence)} active={selectedSentence === sentence} className="fairy-tale-sentence"> {sentence} </ListGroup.Item> ))} </ListGroup> <div className="d-flex justify-content-between"> <Button variant="outline-secondary" onClick={() => setCurrentFairyTalePage(prev => Math.max(1, prev - 1))} disabled={currentFairyTalePage === 1}> 이전 페이지 </Button> <Button variant="outline-secondary" onClick={() => setCurrentFairyTalePage(prev => Math.min(selectedFairyTale.totalPages, prev + 1))} disabled={currentFairyTalePage === selectedFairyTale.totalPages}> 다음 페이지 </Button> </div> {selectedSentence && ( <Alert variant="success" className="mt-3 text-center"> 선택된 문장: <strong>{selectedSentence}</strong> </Alert> )} </div> ) : ( <Alert variant="info" className="text-center m-2">선택된 동화가 없습니다. 수업 시작 시 동화를 선택해주세요.</Alert> ) )}
+                  {activeToolTab === 'aac' && ( <Alert variant="info" className="text-center m-2">AAC 도구 기능 구현 예정</Alert> )}
+                  {activeToolTab === 'filter' && ( <Alert variant="info" className="text-center m-2">필터 도구 기능 구현 예정</Alert> )}
+                  {activeToolTab === 'fairyTale' && fairyTaleInfo && (
+                    <div className="p-2">
+                      <h6 className="text-center mb-3">{fairyTaleInfo.title} (페이지 {currentFairyTalePage}/{fairyTaleInfo.endPage})</h6>
+                      <ListGroup className="mb-3" style={{maxHeight: '400px', overflowY: 'auto'}}>
+                        {fairyTaleContent[currentFairyTalePage] ? (
+                          fairyTaleContent[currentFairyTalePage].map((sentence, index) => (
+                            <ListGroup.Item
+                              key={index}
+                              action
+                              onClick={() => setSelectedSentence(prev => prev === sentence ? '' : sentence)}
+                              active={selectedSentence === sentence}
+                              className="fairy-tale-sentence"
+                            >
+                              {sentence}
+                            </ListGroup.Item>
+                          ))
+                        ) : (
+                          <ListGroup.Item>페이지를 불러오는 중...</ListGroup.Item>
+                        )}
+                      </ListGroup>
+                      <div className="d-flex justify-content-between">
+                        <Button variant="outline-secondary" onClick={handlePrevPage} disabled={currentFairyTalePage <= fairyTaleInfo.startPage}>
+                          이전 페이지
+                        </Button>
+                        <Button variant="outline-secondary" onClick={handleNextPage} disabled={currentFairyTalePage >= fairyTaleInfo.endPage}>
+                          다음 페이지
+                        </Button>
+                      </div>
+                      {selectedSentence && (
+                        <Alert variant="success" className="mt-3 text-center">
+                          선택된 문장: <strong>{selectedSentence}</strong>
+                        </Alert>
+                      )}
+                    </div>
+                  )}
                 </ListGroup>
               </Card.Body>
             </Card>
@@ -295,3 +372,4 @@ function TherapistSessionRoom() {
 }
 
 export default TherapistSessionRoom;
+
