@@ -2,12 +2,12 @@ pipeline {
     agent any
 
     options {
-        skipDefaultCheckout(true) // ← 이게 핵심!
+        skipDefaultCheckout(true) // 자동 checkout 방지
     }
 
     environment {
-        IMAGE_NAME = 'your-dockerhub-id/your-project'
-        CONTAINER_NAME = 'your-app-container'
+        IMAGE_NAME = '정형진/docker-frontend' // 실제 DockerHub 계정/이미지명
+        CONTAINER_NAME = 'frontend-container'
     }
 
     stages {
@@ -18,7 +18,12 @@ pipeline {
             }
         }
 
-        // Git Checkout 명시적으로 하지 않음
+        stage('Git Checkout') {
+            steps {
+                echo '📥 Git 저장소 다시 clone 중...'
+                checkout scm
+            }
+        }
 
         stage('Docker Build') {
             steps {
