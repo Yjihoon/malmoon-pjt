@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Card, Button, Alert, Tabs, Tab, Spinner } from 'react-bootstrap';
 import { v4 as uuidv4 } from 'uuid';
 
-// --- [수정] 실제 파일 경로에 맞게 Import 경로 수정 ---
+// --- 컴포넌트 Import ---
 import AacItemList from '../../../components/TherapistToolTap/AacItemList';
 import AacSetList from '../../../components/TherapistToolTap/AacSetList';
 import FilterList from '../../../components/TherapistToolTap/FilterList';
@@ -23,7 +23,7 @@ function TherapistToolsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // --- 데이터 상태 (camelCase로 통일) ---
+    // --- 데이터 상태 ---
     const [aacItems, setAacItems] = useState([]);
     const [aacSets, setAacSets] = useState([]);
     const [filters, setFilters] = useState([]);
@@ -72,35 +72,43 @@ function TherapistToolsPage() {
     const openModal = (type, data = null) => setModalState({ type, data });
     const closeModal = () => setModalState({ type: null, data: null });
 
-    // --- CRUD 핸들러 (API 연동 전 Mock 로직) ---
-    const handleSaveAacItem = (itemToSave) => {
-        console.log("Saving AAC Item:", itemToSave);
-        closeModal();
+    // --- [수정] AI 이미지 생성을 위한 핸들러 (실제 API 호출) ---
+    const handleGenerateAacImage = async (promptData) => {
+        console.log("AI 이미지 생성을 요청합니다:", promptData);
+        
+        // 📞 API CALL: Spring Boot 백엔드 API를 호출합니다.
+        // 이 API는 내부적으로 Python AI 서버와 통신해야 합니다.
+        try {
+            // [수정] 백엔드 Controller의 경로에 맞게 '/generate'로 수정합니다.
+            const response = await fetch('/api/v1/aacs/generate', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(promptData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'AI 이미지 생성 요청에 실패했습니다.' }));
+                throw new Error(errorData.message);
+            }
+
+            const result = await response.json();
+            // 백엔드가 반환하는 필드명(previewUrl)을 확인하고 사용합니다.
+            return result.previewUrl; 
+        } catch (error) {
+            console.error("AI image generation failed:", error);
+            throw error; // 에러를 다시 던져서 Modal에서 처리하도록 함
+        }
     };
-    const handleDeleteAacItem = (itemId) => {
-        if (window.confirm('정말로 이 AAC 아이템을 삭제하시겠습니까?')) console.log("Deleting AAC Item:", itemId);
-    };
-    const handleSaveAacSet = (set) => {
-        console.log("Saving AAC Set:", set);
-        closeModal();
-    };
-    const handleDeleteAacSet = (setId) => {
-        if (window.confirm('정말로 이 AAC 묶음을 삭제하시겠습니까?')) console.log("Deleting AAC Set:", setId);
-    };
-    const handleSaveFilter = (filterToSave) => {
-        console.log("Saving Filter:", filterToSave);
-        closeModal();
-    };
-    const handleDeleteFilter = (filterId) => {
-        if (window.confirm('정말로 이 필터를 삭제하시겠습니까?')) console.log("Deleting Filter:", filterId);
-    };
-    const handleSaveToolBundle = (bundle) => {
-        console.log("Saving Tool Bundle:", bundle);
-        closeModal();
-    };
-    const handleDeleteToolBundle = (bundleId) => {
-        if (window.confirm('정말로 이 수업 세트를 삭제하시겠습니까?')) console.log("Deleting Tool Bundle:", bundleId);
-    };
+
+    // --- CRUD 핸들러 ---
+    const handleSaveAacItem = (itemToSave) => { console.log("Saving AAC Item:", itemToSave); closeModal(); };
+    const handleDeleteAacItem = (itemId) => { if (window.confirm('정말로 이 AAC 아이템을 삭제하시겠습니까?')) console.log("Deleting AAC Item:", itemId); };
+    const handleSaveAacSet = (set) => { console.log("Saving AAC Set:", set); closeModal(); };
+    const handleDeleteAacSet = (setId) => { if (window.confirm('정말로 이 AAC 묶음을 삭제하시겠습니까?')) console.log("Deleting AAC Set:", setId); };
+    const handleSaveFilter = (filterToSave) => { console.log("Saving Filter:", filterToSave); closeModal(); };
+    const handleDeleteFilter = (filterId) => { if (window.confirm('정말로 이 필터를 삭제하시겠습니까?')) console.log("Deleting Filter:", filterId); };
+    const handleSaveToolBundle = (bundle) => { console.log("Saving Tool Bundle:", bundle); closeModal(); };
+    const handleDeleteToolBundle = (bundleId) => { if (window.confirm('정말로 이 수업 세트를 삭제하시겠습니까?')) console.log("Deleting Tool Bundle:", bundleId); };
 
     if (loading) return <Container className="my-5 text-center"><Spinner animation="border" /> <p>로딩 중...</p></Container>;
     if (error) return <Container className="my-5 text-center"><Alert variant="danger">{error}</Alert></Container>;
@@ -147,10 +155,34 @@ function TherapistToolsPage() {
                 </Tab>
             </Tabs>
             
-            <AacItemModal show={modalState.type === 'AAC_item'} onHide={closeModal} onSave={handleSaveAacItem} itemData={modalState.data} />
-            <AacSetModal show={modalState.type === 'AAC_set'} onHide={closeModal} onSave={handleSaveAacSet} initialData={modalState.data} allAacItems={aacItems} />
-            <FilterModal show={modalState.type === 'Filter'} onHide={closeModal} onSave={handleSaveFilter} filterData={modalState.data} />
-            <ToolBundleModal show={modalState.type === 'tool_bundle'} onHide={closeModal} onSave={handleSaveToolBundle} bundleData={modalState.data} allAacSets={aacSets} allFilters={filters} />
+            <AacItemModal 
+                show={modalState.type === 'AAC_item'} 
+                onHide={closeModal} 
+                onSave={handleSaveAacItem} 
+                itemData={modalState.data}
+                onGenerate={handleGenerateAacImage} 
+            />
+            <AacSetModal 
+                show={modalState.type === 'AAC_set'} 
+                onHide={closeModal} 
+                onSave={handleSaveAacSet} 
+                initialData={modalState.data} 
+                allAacItems={aacItems} 
+            />
+            <FilterModal 
+                show={modalState.type === 'Filter'} 
+                onHide={closeModal} 
+                onSave={handleSaveFilter} 
+                filterData={modalState.data} 
+            />
+            <ToolBundleModal 
+                show={modalState.type === 'tool_bundle'} 
+                onHide={closeModal} 
+                onSave={handleSaveToolBundle} 
+                bundleData={modalState.data} 
+                allAacSets={aacSets} 
+                allFilters={filters} 
+            />
         </Container>
     );
 }
