@@ -14,18 +14,20 @@ pipeline {
             }
         }
 
-        stage('Git Checkout') {
-            steps {
-                echo '📥 Git 저장소 다시 clone 중...'
-                checkout scm
-            }
-        }
+        // 이 블록은 제거하거나 주석 처리 권장
+        // stage('Git Checkout') {
+        //     steps {
+        //         echo '📥 Git 저장소 다시 clone 중...'
+        //         // checkout scm
+        //     }
+        // }
 
         stage('Spring Boot Build') {
             steps {
                 echo '🔨 Spring Boot 애플리케이션 빌드 중...'
                 sh '''
                     cd apps/backend
+                    chmod +x ./gradlew
                     ./gradlew build
                 '''
             }
