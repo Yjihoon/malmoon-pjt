@@ -10,12 +10,13 @@ pipeline {
         stage('Git Checkout') {
             steps {
                 echo '✅ GitLab에서 프로젝트 코드 가져오는 중...'
-                checkout([$class: 'GitSCM',
-                userRemoteConfigs: [[
-                    url: 'https://lab.ssafy.com/s13-webmobile1-sub1/S13P11C107.git',
-                    credentialsId: 'gitlab-token1'
-                ]],
-                branches: [[name: '*/develop']]
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/develop']],
+                    userRemoteConfigs: [[
+                        url: 'https://lab.ssafy.com/s13-webmobile1-sub1/S13P11C107.git',
+                        credentialsId: 'gitlab-token'
+                    ]]
                 ])
             }
         }
