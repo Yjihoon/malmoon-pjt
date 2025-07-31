@@ -17,7 +17,6 @@ pipeline {
         stage('Git Checkout') {
             steps {
                 echo '✅ GitLab에서 프로젝트 코드 가져오는 중...'
-                checkout scm
             }
         }
 
