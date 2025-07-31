@@ -2,6 +2,7 @@ package com.communet.malmoon.member.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 
 import org.junit.jupiter.api.Assertions;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -102,8 +104,10 @@ class MemberServiceTest {
 		req.setDong("금호동");
 		req.setDetail("삼성아파트");
 
+		MockMultipartFile multipartFile1 = new MockMultipartFile("file", "test.txt", "text/plain", "test file".getBytes(StandardCharsets.UTF_8) );
+
 		// when
-		memberService.joinTherapist(req);
+		memberService.joinTherapist(req, multipartFile1);
 
 		// then
 		Member savedMember = memberRepository.findByEmail("therapist@example.com").orElse(null);

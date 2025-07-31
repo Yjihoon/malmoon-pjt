@@ -22,6 +22,7 @@ import com.communet.malmoon.member.repository.TherapistRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -81,7 +82,7 @@ public class MemberService {
 	 * @throws DuplicateEmailException 이메일 중복 시 예외 발생
 	 */
 	@Transactional
-	public void joinTherapist(TherapistJoinReq therapistJoinReq) {
+	public void joinTherapist(TherapistJoinReq therapistJoinReq, MultipartFile  qualification) {
 		if (checkEmail(therapistJoinReq.getEmail())) {
 			throw new DuplicateEmailException("이미 사용 중인 이메일입니다.");
 		}
@@ -109,7 +110,7 @@ public class MemberService {
 
 		memberRepository.save(member);
 
-		FileUploadRes fileUploadRes = fileService.uploadFile(String.valueOf(FileType.QUALIFICATION), therapistJoinReq.getQualification());
+		FileUploadRes fileUploadRes = fileService.uploadFile(String.valueOf(FileType.QUALIFICATION), qualification);
 
 		Therapist therapist = Therapist.builder()
 				.therapistId(member.getMemberId())
