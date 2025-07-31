@@ -49,7 +49,36 @@ public class FileServiceImpl implements FileService {
 				.fileId(savedFile.getId())
 				.url(s3Prefix + filename)
 				.build();
-			
+
+		} catch (IOException e) {
+			log.error("파일 업로드 실패", e);
+			throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.");
+		}
+	}
+
+	@Override
+	public FileUploadRes uploadFile(String directory, java.io.File file) {
+		try (java.io.InputStream inputStream = new java.io.FileInputStream(file)) {
+			// 0. ContentType 추론
+			String contentType = resolveContentType(file.getName());
+
+			// 1. S3Uploader에 InputStream 기반 업로드 요청
+			String filename = s3Uploader.upload(directory, inputStream, file.getName(), contentType);
+
+			// 2. File 엔티티 저장
+			File savedFile = fileRepository.save(File.builder()
+				.fileType(FileType.valueOf(directory.toUpperCase()))
+				.filename(filename)
+				.isDeleted(false)
+				.build());
+
+			log.info("파일 저장 완료: id={}, filename={}", savedFile.getId(), filename);
+
+			// 3. 결과 DTO 반환
+			return FileUploadRes.builder()
+				.fileId(savedFile.getId())
+				.url(s3Prefix + filename)
+				.build();
 		} catch (IOException e) {
 			log.error("파일 업로드 실패", e);
 			throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.");
@@ -67,4 +96,16 @@ public class FileServiceImpl implements FileService {
 
 		return s3Prefix + file.getFilename();
 	}
+
+	private String resolveContentType(String filename) {
+		filename = filename.toLowerCase();
+		if (filename.endsWith(".png"))
+			return "image/png";
+		if (filename.endsWith(".jpg") || filename.endsWith(".jpeg"))
+			return "image/jpeg";
+		if (filename.endsWith(".gif"))
+			return "image/gif";
+		return "application/octet-stream";
+	}
+
 }

@@ -1,6 +1,7 @@
 package com.communet.malmoon.file.service;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -51,6 +52,31 @@ public class S3Uploader {
 
 		// 업로드된 파일 URL 반환
 		return getFileUrl(fileName);
+	}
+
+	/**
+	 * java.io.File 기반 업로드 (InputStream 사용)
+	 *
+	 * @param directory 업로드 경로 (aac/create 등)
+	 * @param inputStream 파일 스트림
+	 * @param originalFilename 원본 파일명 (확장자 포함)
+	 * @return S3 저장 키 (ex: aac/create/uuid_filename.png)
+	 * @throws IOException 스트림 처리 예외
+	 */
+	public String upload(String directory, InputStream inputStream, String originalFilename, String contentType) throws
+		IOException {
+		String uuid = UUID.randomUUID().toString();
+		String fileName = directory + "/" + uuid + "_" + originalFilename;
+
+		PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+			.bucket(bucket)
+			.key(fileName)
+			.contentType(contentType)
+			.build();
+
+		s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, inputStream.available()));
+
+		return fileName;
 	}
 
 	/**

@@ -17,6 +17,8 @@ public interface FileService {
 	 */
 	FileUploadRes uploadFile(String directory, MultipartFile file);
 
+	FileUploadRes uploadFile(String directory, java.io.File file);
+
 	/**
 	 * fileId를 통해 S3 이미지 URL을 반환합니다.
 	 *
