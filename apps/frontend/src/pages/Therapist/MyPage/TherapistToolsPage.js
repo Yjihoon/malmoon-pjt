@@ -72,14 +72,15 @@ function TherapistToolsPage() {
     const openModal = (type, data = null) => setModalState({ type, data });
     const closeModal = () => setModalState({ type: null, data: null });
 
-    // --- [수정] AI 이미지 생성을 위한 핸들러 (실제 API 호출) ---
+    // --- [수정] AI 이미지 생성을 위한 핸들러 ---
     const handleGenerateAacImage = async (promptData) => {
         console.log("AI 이미지 생성을 요청합니다:", promptData);
         
-        // 📞 API CALL: Spring Boot 백엔드 API를 호출합니다.
-        // 이 API는 내부적으로 Python AI 서버와 통신해야 합니다.
+        // [수정] AI 서버의 주소를 여기에 정의합니다.
+        const AI_SERVER_URL = 'http://localhost:8000';
+
         try {
-            // [수정] 백엔드 Controller의 경로에 맞게 '/generate'로 수정합니다.
+            // 1. Spring 백엔드에 이미지 생성을 요청합니다.
             const response = await fetch('/api/v1/aacs/generate', { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -92,11 +93,17 @@ function TherapistToolsPage() {
             }
 
             const result = await response.json();
-            // 백엔드가 반환하는 필드명(previewUrl)을 확인하고 사용합니다.
-            return result.previewUrl; 
+            
+            // 2. [핵심 수정] 백엔드로부터 받은 부분 경로(result.previewUrl) 앞에
+            //    AI 서버 주소를 붙여 완전한 URL을 만듭니다.
+            const fullImageUrl = AI_SERVER_URL + result.previewUrl;
+            console.log("생성된 전체 이미지 URL:", fullImageUrl);
+            
+            // 3. 완전한 URL을 Modal 컴포넌트로 반환합니다.
+            return fullImageUrl; 
         } catch (error) {
             console.error("AI image generation failed:", error);
-            throw error; // 에러를 다시 던져서 Modal에서 처리하도록 함
+            throw error;
         }
     };
 
