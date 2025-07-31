@@ -2,7 +2,11 @@ package com.communet.malmoon.member.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
+import com.communet.malmoon.file.domain.FileType;
+import com.communet.malmoon.file.dto.response.FileUploadRes;
+import com.communet.malmoon.file.service.FileService;
 import com.communet.malmoon.member.domain.*;
 import com.communet.malmoon.member.dto.request.*;
 import com.communet.malmoon.member.dto.response.CareerRes;
@@ -24,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MemberService {
 
+	private final FileService fileService;
 	private final MemberRepository memberRepository;
 	private final TherapistRepository therapistRepository;
 	private final CareerRepository careerRepository;
@@ -37,6 +42,7 @@ public class MemberService {
 	 * @param memberJoinReq 회원 가입 요청 DTO
 	 * @throws DuplicateEmailException 이메일 중복 시 예외 발생
 	 */
+	@Transactional
 	public void join(MemberJoinReq memberJoinReq) {
 		if (checkEmail(memberJoinReq.getEmail())) {
 			throw new DuplicateEmailException("이미 사용 중인 이메일입니다.");
@@ -103,10 +109,12 @@ public class MemberService {
 
 		memberRepository.save(member);
 
+		FileUploadRes fileUploadRes = fileService.uploadFile(String.valueOf(FileType.QUALIFICATION), therapistJoinReq.getQualification());
+
 		Therapist therapist = Therapist.builder()
 				.therapistId(member.getMemberId())
 				.careerYears(therapistJoinReq.getCareerYears())
-				//.qualificationImage()
+				.fileId(fileUploadRes.getFileId())
 				.careers(therapistJoinReq.getCareers())
 				.build();
 
@@ -137,6 +145,7 @@ public class MemberService {
 	 * @param member 현재 로그인한 회원
 	 * @return 회원 상세 정보 응답 DTO
 	 */
+	@Transactional
 	public MemberMeRes getMe(Member member) {
 		if (member.getRole() == MemberType.ROLE_CLIENT) {
 			return MemberMeRes.builder()
@@ -146,6 +155,11 @@ public class MemberService {
 				.birthDate(member.getBirthDate())
 				.tel1(member.getTel1())
 				.tel2(member.getTel2())
+				.city(member.getAddress().getCity())
+				.district(member.getAddress().getDistrict())
+				.dong(member.getAddress().getDong())
+				.detail(member.getAddress().getDetail())
+				.profile(member.getProfile())
 				.build();
 		}
 
@@ -160,6 +174,12 @@ public class MemberService {
 						.build())
 				.toList();
 
+		Optional<Therapist> therapist = therapistRepository.findById(member.getMemberId());
+		String fileUrl = "";
+		if (therapist.isPresent()) {
+			fileUrl = fileService.getFileUrl(therapist.get().getFileId());
+		}
+
 		return MemberMeRes.builder()
 			.email(member.getEmail())
 			.name(member.getName())
@@ -168,6 +188,12 @@ public class MemberService {
 			.tel1(member.getTel1())
 			.tel2(member.getTel2())
 			.careers(careerResList)
+			.city(member.getAddress().getCity())
+			.district(member.getAddress().getDistrict())
+			.dong(member.getAddress().getDong())
+			.detail(member.getAddress().getDetail())
+			.profile(member.getProfile())
+			.fileUrl(fileUrl)
 			.build();
 	}
 
@@ -176,15 +202,11 @@ public class MemberService {
 	 * - 닉네임, 전화번호 등 변경 가능
 	 * - 치료사 경력 추가 시 처리
 	 * @param memberMeChangeReq 수정할 정보 DTO
-	 * @param memberArg 현재 로그인한 회원
+	 * @param member 현재 로그인한 회원
 	 * @throws IllegalArgumentException 일반 회원이 경력을 수정하려 할 경우 발생
 	 */
 	@Transactional
-	public void changeMe(MemberMeChangeReq memberMeChangeReq, Member memberArg) {
-
-		Member member = memberRepository.findById(memberArg.getMemberId())
-				.orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
-
+	public void changeMe(MemberMeChangeReq memberMeChangeReq, Member member) {
 		if (memberMeChangeReq.getNickname() != null) {
 			member.setNickname(memberMeChangeReq.getNickname());
 		}
@@ -194,9 +216,22 @@ public class MemberService {
 		if (memberMeChangeReq.getTel2() != null) {
 			member.setTel2(memberMeChangeReq.getTel2());
 		}
-		// if (memberMeChangeReq.getProfileImageUrl() != null) {
-		// 	member.setProfileImageUrl(memberMeChangeReq.getProfileImageUrl());
-		// }
+		 if (memberMeChangeReq.getProfile() != null) {
+		 	member.setProfile(memberMeChangeReq.getProfile());
+		 }
+		if (memberMeChangeReq.getCity() != null) {
+			member.getAddress().setCity(memberMeChangeReq.getCity());
+		}
+		if (memberMeChangeReq.getDistrict() != null) {
+			member.getAddress().setDistrict(memberMeChangeReq.getDistrict());
+		}
+		if (memberMeChangeReq.getDong() != null) {
+			member.getAddress().setDong(memberMeChangeReq.getDong());
+		}
+		if (memberMeChangeReq.getDetail() != null) {
+			member.getAddress().setDetail(memberMeChangeReq.getDetail());
+		}
+
 		if (memberMeChangeReq.getCareers() != null) {
 			Therapist therapist = therapistRepository.findById(member.getMemberId())
 				.orElseThrow(() -> new IllegalArgumentException("일반 회원은 경력을 수정할 수 없습니다."));

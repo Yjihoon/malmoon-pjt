@@ -3,7 +3,8 @@ package com.communet.malmoon.file.domain;
 public enum FileType {
 	AAC("aac"),
 	PROFILE("profile"),
-	RECORD("record");
+	RECORD("record"),
+	QUALIFICATION("qualification"),;
 
 	private final String directory;
 	public String getDirectory() {

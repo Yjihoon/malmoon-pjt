@@ -23,10 +23,8 @@ public class Therapist {
 	private Long therapistId;
 	@Column(name = "careerYears", columnDefinition = "int",  nullable = false)
 	private Integer careerYears;
-
-	// @OneToOne(fetch = FetchType.LAZY)
-	// @JoinColumn(name = "qualification_image_id")
-	// private File qualificationImage;
+	@Column(name = "file_id", columnDefinition = "bigint",  nullable = false)
+	private Long fileId;
 
 	@OneToMany(cascade = CascadeType.ALL)
 	@Builder.Default
