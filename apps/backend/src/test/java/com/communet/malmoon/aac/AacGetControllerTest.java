@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.communet.malmoon.aac.controller.AacController;
 import com.communet.malmoon.aac.domain.Aac;
+import com.communet.malmoon.aac.domain.AacStatus;
 import com.communet.malmoon.aac.dto.response.AacGetRes;
 import com.communet.malmoon.aac.service.AacService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -62,6 +63,7 @@ class AacGetControllerTest {
 				.action("도움요청")
 				.emotion("기쁨")
 				.fileId(99L)
+				.status(AacStatus.PUBLIC)
 				.build(),
 			"https://fake-s3-url.com/image.jpg"
 		);

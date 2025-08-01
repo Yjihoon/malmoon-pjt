@@ -1,32 +1,33 @@
 package com.communet.malmoon.aac.dto.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 /**
- * AAC 목록 조회 요청 DTO입니다.
+ * AAC 목록 조회 요청 DTO
  *
- * @param situation 필터링할 상황 키워드 (선택)
- * @param action 필터링할 행동 키워드 (선택)
- * @param emotion 감정 필터링 키워드 (선택)
- * @param page 페이지 번호 (0부터 시작)
- * @param size 페이지당 개수
  */
-@Getter
-@Setter
+@Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class AacGetReq {
 
+	@Schema(description = "AAC 상황", example = "긴급")
 	private String situation;
+
+	@Schema(description = "AAC 동작", example = "도움 요청")
 	private String action;
+
+	@Schema(description = "AAC 감정", example = "불안")
 	private String emotion;
 
+	@Schema(description = "페이지 번호", example = "2")
 	private int page;
+	@Schema(description = "페이지당 개수", example = "10")
 	private int size;
 }
