@@ -22,4 +22,4 @@ RUN mkdir -p ./static && cp -r ./apps/frontend/build/* ./static/
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
-# !
+# !!
