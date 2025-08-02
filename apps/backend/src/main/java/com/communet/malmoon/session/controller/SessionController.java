@@ -7,16 +7,9 @@ import com.communet.malmoon.session.dto.response.SessionTokenRes;
 import com.communet.malmoon.session.service.SessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import io.livekit.server.AccessToken;
-import io.livekit.server.RoomJoin;
-import io.livekit.server.RoomName;
-import io.livekit.server.WebhookReceiver;
-import livekit.LivekitWebhook.WebhookEvent;
 
 @Slf4j
 @CrossOrigin(origins = "*")
@@ -25,56 +18,54 @@ import livekit.LivekitWebhook.WebhookEvent;
 @RequiredArgsConstructor
 public class SessionController {
 
-    @Value("${livekit.api.key}")
-    private String LIVEKIT_API_KEY;
-
-    @Value("${livekit.api.secret}")
-    private String LIVEKIT_API_SECRET;
-
     private final SessionService sessionService;
 
+    /**
+     * 치료사가 세션 방을 생성할 때 호출
+     * @param req 클라이언트 ID를 포함한 요청 객체
+     * @param member 현재 로그인한 치료사 정보
+     * @return 세션 토큰 응답
+     */
     @PostMapping("/room")
     @PreAuthorize("hasRole('ROLE_THERAPIST')")
-    public ResponseEntity<?> createRoom(@RequestBody SessionRoomReq req, @CurrentMember Member member) {
-        String roomName = sessionService.storeRoomInfo(member.getEmail(), req.getClientId());
-
-        String token = generateAccessToken(member, roomName);
+    public ResponseEntity<SessionTokenRes> createRoom(@RequestBody SessionRoomReq req, @CurrentMember Member member) {
+        String token = sessionService.storeRoomInfo(member, req.getClientId());
         return ResponseEntity.ok(new SessionTokenRes(token));
     }
 
+    /**
+     * 치료사가 세션 방을 삭제할 때 호출
+     * @param member 현재 로그인한 치료사 정보
+     * @return HTTP 200 OK 응답
+     */
     @DeleteMapping("/room")
     @PreAuthorize("hasRole('ROLE_THERAPIST')")
     public ResponseEntity<?> deleteRoom(@CurrentMember Member member) {
-        sessionService.deleteRoom(member.getEmail());
+        sessionService.deleteRoomInfo(member.getEmail());
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * 클라이언트가 세션 방에 참여할 때 호출
+     * @param member 현재 로그인한 클라이언트 정보
+     * @return 세션 토큰 응답
+     */
     @PostMapping("/join")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
-    public ResponseEntity<?> joinRoom(@CurrentMember Member member) {
-        String roomName = sessionService.getJoinRoomName(member.getEmail());
-
-        String token = generateAccessToken(member, roomName);
+    public ResponseEntity<SessionTokenRes> joinRoom(@CurrentMember Member member) {
+        String token = sessionService.getJoinRoomName(member);
         return ResponseEntity.ok(new SessionTokenRes(token));
     }
 
-    private String generateAccessToken(Member member, String roomName) {
-        AccessToken token = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET);
-        token.setName(member.getNickname());
-        token.setIdentity(member.getEmail());
-        token.addGrants(new RoomJoin(true), new RoomName(roomName));
-        return token.toJwt();
-    }
-
+    /**
+     * LiveKit Webhook 이벤트 수신
+     * @param authHeader 인증 헤더
+     * @param body 이벤트 바디 (JSON)
+     * @return 응답 문자열
+     */
     @PostMapping(value = "/livekit/webhook", consumes = "application/webhook+json")
     public ResponseEntity<String> receiveWebhook(@RequestHeader("Authorization") String authHeader, @RequestBody String body) {
-        WebhookReceiver webhookReceiver = new WebhookReceiver(LIVEKIT_API_KEY, LIVEKIT_API_SECRET);
-        try {
-            WebhookEvent event = webhookReceiver.receive(body, authHeader);
-            System.out.println("LiveKit Webhook: " + event.toString());
-        } catch (Exception e) {
-            System.err.println("Error validating webhook event: " + e.getMessage());
-        }
+        sessionService.getWebhookReceiver(authHeader, body);
         return ResponseEntity.ok("ok");
     }
 }
