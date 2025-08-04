@@ -21,8 +21,12 @@ function TherapistSessionRoom() {
   const [showToolPanel, setShowToolPanel] = useState(false);
   const [activeToolTab, setActiveToolTab] = useState(null);
 
+  const [remoteVideoTrack, setRemoteVideoTrack] = useState(null);
+  const [remoteAudioTrack, setRemoteAudioTrack] = useState(null);
+
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null);
   const roomRef = useRef(null);
 
   const [sessionTools, setSessionTools] = useState([]);
@@ -47,6 +51,8 @@ function TherapistSessionRoom() {
   const connectToLiveKit = useCallback(async () => {
     if (!user) return;
 
+    setRtcStatus('connecting');
+
     const room = new Room({ adaptiveStream: true, dynacast: true });
     roomRef.current = room;
 
@@ -54,20 +60,26 @@ function TherapistSessionRoom() {
     room.on(RoomEvent.Disconnected, () => setRtcStatus('disconnected'));
 
     room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
-      if (track.kind === 'video' && remoteVideoRef.current) {
-        track.attach(remoteVideoRef.current);
+      if (track.kind === 'video') {
+        setRemoteVideoTrack(track);
         setIsRemoteVideoOff(false);
         participant.on(RoomEvent.TrackMuted, handleRemoteTrackMuted);
         participant.on(RoomEvent.TrackUnmuted, handleRemoteTrackUnmuted);
+      } else if (track.kind === 'audio') {
+        setRemoteAudioTrack(track);
       }
     });
 
     room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
       if (track.kind === 'video') {
         track.detach();
+        setRemoteVideoTrack(null);
         setIsRemoteVideoOff(true);
         participant.off(RoomEvent.TrackMuted, handleRemoteTrackMuted);
         participant.off(RoomEvent.TrackUnmuted, handleRemoteTrackUnmuted);
+      } else if (track.kind === 'audio') {
+        track.detach();
+        setRemoteAudioTrack(null);
       }
     });
 
@@ -97,9 +109,30 @@ function TherapistSessionRoom() {
   }, [user]);
 
   useEffect(() => {
-    connectToLiveKit();
     return () => roomRef.current?.disconnect();
-  }, [connectToLiveKit]);
+  }, []);
+
+  useEffect(() => {
+    if (remoteVideoTrack && remoteVideoRef.current) {
+      remoteVideoTrack.attach(remoteVideoRef.current);
+    }
+    return () => {
+      if (remoteVideoTrack) {
+        remoteVideoTrack.detach();
+      }
+    };
+  }, [remoteVideoTrack]);
+
+  useEffect(() => {
+    if (remoteAudioTrack && remoteAudioRef.current) {
+      remoteAudioTrack.attach(remoteAudioRef.current);
+    }
+    return () => {
+      if (remoteAudioTrack) {
+        remoteAudioTrack.detach();
+      }
+    };
+  }, [remoteAudioTrack]);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -173,133 +206,175 @@ function TherapistSessionRoom() {
     }
   };
 
-  return (
-    <Container fluid className="session-room-container">
-      <Row className="h-100 flex-nowrap">
-        <Col className={`session-main-content ${showToolPanel ? 'col-md-9' : 'col-md-12'} p-0`}>
-          <div className="main-video-area">
-            <div className="main-video-container">
-              <video ref={remoteVideoRef} autoPlay playsInline className="remote-video" />
-              {isRemoteVideoOff && (
-                <div className="video-overlay-text">
-                  <i className="bi bi-camera-video-off-fill" style={{ fontSize: '3em' }}></i>
-                  <p>사용자 카메라 꺼짐</p>
-                </div>
-              )}
-            </div>
-
-            <div className="pip-video-container">
-              <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
-              {isVideoOff && (
-                <div className="text-center video-overlay-text">
-                  <i className="bi bi-camera-video-off-fill" style={{ fontSize: '1.5em' }}></i>
-                </div>
-              )}
-            </div>
+  const renderContent = () => {
+    switch (rtcStatus) {
+      case 'disconnected':
+        return (
+          <div className="join-container">
+            <h2 className="mb-4">수업을 시작할 준비가 되셨나요?</h2>
+            <Button variant="primary" size="lg" onClick={connectToLiveKit}>
+              <i className="bi bi-box-arrow-in-right me-2"></i>수업 시작하기
+            </Button>
           </div>
+        );
+      case 'connecting':
+        return (
+          <div className="join-container">
+            <h2 className="mb-4">수업 세션에 연결 중입니다...</h2>
+            <p>잠시만 기다려주세요.</p>
+          </div>
+        );
+      case 'error':
+        return (
+          <div className="join-container">
+            <Alert variant="danger">
+              <Alert.Heading>연결 오류</Alert.Heading>
+              <p>세션에 연결하지 못했습니다. 네트워크 상태를 확인하시거나 잠시 후 다시 시도해주세요.</p>
+            </Alert>
+            <Button variant="primary" onClick={() => setRtcStatus('disconnected')}>
+              다시 시도
+            </Button>
+          </div>
+        );
+      case 'connected':
+        return (
+          <>
+            {remoteAudioTrack && <audio ref={remoteAudioRef} autoPlay />}
+            <Row className="h-100 flex-nowrap">
+              <Col className={`session-main-content ${showToolPanel ? 'col-md-9' : 'col-md-12'} p-0`}>
+                <div className="main-video-area">
+                  <div className="main-video-container">
+                    <video ref={remoteVideoRef} autoPlay playsInline className="remote-video" />
+                    {isRemoteVideoOff && (
+                      <div className="video-overlay-text">
+                        <i className="bi bi-camera-video-off-fill" style={{ fontSize: '3em' }}></i>
+                        <p>사용자 카메라 꺼짐</p>
+                      </div>
+                    )}
+                  </div>
 
-          {selectedSentence && (
-            <div className="selected-sentence-display text-center p-2 mb-3">
-              {selectedSentence}
-            </div>
-          )}
+                  <div className="pip-video-container">
+                    <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
+                    {isVideoOff && (
+                      <div className="text-center video-overlay-text">
+                        <i className="bi bi-camera-video-off-fill" style={{ fontSize: '1.5em' }}></i>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-          <div className="control-panel">
-            <div className="d-flex align-items-center justify-content-center h-100">
-                <Button variant={isMuted ? "danger" : "light"} className="control-button me-3" onClick={toggleMute}>
-                    <i className={`bi bi-mic${isMuted ? "-mute-fill" : "-fill"}`}></i>
-                    <span>음소거</span>
-                </Button>
-                <Button variant={isVideoOff ? "danger" : "light"} className="control-button me-3" onClick={toggleVideo}>
-                    <i className={`bi bi-camera-video${isVideoOff ? "-off-fill" : "-fill"}`}></i>
-                    <span>캠 끄기</span>
-                </Button>
-                <Button variant={activeToolTab === 'aac' ? "primary" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('aac')}>
-                    <i className="bi bi-chat-dots-fill"></i>
-                    <span>AAC</span>
-                </Button>
-                <Button variant={activeToolTab === 'filter' ? "success" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('filter')}>
-                    <i className="bi bi-stars"></i>
-                    <span>필터</span>
-                </Button>
-                {fairyTaleInfo && (
-                  <Button variant={activeToolTab === 'fairyTale' ? "info" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('fairyTale')}>
-                      <i className="bi bi-book-fill"></i>
-                      <span>동화</span>
-                  </Button>
+                {selectedSentence && (
+                  <div className="selected-sentence-display text-center p-2 mb-3">
+                    {selectedSentence}
+                  </div>
                 )}
-                <Button variant={activeToolTab === 'chat' ? "warning" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('chat')}>
-                    <i className="bi bi-chat-right-text-fill"></i>
-                    <span>채팅</span>
-                </Button>
-                <Button variant="danger" className="control-button ms-auto" onClick={endSession}>
-                    <i className="bi bi-x-circle-fill" style={{ fontSize: '1.5em' }}></i>
-                    <span>수업 종료</span>
-                </Button>
-            </div>
-          </div>
-        </Col>
 
-        {showToolPanel && (
-          <Col md={3} className="tool-panel p-0">
-            <Card className="h-100 shadow-sm">
-              <Card.Header className="d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">{activeToolTab === 'aac' ? 'AAC 도구' : activeToolTab === 'filter' ? '필터 도구' : activeToolTab === 'chat' ? '채팅' : '동화 도구'}</h5>
-                <Button variant="light" size="sm" onClick={() => setShowToolPanel(false)}>&times;</Button>
-              </Card.Header>
-              <Card.Body className="p-2">
-                <ListGroup variant="flush">
-                  {activeToolTab === 'aac' && ( <Alert variant="info" className="text-center m-2">AAC 도구 기능 구현 예정</Alert> )}
-                  {activeToolTab === 'filter' && ( <Alert variant="info" className="text-center m-2">필터 도구 기능 구현 예정</Alert> )}
-                  {activeToolTab === 'chat' && ( <Alert variant="warning" className="text-center m-2">채팅 기능 구현 예정</Alert> )}
-                  {activeToolTab === 'fairyTale' && fairyTaleInfo && (
-                    <div className="p-2">
-                      <h6 className="text-center mb-3">{fairyTaleInfo.title} (페이지 {currentFairyTalePage}/{fairyTaleInfo.endPage})</h6>
-                      <ListGroup className="mb-3" style={{maxHeight: '400px', overflowY: 'auto'}}>
-                        {fairyTaleContent[currentFairyTalePage] ? (
-                          fairyTaleContent[currentFairyTalePage].map((sentence, index) => (
-                            <ListGroup.Item
-                              key={index}
-                              action
-                              onClick={() => setSelectedSentence(prev => prev === sentence ? '' : sentence)}
-                              active={selectedSentence === sentence}
-                              className="fairy-tale-sentence"
-                            >
-                              {sentence}
-                            </ListGroup.Item>
-                          ))
-                        ) : (
-                          <ListGroup.Item>페이지를 불러오는 중...</ListGroup.Item>
+                <div className="control-panel">
+                  <div className="d-flex align-items-center justify-content-center h-100">
+                      <Button variant={isMuted ? "danger" : "light"} className="control-button me-3" onClick={toggleMute}>
+                          <i className={`bi bi-mic${isMuted ? "-mute-fill" : "-fill"}`}></i>
+                          <span>음소거</span>
+                      </Button>
+                      <Button variant={isVideoOff ? "danger" : "light"} className="control-button me-3" onClick={toggleVideo}>
+                          <i className={`bi bi-camera-video${isVideoOff ? "-off-fill" : "-fill"}`}></i>
+                          <span>캠 끄기</span>
+                      </Button>
+                      <Button variant={activeToolTab === 'aac' ? "primary" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('aac')}>
+                          <i className="bi bi-chat-dots-fill"></i>
+                          <span>AAC</span>
+                      </Button>
+                      <Button variant={activeToolTab === 'filter' ? "success" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('filter')}>
+                          <i className="bi bi-stars"></i>
+                          <span>필터</span>
+                      </Button>
+                      {fairyTaleInfo && (
+                        <Button variant={activeToolTab === 'fairyTale' ? "info" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('fairyTale')}>
+                            <i className="bi bi-book-fill"></i>
+                            <span>동화</span>
+                        </Button>
+                      )}
+                      <Button variant={activeToolTab === 'chat' ? "warning" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('chat')}>
+                          <i className="bi bi-chat-right-text-fill"></i>
+                          <span>채팅</span>
+                      </Button>
+                      <Button variant="danger" className="control-button ms-auto" onClick={endSession}>
+                          <i className="bi bi-x-circle-fill" style={{ fontSize: '1.5em' }}></i>
+                          <span>수업 종료</span>
+                      </Button>
+                  </div>
+                </div>
+              </Col>
+
+              {showToolPanel && (
+                <Col md={3} className="tool-panel p-0">
+                  <Card className="h-100 shadow-sm">
+                    <Card.Header className="d-flex justify-content-between align-items-center">
+                      <h5 className="mb-0">{activeToolTab === 'aac' ? 'AAC 도구' : activeToolTab === 'filter' ? '필터 도구' : activeToolTab === 'chat' ? '채팅' : '동화 도구'}</h5>
+                      <Button variant="light" size="sm" onClick={() => setShowToolPanel(false)}>&times;</Button>
+                    </Card.Header>
+                    <Card.Body className="p-2">
+                      <ListGroup variant="flush">
+                        {activeToolTab === 'aac' && ( <Alert variant="info" className="text-center m-2">AAC 도구 기능 구현 예정</Alert> )}
+                        {activeToolTab === 'filter' && ( <Alert variant="info" className="text-center m-2">필터 도구 기능 구현 예정</Alert> )}
+                        {activeToolTab === 'chat' && ( <Alert variant="warning" className="text-center m-2">채팅 기능 구현 예정</Alert> )}
+                        {activeToolTab === 'fairyTale' && fairyTaleInfo && (
+                          <div className="p-2">
+                            <h6 className="text-center mb-3">{fairyTaleInfo.title} (페이지 {currentFairyTalePage}/{fairyTaleInfo.endPage})</h6>
+                            <ListGroup className="mb-3" style={{maxHeight: '400px', overflowY: 'auto'}}>
+                              {fairyTaleContent[currentFairyTalePage] ? (
+                                fairyTaleContent[currentFairyTalePage].map((sentence, index) => (
+                                  <ListGroup.Item
+                                    key={index}
+                                    action
+                                    onClick={() => setSelectedSentence(prev => prev === sentence ? '' : sentence)}
+                                    active={selectedSentence === sentence}
+                                    className="fairy-tale-sentence"
+                                  >
+                                    {sentence}
+                                  </ListGroup.Item>
+                                ))
+                              ) : (
+                                <ListGroup.Item>페이지를 불러오는 중...</ListGroup.Item>
+                              )}
+                            </ListGroup>
+                            <div className="d-flex justify-content-between">
+                              <Button variant="outline-secondary" onClick={() => handlePageChange(currentFairyTalePage - 1)} disabled={currentFairyTalePage <= fairyTaleInfo.startPage}>
+                                이전 페이지
+                              </Button>
+                              <Button variant="outline-secondary" onClick={() => handlePageChange(currentFairyTalePage + 1)} disabled={currentFairyTalePage >= fairyTaleInfo.endPage}>
+                                다음 페이지
+                              </Button>
+                            </div>
+                            {selectedSentence && (
+                              <div className="mt-3">
+                                <Alert variant="success" className="text-center">
+                                  선택된 문장: <strong>{selectedSentence}</strong>
+                                </Alert>
+                                <div className="d-grid">
+                                  <Button variant="primary" onClick={sendSentence}>
+                                    <i className="bi bi-send-fill me-2"></i>선택한 문장 전송
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </ListGroup>
-                      <div className="d-flex justify-content-between">
-                        <Button variant="outline-secondary" onClick={() => handlePageChange(currentFairyTalePage - 1)} disabled={currentFairyTalePage <= fairyTaleInfo.startPage}>
-                          이전 페이지
-                        </Button>
-                        <Button variant="outline-secondary" onClick={() => handlePageChange(currentFairyTalePage + 1)} disabled={currentFairyTalePage >= fairyTaleInfo.endPage}>
-                          다음 페이지
-                        </Button>
-                      </div>
-                      {selectedSentence && (
-                        <div className="mt-3">
-                          <Alert variant="success" className="text-center">
-                            선택된 문장: <strong>{selectedSentence}</strong>
-                          </Alert>
-                          <div className="d-grid">
-                            <Button variant="primary" onClick={sendSentence}>
-                              <i className="bi bi-send-fill me-2"></i>선택한 문장 전송
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </ListGroup>
-              </Card.Body>
-            </Card>
-          </Col>
-        )}
-      </Row>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              )}
+            </Row>
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Container fluid className="session-room-container">
+      {renderContent()}
     </Container>
   );
 }
