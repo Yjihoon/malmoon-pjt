@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import './HomePage.css'; // HomePage 전용 CSS 파일 생성
+import './HomePage.css';
 
-// GomMoon의 Home.jsx에서 사용된 이미지들을 위한 플레이스홀더 임포트
-// 이 이미지 파일들은 수동으로 'frontend/src/logoimage' 폴더에 복사해야 합니다.
 import penguin from '../logoimage/penguin.png';
 import bear from '../logoimage/bear.png';
 import duck from '../logoimage/duck.png';
@@ -10,16 +8,14 @@ import wolf from '../logoimage/wolf.png';
 import puppy from '../logoimage/puppy.png';
 import parrot from '../logoimage/parrot.png';
 
-// 슬라이더 이미지들을 위한 플레이스홀더 임포트
-// 이 이미지 파일들도 수동으로 'frontend/src/logoimage' 폴더에 복사해야 합니다.
 import slider1 from '../logoimage/slider1.png';
 import slider2 from '../logoimage/slider2.png';
 import slider3 from '../logoimage/slider3.png';
 
+import logo from '../logoimage/logo.png';
 
-// ImageSlider 컴포넌트의 디자인만 반영한 단순화된 버전
 const ImageSlider = () => {
-  const images = [slider1, slider2, slider3]; // 실제 이미지 경로로 변경 필요
+  const images = [slider1, slider2, slider3];
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const nextSlide = () => {
@@ -30,28 +26,37 @@ const ImageSlider = () => {
     setCurrentSlide((prev) => (prev === 0 ? images.length - 1 : prev - 1));
   };
 
-  // 자동 슬라이드 (선택 사항)
   useEffect(() => {
-    const slideInterval = setInterval(nextSlide, 5000); // 5초마다 자동 슬라이드
+    const slideInterval = setInterval(nextSlide, 5000);
     return () => clearInterval(slideInterval);
   }, []);
 
   return (
     <div className="slider-wrapper">
-      <button className="arrow left" onClick={prevSlide}>&lt;</button>
       <div className="slider-frame">
         <div className="slider-track" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
           {images.map((src, i) => (
             <img key={i} src={src} alt={`slide-${i}`} className="slide-image" />
           ))}
         </div>
+
+        <button className="arrow left" onClick={prevSlide}>&lt;</button>
+        <button className="arrow right" onClick={nextSlide}>&gt;</button>
       </div>
-      <button className="arrow right" onClick={nextSlide}>&gt;</button>
+
+      <div className="slider-indicators">
+        {images.map((_, i) => (
+          <span
+            key={i}
+            className={`indicator ${i === currentSlide ? 'active' : ''}`}
+            onClick={() => setCurrentSlide(i)}
+          ></span>
+        ))}
+      </div>
     </div>
   );
 };
 
-// CharacterCard 컴포넌트의 디자인만 반영한 단순화된 버전
 const CharacterCard = ({ name, image, desc }) => {
   return (
     <div className="character-card card-base">
@@ -62,11 +67,22 @@ const CharacterCard = ({ name, image, desc }) => {
   );
 };
 
-
 function HomePage() {
   return (
     <div className="home-page main-container">
-      <h1>언어 치료 서비스</h1>
+      <div className="logo-header">
+        <img src={logo} alt="로고" className="main-logo" />
+      </div>
+
+      <div className="homepage-subtitle">
+        <p>
+          온라인 의사소통 클리닉 <span className="highlight-word">
+            <span className="red-text">말</span><span className="blue-text">문</span>
+          </span>을 통해<br />
+          언어치료사와 1:1 맞춤수업을 시작해보세요.
+        </p>
+      </div>
+
       <ImageSlider />
 
       <section className="about-section">
