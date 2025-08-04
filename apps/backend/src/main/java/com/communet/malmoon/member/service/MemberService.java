@@ -116,8 +116,17 @@ public class MemberService {
 				.therapistId(member.getMemberId())
 				.careerYears(therapistJoinReq.getCareerYears())
 				.fileId(fileUploadRes.getFileId())
-				.careers(therapistJoinReq.getCareers())
 				.build();
+
+		for (CareerReq careerDto : therapistJoinReq.getCareers()) {
+			Career career = Career.builder()
+					.company(careerDto.getCompany())
+					.position(careerDto.getPosition())
+					.startDate(careerDto.getStartDate())
+					.endDate(careerDto.getEndDate())
+					.build();
+			therapist.addCareer(career);
+		}
 
 		therapistRepository.save(therapist);
 	}
@@ -238,16 +247,20 @@ public class MemberService {
 				.orElseThrow(() -> new IllegalArgumentException("일반 회원은 경력을 수정할 수 없습니다."));
 
 			careerRepository.deleteByTherapist_TherapistId(member.getMemberId());
-			List<Career> careers = new ArrayList<>();
+
+			therapist.getCareers().clear();
+
 			for (CareerReq careerReq : memberMeChangeReq.getCareers()) {
-				careers.add(Career.builder()
+				Career career = Career.builder()
 						.company(careerReq.getCompany())
 						.position(careerReq.getPosition())
 						.startDate(careerReq.getStartDate())
 						.endDate(careerReq.getEndDate())
-						.build());
+						.build();
+				therapist.addCareer(career);
 			}
-			therapist.setCareers(careers);
+
+			therapistRepository.save(therapist);
 		}
 	}
 
