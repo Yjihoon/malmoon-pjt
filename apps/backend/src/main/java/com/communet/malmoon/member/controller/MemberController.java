@@ -1,5 +1,8 @@
 package com.communet.malmoon.member.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,13 +45,17 @@ public class MemberController {
 
 	/**
 	 * 치료사 회원 가입 API
-	 * @param therapistJoinReq 치료사 가입 요청 DTO
+	 * @param therapistJoinReqJson 치료사 가입 요청 DTO
 	 * @return 201 CREATED
 	 */
 	@PostMapping("/therapists")
 	public ResponseEntity<?> joinTherapist(
-			@Valid TherapistJoinReq therapistJoinReq,
-			@RequestPart(value = "qualification") MultipartFile qualification) {
+			@RequestPart("therapistJoinReq") String therapistJoinReqJson,
+			@RequestPart(value = "qualification") MultipartFile qualification) throws JsonProcessingException {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.registerModule(new JavaTimeModule());
+		TherapistJoinReq therapistJoinReq = objectMapper.readValue(therapistJoinReqJson, TherapistJoinReq.class);
+
 		memberService.joinTherapist(therapistJoinReq, qualification);
 		return ResponseEntity.status(HttpStatus.CREATED).build();
 	}

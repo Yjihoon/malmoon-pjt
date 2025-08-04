@@ -3,6 +3,7 @@ package com.communet.malmoon.member.domain;
 import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -37,10 +38,12 @@ public class Career {
 	@Column(name = "position", columnDefinition = "varchar(30)",  nullable = false)
 	private String position;
 
-	@Column(name = "startDate", columnDefinition = "date",  nullable = false)
+	@Column(name = "start_date", columnDefinition = "date",  nullable = false)
+	@JsonProperty("start_date")
 	private LocalDate startDate;
 
 	@Column(name = "end_date", columnDefinition = "date")
+	@JsonProperty("end_date")
 	private LocalDate endDate;
 
 	@ManyToOne(fetch = FetchType.LAZY)
