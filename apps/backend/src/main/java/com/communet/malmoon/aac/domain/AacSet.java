@@ -10,6 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -20,7 +22,9 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "aac_set")
 @Getter
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
 public class AacSet {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,6 +32,9 @@ public class AacSet {
 
 	@Column(nullable = false, length = 100)
 	private String name;
+
+	@Column(name = "description", nullable = false)
+	private String description;
 
 	@Column(name = "therapist_id", nullable = false)
 	private Long therapistId;
@@ -38,5 +45,10 @@ public class AacSet {
 	@PrePersist
 	protected void onCreate() {
 		this.createdAt = LocalDateTime.now();
+	}
+
+	public void update(String name, String description) {
+		this.name = name;
+		this.description = description;
 	}
 }

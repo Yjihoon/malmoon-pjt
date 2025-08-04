@@ -58,4 +58,8 @@ public class Aac {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status", nullable = false)
 	private AacStatus status;
+
+	public void changeStatusDeleted() {
+		this.status = AacStatus.DELETED;
+	}
 }

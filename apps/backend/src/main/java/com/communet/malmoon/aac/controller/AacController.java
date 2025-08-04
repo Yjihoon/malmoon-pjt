@@ -4,6 +4,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.communet.malmoon.aac.dto.request.AacConfirmReq;
 import com.communet.malmoon.aac.dto.request.AacCreateReq;
+import com.communet.malmoon.aac.dto.request.AacCustomReq;
 import com.communet.malmoon.aac.dto.request.AacGetReq;
 import com.communet.malmoon.aac.dto.response.AacCreateRes;
 import com.communet.malmoon.aac.dto.response.AacGetRes;
@@ -53,6 +56,21 @@ public class AacController {
 	}
 
 	/**
+	 * 사용자가 직접 AAC를 등록하는 API입니다.
+	 * 이미지와 함께 상황, 감정, 동작 등의 메타데이터를 업로드합니다.
+	 *
+	 * @param request 사용자 정의 AAC 등록 요청 (multipart/form-data)
+	 * @param member  현재 로그인한 사용자 정보
+	 * @return 등록 성공 여부
+	 */
+	@PostMapping("/custom")
+	@Operation(summary = "사용자 정의 AAC 등록", description = "사용자가 직접 AAC 이모지를 생성하여 등록합니다. 이미지와 메타 정보를 포함합니다.")
+	public ResponseEntity<Void> uploadCustomAac(@ModelAttribute AacCustomReq request, @CurrentMember Member member) {
+		aacService.uploadCustomAac(request, member.getMemberId());
+		return ResponseEntity.ok().build();
+	}
+
+	/**
 	 * AAC 이미지 생성 (FastAPI 연동)
 	 *
 	 * @param request 상황/감정/동작 등 생성 요청 데이터
@@ -66,6 +84,16 @@ public class AacController {
 		return ResponseEntity.ok(response);
 	}
 
+	/**
+	 * FastAPI에서 생성된 임시 AAC 이미지를 확정하고 S3에 저장한 후, DB에 AAC 정보를 등록합니다.
+	 *
+	 * @param request 확정할 AAC 정보 요청 객체 (이름, 설명, 감정, 상황, 동작, 이유 등 포함)
+	 * @param member 현재 로그인한 사용자 정보 (커스텀 인증 객체에서 주입됨)
+	 * @return 저장 성공 시 HTTP 200 OK 응답 반환
+	 *
+	 * @see com.communet.malmoon.aac.dto.request.AacConfirmReq
+	 * @see com.communet.malmoon.aac.dto.response.AacCreateRes
+	 */
 	@PostMapping("/confirm")
 	@Operation(summary = "AAC 생성 확정", description = "FastAPI에서 생성된 임시 이미지를 S3에 저장하고 AAC로 확정합니다.")
 	public ResponseEntity<AacCreateRes> confirmAacImage(
@@ -74,6 +102,36 @@ public class AacController {
 
 		aacService.confirmAndSaveAac(request, member.getMemberId());
 
+		return ResponseEntity.ok().build();
+	}
+
+	/**
+	 * AAC 상세 정보를 조회합니다.
+	 *
+	 * @param aacId 조회할 AAC ID
+	 * @return AAC 상세 응답
+	 */
+	@GetMapping("/{aacId}")
+	@Operation(summary = "AAC 상세 조회", description = "특정 AAC 이모지의 상세 정보를 조회합니다.")
+	public ResponseEntity<AacGetRes> getAacDetail(@PathVariable("aacId") Long aacId) {
+		AacGetRes result = aacService.getAacDetail(aacId);
+		return ResponseEntity.ok(result);
+	}
+
+	/**
+	 * 사용자가 생성한 AAC 중 상태가 PRIVATE인 항목만 삭제할 수 있습니다.
+	 *
+	 * @param aacId 삭제할 AAC ID
+	 * @param member 현재 로그인한 사용자 정보
+	 * @return 삭제 성공 시 HTTP 200 OK
+	 */
+	@PatchMapping("/custom/{aacId}")
+	@Operation(summary = "사용자 정의 AAC 삭제", description = "사용자가 생성하고 상태가 PRIVATE인 AAC만 삭제할 수 있습니다.")
+	public ResponseEntity<Void> softDeleteCustomAac(
+		@PathVariable("aacId") Long aacId,
+		@CurrentMember Member member
+	) {
+		aacService.softDeleteCustomAac(aacId, member.getMemberId());
 		return ResponseEntity.ok().build();
 	}
 }

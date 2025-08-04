@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import com.communet.malmoon.aac.domain.Aac;
 import com.communet.malmoon.aac.dto.request.AacConfirmReq;
 import com.communet.malmoon.aac.dto.request.AacCreateReq;
+import com.communet.malmoon.aac.dto.request.AacCustomReq;
 import com.communet.malmoon.aac.dto.request.AacGetReq;
 import com.communet.malmoon.aac.dto.response.AacGetRes;
 import com.communet.malmoon.aac.exception.AacErrorCode;
@@ -70,6 +71,42 @@ public class AacService {
 	}
 
 	/**
+	 * 사용자가 직접 AAC 이모지를 업로드하여 등록합니다.
+	 * 전달받은 이미지 파일을 S3에 업로드하고, 관련 메타데이터(상황, 감정, 동작 등)를 포함한 AAC 엔티티를 저장합니다.
+	 *
+	 * @param request 사용자 정의 AAC 등록 요청 데이터 (이름, 설명, 상황, 감정, 동작, 이유, 이미지 등)
+	 * @param memberId 현재 로그인한 사용자의 ID
+	 */
+	@Transactional
+	public void uploadCustomAac(AacCustomReq request, Long memberId) {
+		try {
+			if (request.getFile() == null || request.getFile().isEmpty()) {
+				throw new AacException(AacErrorCode.FILE_NOT_FOUND);
+			}
+			String directory = String.valueOf(FileType.AAC);
+			FileUploadRes fileUploadRes = fileService.uploadFile(directory, request.getFile());
+
+			Aac aac = Aac.builder()
+				.name(request.getName())
+				.situation(request.getSituation())
+				.action(request.getAction())
+				.emotion(request.getEmotion())
+				.description(request.getDescription())
+				.fileId(fileUploadRes.getFileId())
+				.status(request.getStatus())
+				.build();
+
+			aacRepository.save(aac);
+		} catch (AacException e) {
+			log.warn("사용자 정의 AAC 등록 실패 - 사용자 요청 오류: {}", e.getMessage());
+			throw e;
+		} catch (Exception e) {
+			log.error("사용자 정의 AAC 등록 중 서버 오류 발생", e);
+			throw new AacException(AacErrorCode.UNEXPECTED_SERVER_ERROR);
+		}
+	}
+
+	/**
 	 * FastAPI를 통해 이미지 프리뷰 생성 요청을 수행합니다.
 	 *
 	 * @param request AAC 생성 요청 데이터
@@ -79,6 +116,13 @@ public class AacService {
 		return fastApiClient.requestPreviewImage(request);
 	}
 
+	/**
+	 * FastAPI에서 생성된 임시 이미지를 확정 처리하여 S3에 업로드하고, AAC 정보를 DB에 저장합니다.
+	 *
+	 * @param request 확정할 AAC 정보 요청 객체 (이름, 설명, 상황, 감정, 동작, 이미지 경로 등 포함)
+	 * @param memberId 현재 로그인한 사용자 ID (재활사 기준)
+	 * @throws AacException 예외 발생 시 커스텀 예외 반환
+	 */
 	@Transactional
 	public void confirmAndSaveAac(AacConfirmReq request, Long memberId) {
 		// 1. 파일 경로 재구성
@@ -126,6 +170,44 @@ public class AacService {
 		} catch (Exception e) {
 			log.error("🧩 AAC 저장 실패", e);
 			throw new AacException(AacErrorCode.AAC_SAVE_FAILED);
+		}
+	}
+
+	@Transactional
+	public AacGetRes getAacDetail(Long aacId) {
+		Aac aac = aacRepository.findById(aacId)
+			.orElseThrow(() -> new AacException(AacErrorCode.NOT_FOUND));
+
+		String ImageUrl = fileService.getFileUrl(aac.getFileId());
+
+		return AacGetRes.from(aac, ImageUrl);
+	}
+
+	/**
+	 * 사용자가 생성한 PRIVATE 상태의 AAC를 삭제합니다.
+	 *
+	 * @param aacId AAC ID
+	 * @param memberId 로그인한 사용자 ID
+	 */
+	@Transactional
+	public void softDeleteCustomAac(Long aacId, Long memberId) {
+		Aac aac = aacRepository.findById(aacId)
+			.orElseThrow(() -> new AacException(AacErrorCode.NOT_FOUND));
+
+		if (!aac.getTherapistId().equals(memberId)) {
+			throw new AacException(AacErrorCode.UNAUTHORIZED_ACCESS);
+		}
+
+		if (!aac.getStatus().isPrivate()) {
+			throw new AacException(AacErrorCode.INVALID_STATUS);
+		}
+
+		try {
+			aac.changeStatusDeleted();
+			aacRepository.save(aac);
+		} catch (Exception e) {
+			log.error("AAC 삭제 실패 - aacId: {}", aacId, e);
+			throw new AacException(AacErrorCode.AAC_DELETE_FAILED);
 		}
 	}
 }
