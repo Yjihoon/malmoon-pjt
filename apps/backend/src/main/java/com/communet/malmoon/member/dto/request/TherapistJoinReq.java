@@ -20,5 +20,5 @@ import org.springframework.web.multipart.MultipartFile;
 public class TherapistJoinReq extends MemberJoinReq {
 	@NotNull(message = "경력 입력은 필수입니다.")
 	private Integer careerYears;
-	private List<Career> careers = new ArrayList<>();
+	private List<CareerReq> careers = new ArrayList<>();
 }

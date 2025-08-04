@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDate;
 
+import com.communet.malmoon.member.dto.response.MemberLoginRes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,7 +63,8 @@ class AuthServiceTest {
 		req.setPassword("correctPassword");
 
 		// when
-		String token = authService.login(req);
+		MemberLoginRes memberLoginRes = authService.login(req);
+		String token = memberLoginRes.getAccessToken();
 
 		// then
 		assertNotNull(token);
