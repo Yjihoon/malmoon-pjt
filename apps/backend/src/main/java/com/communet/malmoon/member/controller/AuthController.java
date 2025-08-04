@@ -1,5 +1,6 @@
 package com.communet.malmoon.member.controller;
 
+import com.communet.malmoon.member.domain.Member;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,8 +28,8 @@ public class AuthController {
 	 * @return JWT access token을 담은 응답 객체
 	 */
 	@PostMapping("/login")
-	public ResponseEntity<?> login(@RequestBody MemberLoginReq memberLoginReq) {
-		String accessToken = authService.login(memberLoginReq);
-		return ResponseEntity.ok(new MemberLoginRes(accessToken));
+	public ResponseEntity<MemberLoginRes> login(@RequestBody MemberLoginReq memberLoginReq) {
+		MemberLoginRes memberLoginRes = authService.login(memberLoginReq);
+		return ResponseEntity.ok(memberLoginRes);
 	}
 }

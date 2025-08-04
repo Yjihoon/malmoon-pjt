@@ -1,5 +1,6 @@
 package com.communet.malmoon.member.service;
 
+import com.communet.malmoon.member.dto.response.MemberLoginRes;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,7 +30,7 @@ public class AuthService {
 	 * @throws UsernameNotFoundException 사용자가 없으면 발생
 	 * @throws BadCredentialsException 비밀번호가 틀리면 발생
 	 */
-	public String login(MemberLoginReq memberLoginReq) {
+	public MemberLoginRes login(MemberLoginReq memberLoginReq) {
 
 		Member member = memberRepository.getByEmail(memberLoginReq.getEmail())
 			.orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
@@ -38,6 +39,17 @@ public class AuthService {
 			throw new BadCredentialsException("비밀번호가 일치하지 않습니다.");
 		}
 
-		return JwtTokenUtil.getToken(member.getEmail(), member.getRole());
+        return MemberLoginRes.builder()
+                .accessToken(JwtTokenUtil.getToken(member.getEmail(), member.getRole()))
+                .memberId(member.getMemberId())
+                .email(member.getEmail())
+                .role(member.getRole())
+                .tel1(member.getTel1())
+                .tel2(member.getTel2())
+                .name(member.getName())
+                .nickname(member.getNickname())
+                .birthDate(member.getBirthDate())
+                .profile(member.getProfile())
+                .build();
 	}
 }
