@@ -4,7 +4,8 @@ public enum FileType {
 	AAC("aac"),
 	PROFILE("profile"),
 	RECORD("record"),
-	QUALIFICATION("qualification"),;
+	QUALIFICATION("qualification"),
+	FILTER("filter");
 
 	private final String directory;
 	public String getDirectory() {

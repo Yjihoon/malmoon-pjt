@@ -3,6 +3,7 @@ package com.communet.malmoon.member.domain;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.communet.malmoon.matching.domain.TreatmentTime;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,7 +27,11 @@ public class Therapist {
 	@Column(name = "file_id", columnDefinition = "bigint",  nullable = false)
 	private Long fileId;
 
-	@OneToMany(cascade = CascadeType.ALL)
+	@OneToMany(mappedBy = "therapist", cascade = CascadeType.ALL)
 	@Builder.Default
 	private List<Career> careers = new ArrayList<>();
+
+	@OneToMany(mappedBy = "therapist", cascade = CascadeType.ALL)
+	@Builder.Default
+	private List<TreatmentTime> treatmentTimes = new ArrayList<>();
 }
