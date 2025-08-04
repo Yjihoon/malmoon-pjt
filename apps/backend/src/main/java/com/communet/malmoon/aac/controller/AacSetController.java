@@ -80,7 +80,7 @@ public class AacSetController {
 	@GetMapping("/my/{aacSetId}")
 	@Operation(summary = "AAC 묶음 상세 조회", description = "묶음에 포함된 AAC 항목들을 순서대로 반환합니다.")
 	public ResponseEntity<List<AacSetDetailRes>> getAacItemsInSet(
-		@PathVariable Long aacSetId,
+		@PathVariable("aacSetId") Long aacSetId,
 		@CurrentMember Member member
 	) {
 		List<AacSetDetailRes> result = aacSetService.getAacInset(aacSetId, member.getMemberId());
@@ -99,7 +99,7 @@ public class AacSetController {
 	 */
 	@PatchMapping("/{aacSetId}")
 	@Operation(summary = "AAC 묶음 수정", description = "묶음 이름, 설명, 포함된 AAC 항목을 수정합니다.")
-	public ResponseEntity<Void> updateAacSet(@PathVariable Long aacSetId,
+	public ResponseEntity<Void> updateAacSet(@PathVariable("aacSetId") Long aacSetId,
 		@RequestBody AacSetUpdateReq request,
 		@CurrentMember Member member) {
 		aacSetService.updateAacSet(aacSetId, request, member.getMemberId());
@@ -117,7 +117,7 @@ public class AacSetController {
 	@DeleteMapping("/{aacSetId}")
 	@Operation(summary = "AAC 묶음 삭제", description = "AAC 묶음을 삭제합니다.")
 	public ResponseEntity<Void> deleteAacSet(
-		@PathVariable Long aacSetId,
+		@PathVariable("aacSetId") Long aacSetId,
 		@CurrentMember Member member
 	) {
 		aacSetService.deleteAacSet(aacSetId, member.getMemberId());

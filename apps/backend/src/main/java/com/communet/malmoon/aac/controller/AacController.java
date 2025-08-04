@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -112,9 +113,25 @@ public class AacController {
 	 */
 	@GetMapping("/{aacId}")
 	@Operation(summary = "AAC 상세 조회", description = "특정 AAC 이모지의 상세 정보를 조회합니다.")
-	public ResponseEntity<AacGetRes> getAacDetail(@PathVariable Long aacId) {
+	public ResponseEntity<AacGetRes> getAacDetail(@PathVariable("aacId") Long aacId) {
 		AacGetRes result = aacService.getAacDetail(aacId);
 		return ResponseEntity.ok(result);
 	}
 
+	/**
+	 * 사용자가 생성한 AAC 중 상태가 PRIVATE인 항목만 삭제할 수 있습니다.
+	 *
+	 * @param aacId 삭제할 AAC ID
+	 * @param member 현재 로그인한 사용자 정보
+	 * @return 삭제 성공 시 HTTP 200 OK
+	 */
+	@PatchMapping("/custom/{aacId}")
+	@Operation(summary = "사용자 정의 AAC 삭제", description = "사용자가 생성하고 상태가 PRIVATE인 AAC만 삭제할 수 있습니다.")
+	public ResponseEntity<Void> softDeleteCustomAac(
+		@PathVariable("aacId") Long aacId,
+		@CurrentMember Member member
+	) {
+		aacService.softDeleteCustomAac(aacId, member.getMemberId());
+		return ResponseEntity.ok().build();
+	}
 }

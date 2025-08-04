@@ -4,5 +4,9 @@ public enum AacStatus {
 	DEFAULT,
 	PUBLIC,
 	PRIVATE,
-	DELETED
+	DELETED;
+
+	public boolean isPrivate() {
+		return this == PRIVATE;
+	}
 }

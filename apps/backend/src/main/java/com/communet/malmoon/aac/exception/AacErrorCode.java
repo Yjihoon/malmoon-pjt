@@ -20,6 +20,10 @@ public enum AacErrorCode {
 	FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일 정보를 찾을 수 없습니다."),
 	UNEXPECTED_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "예상치 못한 서버 오류가 발생했습니다."),
 
+	// === 삭제 권한 및 상태 관련 ===
+	INVALID_STATUS(HttpStatus.BAD_REQUEST, "삭제 가능한 상태가 아닙니다."),
+	AAC_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AAC 삭제 처리 중 오류가 발생했습니다."),
+
 	// === FastAPI 연동 관련 ===
 	FASTAPI_CLIENT_ERROR(HttpStatus.BAD_REQUEST, "FastAPI 요청이 잘못되었습니다."),
 	FASTAPI_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "FastAPI 서버 오류가 발생했습니다."),

@@ -3,12 +3,18 @@ package com.communet.malmoon.aac.dto.request;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * AAC 묶음 생성 요청 DTO
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Schema(description = "AAC 묶음 생성 요청 DTO")
 public class AacSetCreateReq {
 

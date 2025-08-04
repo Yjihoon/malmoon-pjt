@@ -77,6 +77,7 @@ public class AacService {
 	 * @param request 사용자 정의 AAC 등록 요청 데이터 (이름, 설명, 상황, 감정, 동작, 이유, 이미지 등)
 	 * @param memberId 현재 로그인한 사용자의 ID
 	 */
+	@Transactional
 	public void uploadCustomAac(AacCustomReq request, Long memberId) {
 		try {
 			if (request.getFile() == null || request.getFile().isEmpty()) {
@@ -180,5 +181,33 @@ public class AacService {
 		String ImageUrl = fileService.getFileUrl(aac.getFileId());
 
 		return AacGetRes.from(aac, ImageUrl);
+	}
+
+	/**
+	 * 사용자가 생성한 PRIVATE 상태의 AAC를 삭제합니다.
+	 *
+	 * @param aacId AAC ID
+	 * @param memberId 로그인한 사용자 ID
+	 */
+	@Transactional
+	public void softDeleteCustomAac(Long aacId, Long memberId) {
+		Aac aac = aacRepository.findById(aacId)
+			.orElseThrow(() -> new AacException(AacErrorCode.NOT_FOUND));
+
+		if (!aac.getTherapistId().equals(memberId)) {
+			throw new AacException(AacErrorCode.UNAUTHORIZED_ACCESS);
+		}
+
+		if (!aac.getStatus().isPrivate()) {
+			throw new AacException(AacErrorCode.INVALID_STATUS);
+		}
+
+		try {
+			aac.changeStatusDeleted();
+			aacRepository.save(aac);
+		} catch (Exception e) {
+			log.error("AAC 삭제 실패 - aacId: {}", aacId, e);
+			throw new AacException(AacErrorCode.AAC_DELETE_FAILED);
+		}
 	}
 }
