@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Card, Button, Alert, Tabs, Tab, Spinner } from 'react-bootstrap';
-import { v4 as uuidv4 } from 'uuid';
 
 // --- 컴포넌트 Import ---
 import AacItemList from '../../../components/TherapistToolTap/AacItemList';
@@ -15,91 +14,97 @@ import ToolBundleModal from '../../../components/TherapistToolTap/ToolBundleModa
 // --- CSS Import ---
 import './TherapistToolsPage.css';
 
-// Mock authentication hook
-const useAuth = () => ({ user: { userType: 'therapist', id: 'therapist123' } });
-
 function TherapistToolsPage() {
-    const { user } = useAuth();
+    const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-
-    // --- 데이터 상태 ---
     const [aacItems, setAacItems] = useState([]);
     const [aacSets, setAacSets] = useState([]);
     const [filters, setFilters] = useState([]);
     const [toolBundles, setToolBundles] = useState([]);
-
-    // --- 모달 관리 상태 ---
     const [modalState, setModalState] = useState({ type: null, data: null });
 
-    // ========================================================================
-    // 💧 더미 데이터 생성 부분 (DUMMY DATA GENERATION)
-    // ========================================================================
     const loadMockData = () => {
-        setLoading(true);
         try {
-            if (user && user.userType === 'therapist') {
-                const situations = ['학교', '집', '공원', '병원'];
-                const actions = { '학교': ['공부하기', '밥먹기', '운동하기', '친구와 놀기'], '집': ['쉬기', '숙제하기', '간식먹기', 'TV보기'], '공원': ['산책하기', '자전거타기', '그네타기'], '병원': ['진료받기', '주사맞기', '기다리기'] };
-                const emotions = ['기쁨', '슬픔', '화남', '놀람', '평온'];
-                const dummyAacItems = Array.from({ length: 40 }, (_, i) => {
-                    const sit = situations[i % situations.length];
-                    const act = actions[sit][i % actions[sit].length];
-                    return { id: `item${i + 1}`, name: `${sit}에서 ${act}`, situation: sit, action: act, emotion: emotions[i % emotions.length], description: `${sit} 상황에서 ${act}를 표현하는 AAC 아이템입니다.`, file_id: `https://placehold.co/150x150?text=${encodeURIComponent(act)}`, therapist_id: 'therapist123', created_at: new Date().toISOString(), status: 'public' };
-                });
-                setAacItems(dummyAacItems);
-
-                const dummyFilters = Array.from({ length: 8 }, (_, i) => ({ id: `filter${i + 1}`, therapist_id: 'therapist123', name: `꾸미기 필터 ${i + 1}`, created_at: new Date().toISOString(), file_id: `https://placehold.co/150x150?text=Filter${i + 1}` }));
-                setFilters(dummyFilters);
-
-                const dummyAacSets = [ { ACC_set_id: 'set1', name: '학교 생활 묶음', therapist_id: 'therapist123', created_at: new Date().toISOString(), description: '학교에서의 다양한 활동', aac_item_ids: ['item1', 'item2', 'item3', 'item5', 'item9'] }, { ACC_set_id: 'set2', name: '집에서 묶음', therapist_id: 'therapist123', created_at: new Date().toISOString(), description: '집에서의 일상', aac_item_ids: ['item6', 'item7', 'item10'] } ];
-                setAacSets(dummyAacSets);
-
-                const dummyToolBundles = [ { id: 'bundle1', filter_id: ['filter1'], AAC_set_id: ['set1'], created_at: new Date().toISOString(), name: '즐거운 학교 세트', description: '학교 묶음과 기본 필터 사용' }, { id: 'bundle2', filter_id: ['filter2', 'filter3'], AAC_set_id: ['set2'], created_at: new Date().toISOString(), name: '편안한 우리집 세트', description: '집 묶음과 여러 필터 사용' } ];
-                setToolBundles(dummyToolBundles);
-            } else { setError('치료사 계정으로만 접근 가능합니다.'); }
-        } catch (e) { setError('데이터 로딩 중 오류가 발생했습니다.'); } finally { setLoading(false); }
+            const situations = ['학교', '집', '공원', '병원'];
+            const actions = { '학교': ['공부하기', '밥먹기', '운동하기', '친구와 놀기'], '집': ['쉬기', '숙제하기', '간식먹기', 'TV보기'], '공원': ['산책하기', '자전거타기', '그네타기'], '병원': ['진료받기', '주사맞기', '기다리기'] };
+            const emotions = ['기쁨', '슬픔', '화남', '놀람', '평온'];
+            const dummyAacItems = Array.from({ length: 40 }, (_, i) => {
+                const sit = situations[i % situations.length];
+                const act = actions[sit][i % actions[sit].length];
+                return { id: `item${i + 1}`, name: `${sit}에서 ${act}`, situation: sit, action: act, emotion: emotions[i % emotions.length], description: `${sit} 상황에서 ${act}를 표현하는 AAC 아이템입니다.`, file_id: `https://placehold.co/150x150?text=${encodeURIComponent(act)}`, therapist_id: i % 4 === 0 ? 'anotherTherapist' : 'therapist123', created_at: new Date().toISOString(), status: i % 5 === 0 ? 'private' : 'default' };
+            });
+            setAacItems(dummyAacItems);
+            const dummyFilters = Array.from({ length: 8 }, (_, i) => ({ id: `filter${i + 1}`, therapist_id: 'therapist123', name: `꾸미기 필터 ${i + 1}`, created_at: new Date().toISOString(), file_id: `https://placehold.co/150x150?text=Filter${i + 1}` }));
+            setFilters(dummyFilters);
+            const dummyAacSets = [ { ACC_set_id: 'set1', name: '학교 생활 묶음', therapist_id: 'therapist123', created_at: new Date().toISOString(), description: '학교에서의 다양한 활동', aac_item_ids: ['item1', 'item2', 'item3', 'item5', 'item9'] }, { ACC_set_id: 'set2', name: '집에서 묶음', therapist_id: 'therapist123', created_at: new Date().toISOString(), description: '집에서의 일상', aac_item_ids: ['item6', 'item7', 'item10'] } ];
+            setAacSets(dummyAacSets);
+            const dummyToolBundles = [ { id: 'bundle1', filter_id: ['filter1'], AAC_set_id: ['set1'], created_at: new Date().toISOString(), name: '즐거운 학교 세트', description: '학교 묶음과 기본 필터 사용' }, { id: 'bundle2', filter_id: ['filter2', 'filter3'], AAC_set_id: ['set2'], created_at: new Date().toISOString(), name: '편안한 우리집 세트', description: '집 묶음과 여러 필터 사용' } ];
+            setToolBundles(dummyToolBundles);
+        } catch (e) { setError('더미 데이터 로딩 중 오류가 발생했습니다.'); } 
     };
-    // ========================================================================
-    // 💧 더미 데이터 생성 부분 끝
-    // ========================================================================
 
     useEffect(() => {
-        loadMockData();
+        const initializePage = async () => {
+            setLoading(true);
+            try {
+                // --- [수정] Local Storage에서 토큰을 올바르게 가져오는 로직 ---
+                // 1. 'currentUser' 키로 저장된 JSON 문자열을 가져옵니다.
+                const storedUserString = localStorage.getItem('currentUser');
+                
+                // 2. JSON 문자열을 객체로 변환합니다.
+                const storedUser = storedUserString ? JSON.parse(storedUserString) : null;
+                
+                // 3. 객체에서 'accessToken'을 추출합니다.
+                const token = storedUser?.accessToken;
+                
+                // 4. 추출한 토큰으로 API를 요청합니다.
+                const response = await fetch('/api/v1/members/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    setCurrentUser(userData);
+                } else {
+                    // API 호출에 실패했더라도, 기존 로직대로 목업 유저 정보를 설정합니다.
+                    console.error("내 정보 조회에 실패했습니다. 테스트를 위해 목업 유저 정보를 사용합니다.");
+                    setCurrentUser({ therapist_id: 'therapist123', role: 'ROLE_THERAPIST' });
+                }
+
+                loadMockData();
+
+            } catch (e) {
+                console.error("데이터 로딩 중 오류 발생:", e);
+                setError('데이터 로딩 중 오류가 발생했습니다.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initializePage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const openModal = (type, data = null) => setModalState({ type, data });
     const closeModal = () => setModalState({ type: null, data: null });
 
-    // --- [수정] AI 이미지 생성을 위한 핸들러 ---
     const handleGenerateAacImage = async (promptData) => {
         console.log("AI 이미지 생성을 요청합니다:", promptData);
-        
-        // [수정] AI 서버의 주소를 여기에 정의합니다.
         const AI_SERVER_URL = 'http://localhost:8000';
-
         try {
-            // 1. Spring 백엔드에 이미지 생성을 요청합니다.
             const response = await fetch('/api/v1/aacs/generate', { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(promptData),
             });
-
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'AI 이미지 생성 요청에 실패했습니다.' }));
                 throw new Error(errorData.message);
             }
-
             const result = await response.json();
-            
-            // 2. [핵심 수정] 백엔드로부터 받은 부분 경로(result.previewUrl) 앞에
-            //    AI 서버 주소를 붙여 완전한 URL을 만듭니다.
             const fullImageUrl = AI_SERVER_URL + result.previewUrl;
             console.log("생성된 전체 이미지 URL:", fullImageUrl);
-            
-            // 3. 완전한 URL을 Modal 컴포넌트로 반환합니다.
             return fullImageUrl; 
         } catch (error) {
             console.error("AI image generation failed:", error);
@@ -107,7 +112,6 @@ function TherapistToolsPage() {
         }
     };
 
-    // --- CRUD 핸들러 ---
     const handleSaveAacItem = (itemToSave) => { console.log("Saving AAC Item:", itemToSave); closeModal(); };
     const handleDeleteAacItem = (itemId) => { if (window.confirm('정말로 이 AAC 아이템을 삭제하시겠습니까?')) console.log("Deleting AAC Item:", itemId); };
     const handleSaveAacSet = (set) => { console.log("Saving AAC Set:", set); closeModal(); };
@@ -130,7 +134,12 @@ function TherapistToolsPage() {
                             <Card.Title className="mb-0">AAC 아이템 목록</Card.Title>
                             <Button variant="primary" onClick={() => openModal('AAC_item')}>새 AAC 아이템 추가</Button>
                         </div> <hr />
-                        <AacItemList aacItems={aacItems} onEdit={(item) => openModal('AAC_item', item)} onDelete={handleDeleteAacItem} />
+                        <AacItemList 
+                            aacItems={aacItems} 
+                            onEdit={(item) => openModal('AAC_item', item)} 
+                            onDelete={handleDeleteAacItem}
+                            currentUser={currentUser} 
+                        />
                     </Card.Body></Card>
                 </Tab>
                 <Tab eventKey="AAC_set" title="AAC 묶음 관리">

@@ -11,12 +11,13 @@ import {
   ListGroup,
 } from "react-bootstrap";
 
-const AacItemList = ({ aacItems, onEdit, onDelete }) => {
+// --- [수정] props에 currentUser 추가 ---
+const AacItemList = ({ aacItems, onEdit, onDelete, currentUser }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSituation, setSelectedSituation] = useState(null);
   const [selectedAction, setSelectedAction] = useState(null);
-  const [activeKey, setActiveKey] = useState(null); //메뉴판 닫히고 시작
+  const [activeKey, setActiveKey] = useState(null);
   const itemsPerPage = 12;
 
   const categories = useMemo(() => {
@@ -38,15 +39,14 @@ const AacItemList = ({ aacItems, onEdit, onDelete }) => {
   const filteredItems = useMemo(() => {
     if (!aacItems) return [];
 
-    // 공개/비공개 필터 
+    // 공개/비공개 필터
     const checkVisibility = (item) => {
-      // 공개 아이템이거나, 비공개지만 내 아이템인 경우
+      // ?. (Optional Chaining)은 currentUser가 아직 로딩 중(null)일 때 오류를 방지합니다.
       return (
-        item.status !== "private" 
-        // ||
-        // (item.status === "private" &&
-        //   item.therapist_id === Member.therapist_id)
-      ); 
+        item.status !== "private" ||
+        (item.status === "private" &&
+          item.therapist_id === currentUser?.therapist_id)
+      );
     };
 
     // 전체 보기 상태
@@ -75,7 +75,8 @@ const AacItemList = ({ aacItems, onEdit, onDelete }) => {
         checkVisibility(item)
       );
     });
-  }, [aacItems, searchTerm, selectedSituation, selectedAction]); 
+    // --- [수정] useMemo 의존성 배열에 currentUser 추가 ---
+  }, [aacItems, searchTerm, selectedSituation, selectedAction, currentUser]);
 
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
   const currentItems = filteredItems.slice(
@@ -175,23 +176,25 @@ const AacItemList = ({ aacItems, onEdit, onDelete }) => {
                       {item.name}
                     </Card.Title>
                     <div className="mt-auto text-center">
-                      <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        className="me-1"
-                        onClick={() => onEdit(item)}
-                      >
-                        편집
-                      </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        disabled={item.status === 'default'}
-                        onClick={() => onDelete(item.id)
-                        }
-                      >
-                        삭제
-                      </Button>
+                      {item.status !== "default" && (
+                        <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          className="me-1"
+                          onClick={() => onEdit(item)}
+                        >
+                          편집
+                        </Button>
+                      )}
+                      {item.status !== "default" && (
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => onDelete(item.id)}
+                        >
+                          삭제
+                        </Button>
+                      )}
                     </div>
                   </Card.Body>
                 </Card>
