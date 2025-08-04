@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './AuthPages.css';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,22 +16,39 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // ✅ 이메일 유효성 검사
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('올바른 이메일 형식을 입력해주세요.');
+      return;
+    }
+
+    // ✅ 비밀번호 유효성 검사 (6자 이상)
+    if (password.trim().length < 6) {
+      setError('비밀번호는 6자 이상이어야 합니다.');
+      return;
+    }
+
     setLoading(true);
 
-    if (email === 'root@example.com' && password === 'rootpassword') {
-      console.log('Mock Root Login Success!');
-      await login({ userEmail: email, userType: 'therapist', name: '치료사' }); // 이름도 함께 저장
-      setLoading(false);
-      // 변경된 부분: 치료사 대시보드 -> 치료사 일정 페이지
-      navigate('/therapist/mypage/schedule');
-    } else if (email === 'user@example.com' && password === 'userpassword') {
-      console.log('Mock User Login Success!');
-      await login({ userEmail: email, userType: 'user', name: '사용자' }); // 이름도 함께 저장
-      setLoading(false);
-      // 변경된 부분: 사용자 대시보드 -> 사용자 일정 페이지
-      navigate('/user/mypage/schedule');
-    } else {
+    try {
+      const res = await axios.post('/api/v1/auth/login', {
+        email,
+        password,
+      });
+
+      const { accessToken } = res.data;
+
+      // 로그인 상태 저장
+      await login({ userEmail: email, accessToken });
+
+      // 홈 또는 마이페이지 등으로 이동
+      navigate('/');
+    } catch (err) {
+      console.error(err);
       setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+    } finally {
       setLoading(false);
     }
   };
@@ -50,6 +68,7 @@ function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              maxLength={30}
             />
           </div>
 
@@ -62,6 +81,8 @@ function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={6}
+              maxLength={30}
             />
           </div>
 
@@ -69,7 +90,9 @@ function LoginPage() {
             {loading ? '로그인 중...' : '로그인'}
           </button>
         </form>
-        <p className="auth-link-text">계정이 없으신가요? <Link to="/signup">회원가입</Link></p>
+        <p className="auth-link-text">
+          계정이 없으신가요? <Link to="/signup">회원가입</Link>
+        </p>
       </div>
     </div>
   );

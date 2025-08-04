@@ -9,7 +9,7 @@ import { useDuplicateCheck } from '../../components/signup/useDuplicateCheck';
 
 function TherapistSignUp() {
   const [formData, setFormData] = useState({
-    profile: 1, // ✅ 변경됨
+    profile: 1,
     name: '',
     nickname: '',
     birthDate: '',
@@ -99,15 +99,17 @@ function TherapistSignUp() {
   };
 
   const handleRemoveCareer = (index) => {
-    const updated = formData.careerHistory.filter((_, i) => i !== index);
-    setFormData((prev) => ({ ...prev, careerHistory: updated }));
+    if (formData.careerHistory.length > 1) {
+      const updated = formData.careerHistory.filter((_, i) => i !== index);
+      setFormData((prev) => ({ ...prev, careerHistory: updated }));
+    }
   };
 
   const validate = () => {
     const err = {};
     const f = formData;
 
-    if (!f.profile) err.profile = '프로필 이미지를 선택해주세요.'; // ✅ 수정됨
+    if (!f.profile) err.profile = '프로필 이미지를 선택해주세요.';
     if (!f.name) err.name = '이름은 필수입니다.';
     if (!f.nickname) err.nickname = '닉네임은 필수입니다.';
 
@@ -162,21 +164,32 @@ function TherapistSignUp() {
       setLoading(true);
 
       const form = new FormData();
-      form.append('role', 'therapist');
+      form.append('qualification', formData.qualification_image_file); // 이미지 파일
 
-      for (const key in formData) {
-        if (key === 'qualification_image_file') {
-          if (formData.qualification_image_file) {
-            form.append('qualification_image_file', formData.qualification_image_file);
-          }
-        } else if (key === 'careerHistory') {
-          form.append('careerHistory', JSON.stringify(formData.careerHistory));
-        } else {
-          form.append(key, formData[key]); // ✅ profile 키도 이걸로 들어감
-        }
-      }
+      const therapistJoinReq = {
+        profile: formData.profile,
+        name: formData.name,
+        nickname: formData.nickname,
+        birthDate: formData.birthDate,
+        email: formData.email,
+        password: formData.password,
+        tel1: formData.tel1,
+        tel2: formData.tel2,
+        city: formData.city,
+        district: formData.district,
+        dong: formData.dong,
+        detail: formData.detail,
+        careerYears: formData.careerYears,
+        careers: formData.careerHistory,
+      };
 
-      await axios.post('/api/v1/members', form, {
+      // ✅ therapistJoinReq를 JSON Blob으로 추가
+      const jsonBlob = new Blob([JSON.stringify(therapistJoinReq)], {
+        type: 'application/json',
+      });
+      form.append('therapistJoinReq', jsonBlob);
+
+      await axios.post('/api/v1/therapists', form, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
