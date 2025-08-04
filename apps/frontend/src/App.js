@@ -25,6 +25,7 @@ import TherapistBookingPage from './pages/User/Booking/TherapistBookingPage';
 import UserMyInfoPage from './pages/User/MyPage/UserMyInfoPage';
 import UserMatchingPage from './pages/User/MyPage/UserMatchingPage';
 import UserSchedulePage from './pages/User/MyPage/UserSchedulePage';
+import UserSessionRoom from './pages/User/UserSessionRoom'; // ✅ 추가
 
 import UserSignUp from './pages/signup/UserSignUp';
 import TherapistSignUp from './pages/signup/TherapistSignUp';
@@ -111,6 +112,7 @@ function App() {
             <Route path="/user/mypage/info" element={<UserMyInfoPage />} />
             <Route path="/user/mypage/matching" element={<UserMatchingPage />} />
             <Route path="/user/mypage/schedule" element={<UserSchedulePage />} />
+            <Route path="/user/session" element={<UserSessionRoom />} /> {/* ✅ 추가 */}
             <Route path="/assessment" element={<h1>간이 언어 평가 페이지 (구현 예정)</h1>} />
             <Route path="/user/profile-settings" element={<h1>사용자 프로필 설정 페이지 (구현 예정)</h1>} />
             <Route path="/user/booking/:therapistId" element={<TherapistBookingPage />} />

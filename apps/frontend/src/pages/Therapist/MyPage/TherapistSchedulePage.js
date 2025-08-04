@@ -57,10 +57,10 @@ function TherapistSchedulePage() {
                     const timePlus40Min = new Date(now.getTime() + 40 * 60 * 1000);
 
                     const dummySchedules = [
-                        { id: 'sch1', date: `${year}-${month}-${day}`, time: `${timePlus10Min.getHours().toString().padStart(2, '0')}:${timePlus10Min.getMinutes().toString().padStart(2, '0')}`, clientName: '김민준', status: '예정됨', sessionType: '언어 발달', assignedTools: [] },
-                        { id: 'sch2', date: `${year}-${month}-${day}`, time: `${timePlus40Min.getHours().toString().padStart(2, '0')}:${timePlus40Min.getMinutes().toString().padStart(2, '0')}`, clientName: '이서윤', status: '예정됨', sessionType: '사회성 기술', assignedTools: [] },
-                        { id: 'sch3', date: `${year}-${month}-${nextDay}`, time: '11:00', clientName: '박하준', status: '예정됨', sessionType: '조음 훈련', assignedTools: [] },
-                        { id: 'sch4', date: `${year}-${month}-${day}`, time: `09:00`, clientName: '최예원', status: '완료됨', sessionType: '인지 발달', assignedTools: [] },
+                        { id: 'sch1', date: `${year}-${month}-${day}`, time: `${timePlus10Min.getHours().toString().padStart(2, '0')}:${timePlus10Min.getMinutes().toString().padStart(2, '0')}`, clientName: '김민준', clientId: 1, status: '예정됨', sessionType: '언어 발달', assignedTools: [] },
+                        { id: 'sch2', date: `${year}-${month}-${day}`, time: `${timePlus40Min.getHours().toString().padStart(2, '0')}:${timePlus40Min.getMinutes().toString().padStart(2, '0')}`, clientName: '이서윤', clientId: 2, status: '예정됨', sessionType: '사회성 기술', assignedTools: [] },
+                        { id: 'sch3', date: `${year}-${month}-${nextDay}`, time: '11:00', clientName: '박하준', clientId: 3, status: '예정됨', sessionType: '조음 훈련', assignedTools: [] },
+                        { id: 'sch4', date: `${year}-${month}-${day}`, time: `09:00`, clientName: '최예원', clientId: 4, status: '완료됨', sessionType: '인지 발달', assignedTools: [] },
                     ];
                     setSchedules(dummySchedules);
 

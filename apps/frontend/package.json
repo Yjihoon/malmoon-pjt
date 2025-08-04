@@ -10,6 +10,7 @@
     "agora-rtc-sdk-ng": "^4.23.4",
     "bootstrap": "^5.3.7",
     "jwt-decode": "^4.0.0",
+    "livekit-client": "^2.15.4",
     "react": "^19.1.0",
     "react-bootstrap": "^2.10.10",
     "react-calendar": "^6.0.0",
