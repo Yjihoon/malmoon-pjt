@@ -3,12 +3,16 @@ package com.communet.malmoon.aac.dto.request;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * AAC 묶음 수정 요청 DTO
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Schema(description = "AAC 묶음 수정 요청 DTO")
 public class AacSetUpdateReq {
 	@Schema(description = "묶음 이름", example = "긴급 상황용 AAC (수정)")
