@@ -29,8 +29,8 @@ public class SessionController {
     @PostMapping("/room")
     @PreAuthorize("hasRole('ROLE_THERAPIST')")
     public ResponseEntity<SessionTokenRes> createRoom(@RequestBody SessionRoomReq req, @CurrentMember Member member) {
-        String token = sessionService.storeRoomInfo(member, req.getClientId());
-        return ResponseEntity.ok(new SessionTokenRes(token));
+        SessionTokenRes sessionTokenRes = sessionService.storeRoomInfo(member, req.getClientId()); // 여기 수정함
+        return ResponseEntity.ok(sessionTokenRes); // 여기 수정함
     }
 
     /**
@@ -53,8 +53,8 @@ public class SessionController {
     @PostMapping("/join")
     @PreAuthorize("hasRole('ROLE_CLIENT')")
     public ResponseEntity<SessionTokenRes> joinRoom(@CurrentMember Member member) {
-        String token = sessionService.getJoinRoomName(member);
-        return ResponseEntity.ok(new SessionTokenRes(token));
+        SessionTokenRes sessionTokenRes = sessionService.getJoinRoomName(member); // 여기 수정함
+        return ResponseEntity.ok(sessionTokenRes); // 여기 수정함
     }
 
     /**

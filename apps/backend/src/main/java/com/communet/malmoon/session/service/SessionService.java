@@ -1,20 +1,5 @@
 package com.communet.malmoon.session.service;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.communet.malmoon.chat.domain.ChatMessage;
 import com.communet.malmoon.chat.domain.ChatMessageType;
 import com.communet.malmoon.chat.domain.RoomType;
@@ -28,15 +13,20 @@ import com.communet.malmoon.chat.service.ChatRoomService;
 import com.communet.malmoon.member.domain.Member;
 import com.communet.malmoon.member.repository.MemberRepository;
 import com.communet.malmoon.session.config.LiveKitConfig;
-
-import io.livekit.server.AccessToken;
-import io.livekit.server.RoomJoin;
-import io.livekit.server.RoomName;
-import io.livekit.server.RoomServiceClient;
-import io.livekit.server.WebhookReceiver;
+import com.communet.malmoon.session.dto.response.SessionTokenRes;
+import io.livekit.server.*;
 import jakarta.persistence.EntityNotFoundException;
 import livekit.LivekitWebhook;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -87,7 +77,7 @@ public class SessionService {
 	 * @return JWT 기반 LiveKit 세션 접속 토큰
 	 */
 	@Transactional
-	public String storeRoomInfo(Member therapist, Long clientId) {
+	public SessionTokenRes storeRoomInfo(Member therapist, Long clientId) { // 여기 수정함
 
 		// 이미 생성한 세션이 있으면 삭제
 		if (redisTemplate.hasKey(REDIS_THERAPIST_PREFIX + therapist.getEmail())) {
@@ -108,19 +98,23 @@ public class SessionService {
 		hashOps.putAll(sessionKey, sessionData);
 
 		// 채팅방 자동 생성
-		createSessionChatRoom(roomName, therapist.getMemberId(), clientId);
+		ChatRoomCreateRes createdRoom = createSessionChatRoom(roomName, therapist.getMemberId(), clientId);
 
 		// Redis String에 therapist/client → roomName 매핑 저장
 		redisTemplate.opsForValue().set(REDIS_THERAPIST_PREFIX + therapist.getEmail(), roomName);
 		redisTemplate.opsForValue().set(REDIS_CLIENT_PREFIX + clientEmail, roomName);
 
-		return generateAccessToken(therapist, roomName);
+		// 여기 추가함
+		return SessionTokenRes.builder()
+			.token(generateAccessToken(therapist, roomName))
+			.chatRoomId(createdRoom.getRoomId())
+			.build();
 	}
 
 	/**
 	 * 세션용 채팅방 생성 및 Redis 매핑 저장
 	 */
-	private void createSessionChatRoom(String roomName, Long therapistId, Long clientId) {
+	private ChatRoomCreateRes createSessionChatRoom(String roomName, Long therapistId, Long clientId) { // 여기 수정함
 		ChatRoomCreateRes createdRoom = chatRoomService.createOrGetRoom(
 			ChatRoomSessionCreateReq.builder()
 				.sessionId(roomName)
@@ -133,6 +127,8 @@ public class SessionService {
 			REDIS_CHAT_ROOM_PREFIX + roomName,
 			createdRoom.getRoomId().toString()
 		);
+
+		return createdRoom; // 여기 추가함
 	}
 
 	/**
@@ -196,10 +192,18 @@ public class SessionService {
 	 * @param client 현재 로그인한 클라이언트
 	 * @return JWT 기반 LiveKit 세션 접속 토큰
 	 */
-	public String getJoinRoomName(Member client) {
+	public SessionTokenRes getJoinRoomName(Member client) { // 여기 수정함
 		String roomName = Objects.requireNonNull(
 			redisTemplate.opsForValue().get(REDIS_CLIENT_PREFIX + client.getEmail()), "참여할 수 있는 세션이 없습니다.").toString();
-		return generateAccessToken(client, roomName);
+
+		// 여기 추가함
+		String chatRoomIdStr = (String) redisTemplate.opsForValue().get(REDIS_CHAT_ROOM_PREFIX + roomName);
+		Long chatRoomId = Long.valueOf(chatRoomIdStr);
+
+		return SessionTokenRes.builder()
+			.token(generateAccessToken(client, roomName))
+			.chatRoomId(chatRoomId)
+			.build();
 	}
 
 	public void getWebhookReceiver(String authHeader, String body) {

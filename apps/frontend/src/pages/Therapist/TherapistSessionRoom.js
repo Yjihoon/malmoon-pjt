@@ -14,6 +14,8 @@ function TherapistSessionRoom() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
 
+  console.log('User object in TherapistSessionRoom (on render):', user); // 여기 추가함
+
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isRemoteVideoOff, setIsRemoteVideoOff] = useState(true);
@@ -37,6 +39,7 @@ function TherapistSessionRoom() {
   const [isFetchingSentences, setIsFetchingSentences] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
+  const [chatRoomId, setChatRoomId] = useState(null); // 여기 추가함
 
   const handleRemoteTrackMuted = (trackPublication, participant) => {
     if (trackPublication.kind === Track.Kind.Video) {
@@ -52,6 +55,8 @@ function TherapistSessionRoom() {
 
   const connectToLiveKit = useCallback(async () => {
     if (!user) return;
+
+    console.log('User object in TherapistSessionRoom (on connect):', user); // 여기 추가함
 
     setRtcStatus('connecting');
 
@@ -102,7 +107,9 @@ function TherapistSessionRoom() {
           "Authorization": `Bearer ${user.accessToken}`
         }
       });
-      const token = response.data.token;
+      const { token, chatRoomId: newChatRoomId } = response.data; // 여기 수정함
+      console.log('Backend response data:', response.data); // 여기 추가함
+      setChatRoomId(newChatRoomId); // 여기 추가함
 
       await room.connect(LIVEKIT_URL, token);
 
@@ -187,9 +194,31 @@ function TherapistSessionRoom() {
   const toggleMute = () => roomRef.current?.localParticipant.setMicrophoneEnabled(!isMuted, { stopMicTrack: false }).then(() => setIsMuted(!isMuted));
   const toggleVideo = () => roomRef.current?.localParticipant.setCameraEnabled(!isVideoOff).then(() => setIsVideoOff(!isVideoOff));
 
-  const endSession = () => {
+  const endSession = async () => { // 여기 수정함
     if (window.confirm('정말로 수업을 종료하시겠습니까?')) {
-      navigate('/therapist/mypage/schedule');
+      try {
+        // 1. 백엔드에 세션 삭제 요청
+        await axios.delete('/api/v1/sessions/room', {
+          headers: { "Authorization": `Bearer ${user.accessToken}` }
+        });
+
+        // 2. LiveKit 세션 연결 종료
+        if (roomRef.current) {
+          roomRef.current.disconnect();
+        }
+
+        // 3. 페이지 이동
+        navigate('/therapist/mypage/schedule');
+
+      } catch (error) {
+        console.error('Failed to end session:', error);
+        alert('세션 종료에 실패했습니다. 콘솔을 확인해주세요.');
+        // 실패하더라도 연결은 끊고 페이지는 이동
+        if (roomRef.current) {
+          roomRef.current.disconnect();
+        }
+        navigate('/therapist/mypage/schedule');
+      }
     }
   };
 
@@ -219,16 +248,34 @@ function TherapistSessionRoom() {
   };
 
   const sendChatMessage = async () => {
-    if (roomRef.current && chatInput.trim() !== '') {
+    if (roomRef.current && chatInput.trim() !== '' && chatRoomId) {
+      const messageContent = chatInput;
+      setChatInput('');
+
+      // 1. 실시간 전송을 위해 LiveKit으로 데이터 전송
       try {
         const encoder = new TextEncoder();
-        const data = encoder.encode(JSON.stringify({ type: 'chat', payload: chatInput }));
+        const data = encoder.encode(JSON.stringify({ type: 'chat', payload: messageContent }));
         await roomRef.current.localParticipant.publishData(data, { reliable: true });
-        setChatMessages(prevMessages => [...prevMessages, { sender: '나', message: chatInput }]);
-        setChatInput('');
+        setChatMessages(prev => [...prev, { sender: '나', message: messageContent }]);
       } catch (error) {
-        console.error('Failed to send chat message:', error);
-        alert('채팅 메시지 전송에 실패했습니다.');
+        console.error('Failed to send chat message via LiveKit:', error);
+        alert('채팅 메시지 실시간 전송에 실패했습니다.');
+      }
+
+      // 2. DB 저장을 위해 백엔드 API로 전송
+      try {
+        await axios.post('/api/v1/chat/session/message', {
+          sessionId: roomRef.current.name,
+          roomId: chatRoomId,
+          senderId: user.memberId,
+          content: messageContent,
+          messageType: 'TALK'
+        }, {
+          headers: { "Authorization": `Bearer ${user.accessToken}` }
+        });
+      } catch (error) {
+        console.error('Failed to save chat message to backend:', error);
       }
     }
   };

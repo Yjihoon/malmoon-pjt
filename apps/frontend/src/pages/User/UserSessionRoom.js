@@ -23,6 +23,7 @@ function UserSessionRoom() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [showChatPanel, setShowChatPanel] = useState(false);
+  const [chatRoomId, setChatRoomId] = useState(null); // 여기 추가함
 
   const [remoteVideoTrack, setRemoteVideoTrack] = useState(null);
   const [remoteAudioTrack, setRemoteAudioTrack] = useState(null);
@@ -116,7 +117,8 @@ function UserSessionRoom() {
           "Content-Type": "application/json"
         }
       });
-      const livekitToken = response.data.token;
+      const { token: livekitToken, chatRoomId: newChatRoomId } = response.data; // 여기 수정함
+      setChatRoomId(newChatRoomId); // 여기 추가함
 
       await room.connect(LIVEKIT_URL, livekitToken);
 
@@ -193,16 +195,34 @@ function UserSessionRoom() {
   };
 
   const sendChatMessage = async () => {
-    if (roomRef.current && chatInput.trim() !== '') {
+    if (roomRef.current && chatInput.trim() !== '' && chatRoomId) {
+      const messageContent = chatInput;
+      setChatInput('');
+
+      // 1. 실시간 전송을 위해 LiveKit으로 데이터 전송
       try {
         const encoder = new TextEncoder();
-        const data = encoder.encode(JSON.stringify({ type: 'chat', payload: chatInput }));
+        const data = encoder.encode(JSON.stringify({ type: 'chat', payload: messageContent }));
         await roomRef.current.localParticipant.publishData(data, { reliable: true });
-        setChatMessages(prevMessages => [...prevMessages, { sender: '나', message: chatInput }]);
-        setChatInput('');
+        setChatMessages(prev => [...prev, { sender: '나', message: messageContent }]);
       } catch (error) {
-        console.error('Failed to send chat message:', error);
-        alert('채팅 메시지 전송에 실패했습니다.');
+        console.error('Failed to send chat message via LiveKit:', error);
+        alert('채팅 메시지 실시간 전송에 실패했습니다.');
+      }
+
+      // 2. DB 저장을 위해 백엔드 API로 전송
+      try {
+        await axios.post('/api/v1/chat/session/message', {
+          sessionId: roomRef.current.name,
+          roomId: chatRoomId,
+          senderId: user.memberId,
+          content: messageContent,
+          messageType: 'TALK'
+        }, {
+          headers: { "Authorization": `Bearer ${user.accessToken}` }
+        });
+      } catch (error) {
+        console.error('Failed to save chat message to backend:', error);
       }
     }
   };
