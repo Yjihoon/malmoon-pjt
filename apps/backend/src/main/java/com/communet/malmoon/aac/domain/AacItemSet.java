@@ -31,11 +31,11 @@ public class AacItemSet {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "set_id", nullable = false)
-	private Long setId;
+	@Column(name = "aac_item_id", nullable = false)
+	private Long aacItemId;
 
-	@Column(name = "aac_id", nullable = false)
-	private Long aacId;
+	@Column(name = "aac_set_id", nullable = false)
+	private Long aacSetId;
 
 	@Column(name = "order_no", nullable = false)
 	private int orderNo;

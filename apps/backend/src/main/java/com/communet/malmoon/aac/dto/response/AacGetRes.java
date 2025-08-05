@@ -1,6 +1,7 @@
 package com.communet.malmoon.aac.dto.response;
 
 import com.communet.malmoon.aac.domain.Aac;
+import com.communet.malmoon.aac.domain.AacStatus;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
@@ -10,15 +11,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * AAC 목록 조회 응답 DTO입니다.
+ * AAC 목록 조회 응답 DTO
  *
- * @param id AAC 항목 ID
- * @param name AAC 이름
- * @param situation 사용 상황 (ex: 밥 먹을 때)
- * @param action 동작 (ex: 먹어요)
- * @param emotion 감정 (선택적)
- * @param description 상세 설명
- * @param fileId S3에서 불러온 이미지 URL
  */
 
 @Getter
@@ -49,6 +43,9 @@ public class AacGetRes {
 	@Schema(description = "이미지 URL", example = "https://s3.amazonaws.com/bucket/image.png")
 	private String fileId;
 
+	@Schema(description = "공개 여부", example = "PUBLIC")
+	private AacStatus status;
+
 	/**
 	 * AAC 도메인 객체와 이미지 URL을 기반으로 응답 DTO를 생성합니다.
 	 *
@@ -65,6 +62,7 @@ public class AacGetRes {
 			.emotion(aac.getEmotion())
 			.description(aac.getDescription())
 			.fileId(fileId)
+			.status(aac.getStatus())
 			.build();
 	}
 }

@@ -34,4 +34,14 @@ public class Therapist {
 	@OneToMany(mappedBy = "therapist", cascade = CascadeType.ALL)
 	@Builder.Default
 	private List<TreatmentTime> treatmentTimes = new ArrayList<>();
+
+	public void addCareer(Career career) {
+		careers.add(career);
+		career.setTherapist(this);
+	}
+
+	public void removeCareer(Career career) {
+		careers.remove(career);
+		career.setTherapist(null);
+	}
 }
