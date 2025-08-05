@@ -151,7 +151,7 @@ public class AacControllerTest {
 			.size(10)
 			.build();
 
-		given(aacService.getAacList(refEq(req))) // 또는 any(AacGetReq.class)
+		given(aacService.getAacList(refEq(req), eq(1L))) // 또는 any(AacGetReq.class)
 			.willReturn(mockPage);
 
 		// when & then

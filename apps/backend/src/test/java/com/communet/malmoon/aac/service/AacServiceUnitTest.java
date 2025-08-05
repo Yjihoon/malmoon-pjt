@@ -79,7 +79,7 @@ class AacServiceTest {
 			.build();
 
 		// when
-		Page<AacGetRes> result = aacService.getAacList(req);
+		Page<AacGetRes> result = aacService.getAacList(req, 1L);
 
 		// then
 		assertThat(result).isNotNull();
@@ -120,7 +120,7 @@ class AacServiceTest {
 			.build();
 
 		// when
-		Page<AacGetRes> result = aacService.getAacList(req);
+		Page<AacGetRes> result = aacService.getAacList(req, 2L);
 
 		// then
 		assertThat(result).isNotNull();
