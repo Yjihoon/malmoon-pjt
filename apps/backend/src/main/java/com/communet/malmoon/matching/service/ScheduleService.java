@@ -7,13 +7,14 @@ import com.communet.malmoon.matching.dto.request.DayTimeReq;
 import com.communet.malmoon.matching.dto.request.ScheduleGetReq;
 import com.communet.malmoon.matching.dto.request.SchedulePostReq;
 import com.communet.malmoon.matching.dto.request.ScheduleUpdateReq;
-import com.communet.malmoon.matching.dto.response.MemberPendingRes;
-import com.communet.malmoon.matching.dto.response.MemberScheduleRes;
-import com.communet.malmoon.matching.dto.response.ScheduleGetRes;
-import com.communet.malmoon.matching.dto.response.TherapistScheduleRes;
+import com.communet.malmoon.matching.dto.response.*;
 import com.communet.malmoon.matching.repository.ScheduleRepository;
 import com.communet.malmoon.member.domain.Member;
+import com.communet.malmoon.member.domain.MemberType;
+import com.communet.malmoon.member.domain.Therapist;
+import com.communet.malmoon.member.dto.response.CareerRes;
 import com.communet.malmoon.member.repository.MemberRepository;
+import com.communet.malmoon.member.repository.TherapistRepository;
 import jakarta.persistence.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -31,6 +32,7 @@ import java.util.Optional;
 public class ScheduleService {
 
     private final MemberRepository memberRepository;
+    private final TherapistRepository therapistRepository;
     private final ScheduleRepository scheduleRepository;
 
     /**
@@ -135,6 +137,83 @@ public class ScheduleService {
                 .toList();
     }
 
+    public List<TherapistRes> getTherapists() {
+        List<Member> members = memberRepository.findByRole(MemberType.ROLE_THERAPIST);
+
+        return members.stream()
+                .map(member -> {
+                    Therapist therapist = therapistRepository.findById(member.getMemberId()).get();
+                    List<CareerRes> careerResList = therapist.getCareers().stream()
+                            .map(career -> CareerRes.builder()
+                                    .company(career.getCompany())
+                                    .position(career.getPosition())
+                                    .startDate(career.getStartDate())
+                                    .endDate(career.getEndDate())
+                                    .build()
+                            )
+                            .toList();
+
+                    return new TherapistRes(
+                            member.getMemberId(),
+                            member.getName(),
+                            member.getEmail(),
+                            member.getTel1(),
+                            member.getBirthDate(),
+                            member.getProfile(),
+                            therapist.getCareerYears(),
+                            careerResList
+                    );
+                })
+                .toList();
+    }
+
+    public List<MyTherapistScheduleRes> getMyTherapists(Member member) {
+        List<Schedule> schedules = scheduleRepository.findByMemberAndStatus(member, StatusType.ACCEPTED);
+
+        return schedules.stream()
+                .map(schedule -> {
+                    Member therapistMember = schedule.getTherapist();
+
+                    // Therapist -> CareerRes 리스트
+                    Therapist therapist = therapistRepository.findById(therapistMember.getMemberId()).get();
+
+                    List<CareerRes> careerResList = therapist.getCareers().stream()
+                            .map(career -> CareerRes.builder()
+                                    .company(career.getCompany())
+                                    .position(career.getPosition())
+                                    .startDate(career.getStartDate())
+                                    .endDate(career.getEndDate())
+                                    .build()
+                            )
+                            .toList();
+
+                    TherapistRes therapistRes = new TherapistRes(
+                            therapistMember.getMemberId(),
+                            therapistMember.getName(),
+                            therapistMember.getEmail(),
+                            therapistMember.getTel1(),
+                            therapistMember.getBirthDate(),
+                            therapistMember.getProfile(),
+                            therapist.getCareerYears(),
+                            careerResList
+                    );
+
+                    // DayTime → DayTimeRes
+                    List<DayTimeRes> dayTimeResList = schedule.getDayTimes().stream()
+                            .map(dt -> new DayTimeRes(dt.getDay(), dt.getTime()))
+                            .toList();
+
+                    return new MyTherapistScheduleRes(
+                            schedule.getScheduleId(),
+                            schedule.getStartDate(),
+                            schedule.getEndDate(),
+                            dayTimeResList,
+                            therapistRes
+                    );
+                })
+                .toList();
+    }
+
     public List<MemberScheduleRes> getMemberSchedules(Long memberId) {
         LocalDate today = LocalDate.now();
         DayOfWeek dayOfWeek = today.getDayOfWeek();
@@ -148,6 +227,7 @@ public class ScheduleService {
                         schedule.getDayTimes().stream()
                                 .filter(dt -> dt.getDay().toString().equals(day))
                                 .map(dt -> new MemberScheduleRes(
+                                        schedule.getTherapist().getMemberId(),
                                         schedule.getTherapist().getName(),
                                         dt.getTime()
                                 ))
@@ -155,12 +235,11 @@ public class ScheduleService {
                 .toList();
     }
 
-    public List<TherapistScheduleRes> getTherapistSchedules(Long therapistId) {
-        LocalDate today = LocalDate.now();
-        DayOfWeek dayOfWeek = today.getDayOfWeek();
+    public List<TherapistScheduleRes> getTherapistSchedules(Long therapistId, LocalDate date) {
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
         String day = dayOfWeek.toString();
         List<Schedule> schedules = scheduleRepository.findAcceptedSchedulesByTherapistIdAndDate(
-                therapistId, StatusType.ACCEPTED, today
+                therapistId, StatusType.ACCEPTED, date
         );
 
         return schedules.stream()
@@ -168,9 +247,9 @@ public class ScheduleService {
                         schedule.getDayTimes().stream()
                                 .filter(dt -> dt.getDay().toString().equals(day))
                                 .map(dt -> {
-                                    Member member = memberRepository.findById(schedule.getMember().getMemberId()).get();
                                     return new TherapistScheduleRes(
-                                            member.getName(),
+                                            schedule.getMember().getMemberId(),
+                                            schedule.getMember().getName(),
                                             dt.getTime()
                                     );
                                 })

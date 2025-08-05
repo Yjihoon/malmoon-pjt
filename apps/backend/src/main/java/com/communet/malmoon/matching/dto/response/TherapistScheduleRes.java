@@ -7,6 +7,7 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class TherapistScheduleRes {
+    private Long memberId;
     private String memberName;
     private Integer time;
 }

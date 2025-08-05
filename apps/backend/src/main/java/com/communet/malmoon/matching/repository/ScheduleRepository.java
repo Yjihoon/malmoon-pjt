@@ -2,6 +2,7 @@ package com.communet.malmoon.matching.repository;
 
 import com.communet.malmoon.matching.domain.Schedule;
 import com.communet.malmoon.matching.domain.StatusType;
+import com.communet.malmoon.member.domain.Member;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -22,6 +23,8 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
             Long therapistId,
             StatusType status
     );
+
+    List<Schedule> findByMemberAndStatus(Member member, StatusType status);
 
     @Query("""
     SELECT s FROM Schedule s

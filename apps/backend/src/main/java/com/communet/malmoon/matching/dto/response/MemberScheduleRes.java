@@ -10,6 +10,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class MemberScheduleRes {
+    private Long therapistId;
     private String therapistName;
     private Integer time;
 }

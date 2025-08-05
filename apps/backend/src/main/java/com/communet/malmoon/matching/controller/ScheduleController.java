@@ -4,7 +4,7 @@ import com.communet.malmoon.common.auth.CurrentMember;
 import com.communet.malmoon.matching.dto.request.ScheduleGetReq;
 import com.communet.malmoon.matching.dto.request.SchedulePostReq;
 import com.communet.malmoon.matching.dto.request.ScheduleUpdateReq;
-import com.communet.malmoon.matching.dto.response.ScheduleGetRes;
+import com.communet.malmoon.matching.dto.response.*;
 import com.communet.malmoon.matching.service.ScheduleService;
 import com.communet.malmoon.member.domain.Member;
 import jakarta.validation.Valid;
@@ -13,6 +13,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/schedule")
@@ -51,18 +54,30 @@ public class ScheduleController {
 
     @GetMapping("/pending")
     @PreAuthorize("hasRole('ROLE_THERAPIST')")
-    public ResponseEntity<?> getPendingSchedules(@CurrentMember Member member) {
+    public ResponseEntity<List<MemberPendingRes>> getPendingSchedules(@CurrentMember Member member) {
         return ResponseEntity.ok(scheduleService.getPendingSchedules(member.getMemberId()));
     }
 
+    @GetMapping("/therapist")
+    public ResponseEntity<List<TherapistRes>> getTherapists() {
+        return ResponseEntity.ok(scheduleService.getTherapists());
+    }
+
+    @GetMapping("/me/therapist")
+    public ResponseEntity<List<MyTherapistScheduleRes>> getMyTherapists(@CurrentMember Member member) {
+        return ResponseEntity.ok(scheduleService.getMyTherapists(member));
+    }
+
     @GetMapping("/me/today")
-    public ResponseEntity<?> getMemberSchedules(@CurrentMember Member member) {
+    public ResponseEntity<List<MemberScheduleRes>> getMemberSchedules(@CurrentMember Member member) {
         return ResponseEntity.ok(scheduleService.getMemberSchedules(member.getMemberId()));
     }
 
-    @GetMapping("/therapist/today")
+    @GetMapping("/therapist/date")
     @PreAuthorize("hasRole('ROLE_THERAPIST')")
-    public ResponseEntity<?> getTherapistSchedule(@CurrentMember Member member) {
-        return ResponseEntity.ok(scheduleService.getTherapistSchedules(member.getMemberId()));
+    public ResponseEntity<List<TherapistScheduleRes>> getTherapistSchedule(
+            @CurrentMember Member member,
+            @RequestParam LocalDate date) {
+        return ResponseEntity.ok(scheduleService.getTherapistSchedules(member.getMemberId(), date));
     }
 }
