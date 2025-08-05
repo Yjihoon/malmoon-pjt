@@ -30,3 +30,67 @@
   box-shadow: 0 0 20px #32CD32; /* 녹색 네온 효과 */
   transition: border-color 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
 }
+
+/* Chat Panel Styles */
+.chat-panel {
+  height: 100%;
+  width: 100%;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-message {
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 15px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.my-message {
+  align-self: flex-end;
+  background-color: #dcf8c6; /* Light green for my messages */
+  color: #333;
+}
+
+.other-message {
+  align-self: flex-start;
+  background-color: #e0e0e0; /* Light gray for other messages */
+  color: #333;
+}
+
+.chat-input-area {
+  padding: 10px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+}
+
+.chat-input-area input {
+  flex-grow: 1;
+  border: 1px solid #ced4da;
+  border-radius: 20px;
+  padding: 8px 15px;
+  margin-right: 10px;
+}
+
+.chat-input-area button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 15px;
+  cursor: pointer;
+}
+
+.chat-input-area button:hover {
+  background-color: #0056b3;
+}

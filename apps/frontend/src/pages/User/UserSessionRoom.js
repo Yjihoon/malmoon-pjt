@@ -20,6 +20,9 @@ function UserSessionRoom() {
   const [rtcStatus, setRtcStatus] = useState('disconnected');
   const [isRemoteSpeaking, setIsRemoteSpeaking] = useState(false);
   const [receivedSentence, setReceivedSentence] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [showChatPanel, setShowChatPanel] = useState(false);
 
   const [remoteVideoTrack, setRemoteVideoTrack] = useState(null);
   const [remoteAudioTrack, setRemoteAudioTrack] = useState(null);
@@ -101,6 +104,8 @@ function UserSessionRoom() {
       const data = JSON.parse(decoder.decode(payload));
       if (data.type === 'sentence') {
         setReceivedSentence(data.payload);
+      } else if (data.type === 'chat') {
+        setChatMessages(prevMessages => [...prevMessages, { sender: participant.identity, message: data.payload }]);
       }
     });
 
@@ -187,6 +192,21 @@ function UserSessionRoom() {
     }
   };
 
+  const sendChatMessage = async () => {
+    if (roomRef.current && chatInput.trim() !== '') {
+      try {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(JSON.stringify({ type: 'chat', payload: chatInput }));
+        await roomRef.current.localParticipant.publishData(data, { reliable: true });
+        setChatMessages(prevMessages => [...prevMessages, { sender: '나', message: chatInput }]);
+        setChatInput('');
+      } catch (error) {
+        console.error('Failed to send chat message:', error);
+        alert('채팅 메시지 전송에 실패했습니다.');
+      }
+    }
+  };
+
   const renderContent = () => {
     switch (rtcStatus) {
       case 'disconnected':
@@ -259,7 +279,7 @@ function UserSessionRoom() {
                       <i className={`bi bi-camera-video${isVideoOff ? "-off-fill" : "-fill"}`}></i>
                       <span>캠 끄기</span>
                   </Button>
-                  <Button variant="light" className="control-button me-3" onClick={() => alert('채팅 기능은 준비 중입니다.')}>
+                  <Button variant="light" className="control-button me-3" onClick={() => setShowChatPanel(prev => !prev)}>
                       <i className="bi bi-chat-right-text-fill"></i>
                       <span>채팅</span>
                   </Button>
@@ -269,6 +289,8 @@ function UserSessionRoom() {
                   </Button>
               </div>
             </div>
+
+            
           </>
         );
       default:
@@ -278,10 +300,42 @@ function UserSessionRoom() {
 
   return (
     <Container fluid className="session-room-container">
-      <Row className="h-100">
-        <Col className="session-main-content p-0">
+      <Row className="h-100 flex-nowrap">
+        <Col className={`session-main-content ${showChatPanel ? 'col-md-9' : 'col-md-12'} p-0`}>
           {renderContent()}
         </Col>
+        {showChatPanel && (
+          <Col md={3} className="tool-panel p-0">
+            <div className="chat-panel d-flex flex-column h-100">
+              <div className="chat-messages flex-grow-1 overflow-auto p-2">
+                {chatMessages.map((msg, index) => (
+                  <div key={index} className={`chat-message ${msg.sender === '나' ? 'my-message' : 'other-message'}`}>
+                    <strong>{msg.sender}:</strong> {msg.message}
+                  </div>
+                ))}
+              </div>
+              <div className="chat-input-area p-2 border-top">
+                <div className="input-group">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="메시지를 입력하세요..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        sendChatMessage();
+                      }
+                    }}
+                  />
+                  <Button variant="primary" onClick={sendChatMessage}>
+                    전송
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Col>
+        )}
       </Row>
     </Container>
   );
