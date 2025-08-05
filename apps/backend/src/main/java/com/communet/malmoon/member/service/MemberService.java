@@ -242,24 +242,28 @@ public class MemberService {
 			member.getAddress().setDetail(memberMeChangeReq.getDetail());
 		}
 
-		if (memberMeChangeReq.getCareers() != null) {
+		if (memberMeChangeReq.getCareerYears() != null || memberMeChangeReq.getCareers() != null) {
 			Therapist therapist = therapistRepository.findById(member.getMemberId())
 				.orElseThrow(() -> new IllegalArgumentException("일반 회원은 경력을 수정할 수 없습니다."));
 
-			careerRepository.deleteByTherapist_TherapistId(member.getMemberId());
-
-			therapist.getCareers().clear();
-
-			for (CareerReq careerReq : memberMeChangeReq.getCareers()) {
-				Career career = Career.builder()
-						.company(careerReq.getCompany())
-						.position(careerReq.getPosition())
-						.startDate(careerReq.getStartDate())
-						.endDate(careerReq.getEndDate())
-						.build();
-				therapist.addCareer(career);
+			if (memberMeChangeReq.getCareerYears() != null) {
+				therapist.setCareerYears(memberMeChangeReq.getCareerYears());
 			}
+			if (memberMeChangeReq.getCareers() != null) {
+				careerRepository.deleteByTherapist_TherapistId(member.getMemberId());
 
+				therapist.getCareers().clear();
+
+				for (CareerReq careerReq : memberMeChangeReq.getCareers()) {
+					Career career = Career.builder()
+							.company(careerReq.getCompany())
+							.position(careerReq.getPosition())
+							.startDate(careerReq.getStartDate())
+							.endDate(careerReq.getEndDate())
+							.build();
+					therapist.addCareer(career);
+				}
+			}
 			therapistRepository.save(therapist);
 		}
 	}
