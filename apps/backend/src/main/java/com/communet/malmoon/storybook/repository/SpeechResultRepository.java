@@ -2,10 +2,10 @@ package com.communet.malmoon.storybook.repository;
 
 import com.communet.malmoon.storybook.domain.SpeechResult;
 import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.time.LocalDateTime;
 import java.util.List;
-
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Query;
 // SpeechResultRepository.java
 public interface SpeechResultRepository extends JpaRepository<SpeechResult, Long> {
 
