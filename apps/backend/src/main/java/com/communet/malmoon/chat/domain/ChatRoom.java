@@ -29,6 +29,9 @@ public class ChatRoom {
 	@Column(name = "room_id")
 	private Long roomId;
 
+	@Column(name = "room_name", nullable = false)
+	private String roomName;
+
 	@Column(name = "session_id", nullable = true)
 	private String sessionId;
 
@@ -51,5 +54,13 @@ public class ChatRoom {
 
 	public void setEndedAt(LocalDateTime endedAt) {
 		this.endedAt = endedAt;
+	}
+
+	public void setRoomName(String roomName) {
+		this.roomName = roomName;
+	}
+
+	public void setRoomType(RoomType roomType) {
+		this.roomType = roomType;
 	}
 }

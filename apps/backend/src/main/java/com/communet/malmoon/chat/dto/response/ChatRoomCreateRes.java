@@ -22,6 +22,9 @@ public class ChatRoomCreateRes {
 	@Schema(description = "채팅방 ID", example = "1001")
 	private Long roomId;
 
+	@Schema(description = "채팅방 이름", example = "김싸피")
+	private String roomName;
+
 	@Schema(description = "채팅방 타입 (1:1 / 그룹)", example = "GROUP")
 	private RoomType roomType;
 
