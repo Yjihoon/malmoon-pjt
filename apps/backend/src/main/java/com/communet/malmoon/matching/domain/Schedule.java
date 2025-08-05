@@ -37,8 +37,10 @@ public class Schedule extends BaseEntity {
     @JsonIgnore
     private Member therapist;
 
-    @Column(name = "member_id")
-    private Long memberId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    @JsonIgnore
+    private Member member;
 
     @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL)
     @Builder.Default

@@ -1,9 +1,12 @@
 package com.communet.malmoon.member.domain;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.communet.malmoon.common.entity.BaseEntity;
 
+import com.communet.malmoon.matching.domain.Schedule;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -59,4 +62,8 @@ public class Member extends BaseEntity {
 	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	@JoinColumn(name = "address_id")
 	private Address address;
+
+	@OneToMany(mappedBy = "therapist", cascade = CascadeType.ALL)
+	@Builder.Default
+	private List<Schedule> schedules = new ArrayList<>();
 }

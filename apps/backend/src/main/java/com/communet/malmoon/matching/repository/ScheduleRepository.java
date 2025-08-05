@@ -3,7 +3,6 @@ package com.communet.malmoon.matching.repository;
 import com.communet.malmoon.matching.domain.Schedule;
 import com.communet.malmoon.matching.domain.StatusType;
 import io.lettuce.core.dynamic.annotation.Param;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -19,10 +18,17 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
             LocalDate startDate
     );
 
-    @EntityGraph(attributePaths = {"therapist", "dayTimes"})
+    List<Schedule> findAllByTherapist_MemberIdAndStatus(
+            Long therapistId,
+            StatusType status
+    );
+
     @Query("""
     SELECT s FROM Schedule s
-    WHERE s.memberId = :memberId
+    JOIN FETCH s.member m
+    JOIN FETCH s.therapist
+    LEFT JOIN FETCH s.dayTimes
+    WHERE m.memberId = :memberId
     AND s.status = :status
     AND :date BETWEEN s.startDate AND s.endDate
     """)

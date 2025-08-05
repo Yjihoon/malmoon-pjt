@@ -7,6 +7,7 @@ import com.communet.malmoon.matching.dto.request.DayTimeReq;
 import com.communet.malmoon.matching.dto.request.ScheduleGetReq;
 import com.communet.malmoon.matching.dto.request.SchedulePostReq;
 import com.communet.malmoon.matching.dto.request.ScheduleUpdateReq;
+import com.communet.malmoon.matching.dto.response.MemberPendingRes;
 import com.communet.malmoon.matching.dto.response.MemberScheduleRes;
 import com.communet.malmoon.matching.dto.response.ScheduleGetRes;
 import com.communet.malmoon.matching.dto.response.TherapistScheduleRes;
@@ -77,7 +78,7 @@ public class ScheduleService {
                 .startDate(schedulePostReq.getStartDate())
                 .endDate(schedulePostReq.getEndDate())
                 .therapist(memberOptional.get())
-                .memberId(member.getMemberId())
+                .member(member)
                 .status(StatusType.PENDING)
                 .build();
 
@@ -107,6 +108,31 @@ public class ScheduleService {
         }
 
         schedule.setStatus(scheduleUpdateReq.getStatus());
+    }
+
+    public List<MemberPendingRes> getPendingSchedules(Long therapistId) {
+
+        List<Schedule> schedules = scheduleRepository.findAllByTherapist_MemberIdAndStatus(therapistId, StatusType.PENDING);
+
+        return schedules.stream()
+                .map(schedule -> {
+                    Member member = schedule.getMember();
+
+                    if (member == null) {
+                        return null;
+                    }
+
+                    return new MemberPendingRes(
+                            schedule.getScheduleId(),
+                            member.getMemberId(),
+                            member.getName(),
+                            member.getEmail(),
+                            member.getTel1(),
+                            member.getCreatedAt()
+                    );
+                })
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     public List<MemberScheduleRes> getMemberSchedules(Long memberId) {
@@ -142,7 +168,7 @@ public class ScheduleService {
                         schedule.getDayTimes().stream()
                                 .filter(dt -> dt.getDay().toString().equals(day))
                                 .map(dt -> {
-                                    Member member = memberRepository.findById(schedule.getMemberId()).get();
+                                    Member member = memberRepository.findById(schedule.getMember().getMemberId()).get();
                                     return new TherapistScheduleRes(
                                             member.getName(),
                                             dt.getTime()

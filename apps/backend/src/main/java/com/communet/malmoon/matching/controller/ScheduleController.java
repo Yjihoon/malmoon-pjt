@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -40,11 +41,18 @@ public class ScheduleController {
     // [PATCH] 치료사가 스케줄 요청 수락/거절
     // 치료사(`@CurrentMember`)가 받은 스케줄 요청을 ACCEPTED 또는 REJECTED 로 변경함
     @PatchMapping
+    @PreAuthorize("hasRole('ROLE_THERAPIST')")
     public ResponseEntity<?> patchSchedule(
             @CurrentMember Member member,
             @RequestBody @Valid ScheduleUpdateReq scheduleUpdateReq) {
         scheduleService.updateStatus(member, scheduleUpdateReq);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/pending")
+    @PreAuthorize("hasRole('ROLE_THERAPIST')")
+    public ResponseEntity<?> getPendingSchedules(@CurrentMember Member member) {
+        return ResponseEntity.ok(scheduleService.getPendingSchedules(member.getMemberId()));
     }
 
     @GetMapping("/me/today")
@@ -53,6 +61,7 @@ public class ScheduleController {
     }
 
     @GetMapping("/therapist/today")
+    @PreAuthorize("hasRole('ROLE_THERAPIST')")
     public ResponseEntity<?> getTherapistSchedule(@CurrentMember Member member) {
         return ResponseEntity.ok(scheduleService.getTherapistSchedules(member.getMemberId()));
     }
