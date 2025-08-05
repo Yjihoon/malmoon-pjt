@@ -1,202 +1,624 @@
-// src/pages/Therapist/MyPage/TherapistMyInfoPage.js
 import React, { useState, useEffect } from 'react';
-import { Container, Form, Button, Row, Col, Alert, Card } from 'react-bootstrap';
-import { Link } from 'react-router-dom'; // <-- 이 줄이 추가되었습니다.
-import { useAuth } from '../../../contexts/AuthContext'; // AuthContext에서 사용자 정보 가져오기
+import { Form, Button, Modal, Row, Col, Alert } from 'react-bootstrap';
+import ProfileImageSelect from '../../../components/signup/ProfileImageSelect';
+import AddressSelector from '../../../components/signup/AddressSelector';
+import { useAuth } from '../../../contexts/AuthContext';
+import axios from 'axios';
+import '../../User/MyPage/UserMyInfoPage.css'; // 동일 스타일 공유
 
 function TherapistMyInfoPage() {
-  const { user } = useAuth(); // 현재 로그인한 사용자 정보
+  const { user } = useAuth();
+
   const [formData, setFormData] = useState({
+    profile: 1,
     name: '',
+    nickname: '',
+    birthDate: '',
     email: '',
-    phone: '',
-    address: '',
-    // 기타 치료사 고유 정보 (예: licenseNumber, specialization 등)
-    licenseNumber: '',
-    specialization: '',
-    introduction: '', // 자기소개
+    tel1: '',
+    tel2: '',
+    city: '',
+    district: '',
+    dong: '',
+    detail: '',
   });
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [serverError, setServerError] = useState('');
 
-  // 컴포넌트 마운트 시 사용자 정보를 폼 데이터로 초기화
+  const [editPhone, setEditPhone] = useState(false);
+  const [editAddress, setEditAddress] = useState(false);
+  const [showProfileSelect, setShowProfileSelect] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [fadeOut, setFadeOut] = useState(false);
+  const [tempAddress, setTempAddress] = useState({
+    city: '', district: '', dong: '', detail: ''
+  });
+  const [careerYears, setCareerYears] = useState(0);
+  const [editCareerYears, setEditCareerYears] = useState(false);
+  const [careerList, setCareerList] = useState([]);
+  const [editCareers, setEditCareers] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editedCareer, setEditedCareer] = useState(null);
+  const [addingNew, setAddingNew] = useState(false);
+  const [newCareer, setNewCareer] = useState({company: '', position: '', startDate: '', endDate: '',});
+
   useEffect(() => {
-    if (user) {
-      setFormData({
-        name: user.name || '', // user 객체에 name 필드가 있다고 가정
-        email: user.userEmail || '', // userEmail 사용
-        phone: user.phone || '',
-        address: user.address || '',
-        licenseNumber: user.licenseNumber || '',
-        specialization: user.specialization || '',
-        introduction: user.introduction || '',
-      });
-    }
-  }, [user]); // user 객체가 변경될 때마다 실행
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    setErrors({ ...errors, [name]: null }); // 입력 시 해당 필드의 에러 초기화
-  };
-
-  const validateForm = () => {
-    let newErrors = {};
-    if (!formData.name) newErrors.name = '이름은 필수입니다.';
-    if (!formData.email) newErrors.email = '이메일은 필수입니다.';
-    // TODO: 이메일 형식 유효성 검사 추가
-    if (!formData.phone) newErrors.phone = '휴대폰 번호는 필수입니다.';
-    // TODO: 기타 치료사 정보 필드의 유효성 검사 추가
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setServerError('');
-    setSuccess(false);
-
-    if (validateForm()) {
-      setLoading(true);
+    async function fetchUserInfo() {
       try {
-        // 실제 백엔드 API 호출 (예: Axios 사용)
-        // const response = await api.put('/api/therapist/profile', formData);
-        console.log('치료사 정보 업데이트 시도:', formData);
-
-        // 목업: 성공 시
-        setSuccess(true);
-        setServerError(''); // 성공 시 기존 에러 메시지 초기화
-        // TODO: AuthContext의 user 정보도 업데이트 (로그인 시와 유사)
-        // updateAuthUser(formData); // AuthContext에 업데이트 함수를 추가해야 함
+        const res = await axios.get('/api/v1/members/me', {
+          headers: {
+            Authorization: `Bearer ${user.accessToken}`,
+          },
+        });        
+        setFormData(res.data);
+        setCareerYears(res.data.careerYears ?? 0);
+        setCareerList(res.data.careers || []);
       } catch (err) {
-        setServerError('정보 업데이트 중 오류가 발생했습니다. 다시 시도해주세요.');
-        console.error('정보 업데이트 오류:', err);
-      } finally {
-        setLoading(false);
+        console.error('❌ 사용자 정보 조회 실패:', err);
+      }
+    }
+    fetchUserInfo();
+  }, [user]);
+
+  const showAlert = (msg) => {
+    setAlertMessage(msg);
+    setFadeOut(false);
+    setTimeout(() => setFadeOut(true), 2500);
+    setTimeout(() => {
+      setAlertMessage('');
+      setFadeOut(false);
+    }, 3000);
+  };
+
+  const handleProfileChange = async (newProfileId) => {
+    try {
+      await axios.patch('/api/v1/members/me', { profile: newProfileId }, {
+        headers: { Authorization: `Bearer ${user.accessToken}` },
+      });
+      setFormData((prev) => ({ ...prev, profile: newProfileId }));
+      setShowProfileSelect(false);
+      showAlert('프로필 이미지가 수정되었습니다.');
+    } catch (err) {
+      console.error('❌ 프로필 수정 실패:', err);
+      alert('프로필 수정에 실패했습니다.');
+    }
+  };
+
+  const handlePhoneUpdate = async () => {
+    if (!formData.tel1) {
+      alert('전화번호 1은 필수입니다.');
+      return;
+    }
+    try {
+      await axios.patch('/api/v1/members/me', {
+        tel1: formData.tel1,
+        tel2: formData.tel2 || '',
+      }, {
+        headers: { Authorization: `Bearer ${user.accessToken}` },
+      });
+      setEditPhone(false);
+      showAlert('전화번호가 수정되었습니다.');
+    } catch (err) {
+      console.error('❌ 전화번호 수정 실패:', err);
+      alert('전화번호 수정에 실패했습니다.');
+    }
+  };
+
+  const handleAddressUpdate = async () => {
+    const { city, district, dong, detail } = tempAddress;
+    if (!city || !district || !dong) {
+      alert('시/군/구, 동(읍/면/리)을 모두 선택해주세요.');
+      return;
+    }
+
+    try {
+      await axios.patch('/api/v1/members/me', {
+        city, district, dong, detail: detail || '',
+      }, {
+        headers: { Authorization: `Bearer ${user.accessToken}` },
+      });
+      setFormData((prev) => ({ ...prev, city, district, dong, detail }));
+      setEditAddress(false);
+      showAlert('주소가 수정되었습니다.');
+    } catch (err) {
+      console.error('❌ 주소 수정 실패:', err);
+      alert('주소 수정에 실패했습니다.');
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    if (!currentPassword || !newPassword || !newPasswordConfirm) {
+      alert('모든 입력 칸을 채워주세요.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      alert('비밀번호는 6자 이상이어야 합니다.');
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      alert('같은 비밀번호로 변경할 수 없습니다.');
+      return;
+    }
+
+    if (newPassword !== newPasswordConfirm) {
+      alert('비밀번호를 다시 확인해주세요.');
+      return;
+    }
+
+    try {
+      await axios.patch('/api/v1/members/me/password', {
+        currentPassword,
+        newPassword,
+      }, {
+        headers: { Authorization: `Bearer ${user.accessToken}` },
+      });
+      setShowPasswordModal(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setNewPasswordConfirm('');
+      showAlert('비밀번호가 성공적으로 변경되었습니다.');
+    } catch (err) {
+      if (err.response?.status === 400) {
+        alert('기존 비밀번호가 틀렸습니다.');
+      } else {
+        alert('비밀번호 수정에 실패했습니다.');
       }
     }
   };
 
-  if (!user) {
-    return (
-      <Container className="my-5 text-center">
-        <Alert variant="warning">로그인 정보가 없습니다. 다시 로그인 해주세요.</Alert>
-        <Button as={Link} to="/login">로그인 페이지로</Button>
-      </Container>
-    );
-  }
+  const handleCareerYearsUpdate = async () => {
+    if (careerYears < 0) {
+      alert('경력 연차는 0 이상이어야 합니다.');
+      return;
+    }
+
+    try {
+      await axios.patch('/api/v1/members/me', {
+        careerYears: careerYears,
+      }, {
+        headers: {
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+      });
+
+      showAlert('총 경력 연차가 수정되었습니다.');
+      setEditCareerYears(false);
+    } catch (err) {
+      console.error('❌ 경력 연차 수정 실패:', err);
+      alert('경력 연차 수정에 실패했습니다.');
+    }
+  };
+
+  const handleCareerListUpdate = async () => {
+    // 1. 빈 문자열을 null로 변환
+    const cleanedCareers = careerList.map((career) => ({
+      ...career,
+      startDate: career.startDate === '' ? null : career.startDate,
+      endDate: career.endDate === '' ? null : career.endDate,
+    }));
+
+    try {
+      // 2. cleanedCareers를 서버에 전송
+      await axios.patch('/api/v1/members/me', {
+        careerYears: careerYears,
+        careers: cleanedCareers,
+      }, {
+        headers: {
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+      });
+
+      setEditCareers(false);
+      showAlert('경력 목록이 수정되었습니다.');
+    } catch (err) {
+      console.error('❌ 경력 수정 실패:', err);
+      alert('경력 수정에 실패했습니다.');
+    }
+  };
 
   return (
-    <Container className="my-5">
-      <Card className="p-4 shadow-sm">
-        <h2 className="text-center mb-4">내 정보 수정 (치료사)</h2>
+    <div className="user-my-info-container">
+      <h4>내 정보 (치료사)</h4>
 
-        {serverError && <Alert variant="danger">{serverError}</Alert>}
-        {success && <Alert variant="success">정보가 성공적으로 업데이트되었습니다!</Alert>}
+      {alertMessage && (
+        <Alert variant="success" className={`custom-alert ${fadeOut ? 'fade-out' : ''}`}>
+          {alertMessage}
+        </Alert>
+      )}
 
-        <Form onSubmit={handleSubmit}>
-          <Row className="mb-3">
-            <Form.Group as={Col} controlId="formGridName">
-              <Form.Label>이름</Form.Label>
-              <Form.Control
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                isInvalid={!!errors.name}
-                readOnly // 이름은 일반적으로 수정하지 못하게 (필요시 제거)
-              />
-              <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
-            </Form.Group>
-
-            <Form.Group as={Col} controlId="formGridEmail">
-              <Form.Label>이메일 주소</Form.Label>
-              <Form.Control
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                isInvalid={!!errors.email}
-                readOnly // 이메일은 일반적으로 수정하지 못하게
-              />
-              <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
-            </Form.Group>
-          </Row>
-
-          <Form.Group className="mb-3" controlId="formGridPhone">
-            <Form.Label>휴대폰 번호</Form.Label>
-            <Form.Control
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              isInvalid={!!errors.phone}
-            />
-            <Form.Control.Feedback type="invalid">{errors.phone}</Form.Control.Feedback>
-          </Form.Group>
-
-          <Form.Group className="mb-3" controlId="formGridAddress">
-            <Form.Label>주소 (선택 사항)</Form.Label>
-            <Form.Control
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              isInvalid={!!errors.address}
-            />
-            <Form.Control.Feedback type="invalid">{errors.address}</Form.Control.Feedback>
-          </Form.Group>
-
-          <hr className="my-4" /> {/* 구분선 */}
-
-          {/* 치료사 고유 정보 */}
-          <Form.Group className="mb-3" controlId="formGridLicenseNumber">
-            <Form.Label>자격증 번호</Form.Label>
-            <Form.Control
-              type="text"
-              name="licenseNumber"
-              value={formData.licenseNumber}
-              onChange={handleChange}
-              isInvalid={!!errors.licenseNumber}
-            />
-            <Form.Control.Feedback type="invalid">{errors.licenseNumber}</Form.Control.Feedback>
-          </Form.Group>
-
-          <Form.Group className="mb-3" controlId="formGridSpecialization">
-            <Form.Label>전문 분야</Form.Label>
-            <Form.Control
-              type="text"
-              name="specialization"
-              value={formData.specialization}
-              onChange={handleChange}
-              isInvalid={!!errors.specialization}
-            />
-            <Form.Control.Feedback type="invalid">{errors.specialization}</Form.Control.Feedback>
-          </Form.Group>
-
-          <Form.Group className="mb-4" controlId="formGridIntroduction">
-            <Form.Label>자기소개</Form.Label>
-            <Form.Control
-              as="textarea"
-              name="introduction"
-              rows={5}
-              value={formData.introduction}
-              onChange={handleChange}
-              isInvalid={!!errors.introduction}
-            />
-            <Form.Control.Feedback type="invalid">{errors.introduction}</Form.Control.Feedback>
-          </Form.Group>
-
-
-          <Button variant="primary" type="submit" className="w-100" disabled={loading}>
-            {loading ? '저장 중...' : '정보 저장'}
+      {/* 프로필 이미지 */}
+      <div className="profile-image-wrapper">
+        <img src={`/images/profile${formData.profile}.png`} alt="프로필" />
+        <div>
+          <Button size="sm" variant="outline-primary" onClick={() => setShowProfileSelect(true)}>
+            캐릭터 변경하기
           </Button>
-        </Form>
-      </Card>
-    </Container>
+        </div>
+      </div>
+
+      {/* 기본 정보 */}
+      <div className="basic-info-box">
+        <h5 className="section-title">기본 정보</h5>
+        {['name', 'nickname', 'birthDate', 'email'].map((key) => (
+          <div key={key} className="info-item-box">
+            <Form.Label>{{
+              name: '이름',
+              nickname: '닉네임',
+              birthDate: '생년월일',
+              email: '이메일'
+            }[key]}</Form.Label>
+            <div className="info-value-box">{formData[key]}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 비밀번호 재설정 */}
+      <div className="mb-3">
+        <Button variant="outline-secondary" size="sm" onClick={() => setShowPasswordModal(true)}>
+          비밀번호 재설정
+        </Button>
+      </div>
+
+      {/* 전화번호 */}
+      <Row className="edit-section">
+        <Col>
+          <Form.Label>전화번호 1</Form.Label>
+          <Form.Control
+            value={formData.tel1}
+            onChange={(e) =>
+              setFormData({ ...formData, tel1: e.target.value.replace(/[^0-9]/g, '') })
+            }
+            readOnly={!editPhone}
+          />
+        </Col>
+        <Col>
+          <Form.Label>전화번호 2 (선택)</Form.Label>
+          <Form.Control
+            value={formData.tel2}
+            onChange={(e) =>
+              setFormData({ ...formData, tel2: e.target.value.replace(/[^0-9]/g, '') })
+            }
+            readOnly={!editPhone}
+          />
+        </Col>
+        <Col xs="auto">
+          <Button onClick={editPhone ? handlePhoneUpdate : () => setEditPhone(true)}>
+            {editPhone ? '수정하기' : '수정'}
+          </Button>
+        </Col>
+      </Row>
+
+      {/* 주소 */}
+      <div className="mb-3">
+        <Form.Label>주소</Form.Label>
+        {editAddress ? (
+          <>
+            <AddressSelector
+              address={tempAddress}
+              onChange={(addr) => setTempAddress({ ...tempAddress, ...addr })}
+            />
+            <div className="mt-2">
+              <Button variant="primary" onClick={handleAddressUpdate}>수정하기</Button>{' '}
+              <Button variant="secondary" onClick={() => setEditAddress(false)}>취소</Button>
+            </div>
+          </>
+        ) : (
+          <div>
+            <div className="address-display">
+              {formData.city} {formData.district} {formData.dong}
+              {formData.detail && ` ${formData.detail}`}
+            </div>
+            <Button className="mt-2" onClick={() => setTempAddress(formData) || setEditAddress(true)}>수정</Button>
+          </div>
+        )}
+      </div>
+
+      <div className="mb-4">
+        <Form.Label>총 경력 연차</Form.Label>
+
+        {!editCareerYears ? (
+          <div className="d-flex align-items-center gap-3">
+            <div className="info-value-box">{careerYears}년</div>
+            <Button size="sm" onClick={() => setEditCareerYears(true)}>수정</Button>
+          </div>
+        ) : (
+          <div className="d-flex align-items-end gap-2">
+            <Form.Control
+              type="number"
+              min="0"
+              value={careerYears}
+              onChange={(e) => setCareerYears(Number(e.target.value))}
+              style={{ maxWidth: '150px' }}
+            />
+            <Button onClick={handleCareerYearsUpdate}>수정하기</Button>
+          </div>
+        )}
+      </div>
+
+      <div className="mb-4">
+        <h5 className="d-flex justify-content-between align-items-center">
+          경력 목록
+          {!editCareers ? (
+            <Button variant="secondary" onClick={() => setEditCareers(true)}>수정하기</Button>
+          ) : (
+            <div>
+              <Button
+                variant="outline-success"
+                className="me-2"
+                onClick={() => setAddingNew(true)}
+                disabled={addingNew}
+              >
+                경력 추가하기
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setEditCareers(false);
+                  setEditingIndex(null);
+                  setAddingNew(false);
+                  showAlert('경력 수정이 완료되었습니다.');
+                }}
+              >
+                저장하기
+              </Button>
+            </div>
+          )}
+        </h5>
+
+        {/* 기존 경력 목록 */}
+        {careerList.map((career, index) => (
+          <div key={index} className="border p-3 mb-2 rounded bg-light">
+            {editingIndex === index ? (
+              <>
+                <Row className="mb-2">
+                  <Col>
+                    <Form.Control
+                      placeholder="회사명"
+                      value={editedCareer.company}
+                      onChange={(e) => setEditedCareer({ ...editedCareer, company: e.target.value })}
+                    />
+                  </Col>
+                  <Col>
+                    <Form.Control
+                      placeholder="직책"
+                      value={editedCareer.position}
+                      onChange={(e) => setEditedCareer({ ...editedCareer, position: e.target.value })}
+                    />
+                  </Col>
+                </Row>
+                <Row className="mb-2">
+                  <Col>
+                    <Form.Control
+                      type="date"
+                      value={editedCareer.startDate}
+                      min="1900-01-01"
+                      onChange={(e) => setEditedCareer({ ...editedCareer, startDate: e.target.value })}
+                      onInput={(e) => {
+                        const v = e.target.value;
+                        const m = v.match(/^\d{0,4}(-\d{0,2})?(-\d{0,2})?$/);
+                        e.target.value = m ? `${m[0]}` : '';
+                      }}
+                    />
+                  </Col>
+                  <Col>
+                    <Form.Control
+                      type="date"
+                      value={editedCareer.endDate}
+                      min="1900-01-01"
+                      onChange={(e) => setEditedCareer({ ...editedCareer, endDate: e.target.value })}
+                      onInput={(e) => {
+                        const v = e.target.value;
+                        const m = v.match(/^\d{0,4}(-\d{0,2})?(-\d{0,2})?$/);
+                        e.target.value = m ? `${m[0]}` : '';
+                      }}
+                    />
+                  </Col>
+                </Row>
+                <div className="d-flex gap-2">
+                  <Button
+                    variant="success"
+                    onClick={async () => {
+                      const updated = [...careerList];
+                      updated[index] = editedCareer;
+
+                      const cleanedCareers = updated.map((c) => ({
+                        ...c,
+                        startDate: c.startDate || null,
+                        endDate: c.endDate || null,
+                      }));
+
+                      await axios.patch('/api/v1/members/me', {
+                        careerYears,
+                        careers: cleanedCareers,
+                      }, {
+                        headers: { Authorization: `Bearer ${user.accessToken}` },
+                      });
+
+                      setCareerList(updated);
+                      setEditingIndex(null);
+                      showAlert('경력이 수정되었습니다.');
+                    }}
+                  >저장</Button>
+                  <Button variant="secondary" onClick={() => setEditingIndex(null)}>취소</Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <strong>{career.company}</strong> ({career.position})<br />
+                  {career.startDate} ~ {career.endDate || '현재'}
+                </div>
+                {editCareers && (
+                  <div className="mt-2 d-flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline-primary"
+                      onClick={() => {
+                        setEditingIndex(index);
+                        setEditedCareer({ ...career });
+                      }}
+                    >수정</Button>
+                    <Button
+                      size="sm"
+                      variant="outline-danger"
+                      onClick={async () => {
+                        const updated = careerList.filter((_, i) => i !== index);
+                        const cleanedCareers = updated.map((c) => ({
+                          ...c,
+                          startDate: c.startDate || null,
+                          endDate: c.endDate || null,
+                        }));
+
+                        await axios.patch('/api/v1/members/me', {
+                          careerYears,
+                          careers: cleanedCareers,
+                        }, {
+                          headers: { Authorization: `Bearer ${user.accessToken}` },
+                        });
+
+                        setCareerList(updated);
+                        showAlert('삭제되었습니다.');
+                      }}
+                    >삭제</Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ))}
+
+        {/* 경력 추가 폼 */}
+        {addingNew && (
+          <div className="border p-3 rounded bg-white">
+            <Row className="mb-2">
+              <Col>
+                <Form.Control
+                  placeholder="회사명"
+                  value={newCareer.company}
+                  onChange={(e) => setNewCareer({ ...newCareer, company: e.target.value })}
+                />
+              </Col>
+              <Col>
+                <Form.Control
+                  placeholder="직책"
+                  value={newCareer.position}
+                  onChange={(e) => setNewCareer({ ...newCareer, position: e.target.value })}
+                />
+              </Col>
+            </Row>
+            <Row className="mb-2">
+              <Col>
+                <Form.Control
+                  type="date"
+                  value={newCareer.startDate}
+                  min="1900-01-01"
+                  onChange={(e) => setNewCareer({ ...newCareer, startDate: e.target.value })}
+                  onInput={(e) => {
+                    const v = e.target.value;
+                    const m = v.match(/^\d{0,4}(-\d{0,2})?(-\d{0,2})?$/);
+                    e.target.value = m ? `${m[0]}` : '';
+                  }}
+                />
+              </Col>
+              <Col>
+                <Form.Control
+                  type="date"
+                  value={newCareer.endDate}
+                  min="1900-01-01"
+                  onChange={(e) => setNewCareer({ ...newCareer, endDate: e.target.value })}
+                  onInput={(e) => {
+                    const v = e.target.value;
+                    const m = v.match(/^\d{0,4}(-\d{0,2})?(-\d{0,2})?$/);
+                    e.target.value = m ? `${m[0]}` : '';
+                  }}
+                />
+              </Col>
+            </Row>
+            <div className="d-flex gap-2">
+              <Button
+                variant="success"
+                onClick={async () => {
+                  const { company, position, startDate } = newCareer;
+                  if (!company.trim() || !position.trim() || !startDate || startDate < '1900-01-01') {
+                    alert('회사명, 직책, 시작일(1900년 이후)은 필수입니다.');
+                    return;
+                  }
+
+                  const updated = [...careerList, newCareer];
+                  const cleanedCareers = updated.map((c) => ({
+                    ...c,
+                    startDate: c.startDate || null,
+                    endDate: c.endDate || null,
+                  }));
+
+                  await axios.patch('/api/v1/members/me', {
+                    careerYears,
+                    careers: cleanedCareers,
+                  }, {
+                    headers: { Authorization: `Bearer ${user.accessToken}` },
+                  });
+
+                  setCareerList(updated);
+                  setNewCareer({ company: '', position: '', startDate: '', endDate: '' });
+                  setAddingNew(false);
+                  showAlert('경력이 추가되었습니다.');
+                }}
+              >추가하기</Button>
+              <Button variant="secondary" onClick={() => setAddingNew(false)}>취소</Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+
+
+      {/* 프로필 선택 모달 */}
+      <Modal show={showProfileSelect} onHide={() => setShowProfileSelect(false)}>
+        <Modal.Header closeButton><Modal.Title>캐릭터 선택</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <ProfileImageSelect
+            value={formData.profile}
+            onChange={handleProfileChange}
+          />
+        </Modal.Body>
+      </Modal>
+
+      {/* 비밀번호 변경 모달 */}
+      <Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)}>
+        <Modal.Header closeButton><Modal.Title>비밀번호 변경</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <Form.Group className="mb-2">
+            <Form.Label>현재 비밀번호</Form.Label>
+            <Form.Control
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+          </Form.Group>
+          <Form.Group className="mb-2">
+            <Form.Label>새 비밀번호</Form.Label>
+            <Form.Control
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </Form.Group>
+          <Form.Group className="mb-2">
+            <Form.Label>비밀번호 확인</Form.Label>
+            <Form.Control
+              type="password"
+              value={newPasswordConfirm}
+              onChange={(e) => setNewPasswordConfirm(e.target.value)}
+            />
+          </Form.Group>
+          <Button onClick={handlePasswordUpdate}>비밀번호 수정</Button>
+        </Modal.Body>
+      </Modal>
+    </div>
   );
 }
 

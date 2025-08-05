@@ -197,6 +197,7 @@ public class MemberService {
 			.birthDate(member.getBirthDate())
 			.tel1(member.getTel1())
 			.tel2(member.getTel2())
+			.careerYears(therapist.get().getCareerYears())
 			.careers(careerResList)
 			.city(member.getAddress().getCity())
 			.district(member.getAddress().getDistrict())

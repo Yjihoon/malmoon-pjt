@@ -1,203 +1,354 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Form, Row, Col, Alert, Card, Button } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../../contexts/AuthContext'; // AuthContext에서 사용자 정보 가져오기
+import { Form, Button, Modal, Row, Col, Alert } from 'react-bootstrap';
+import ProfileImageSelect from '../../../components/signup/ProfileImageSelect';
+import AddressSelector from '../../../components/signup/AddressSelector';
+import { useAuth } from '../../../contexts/AuthContext';
+import axios from 'axios';
+import './UserMyInfoPage.css';
 
 function UserMyInfoPage() {
-  const { user } = useAuth(); // 현재 로그인한 사용자 정보
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '', // 사용자도 주소 필드가 있을 수 있음
-    // 사용자 고유 정보 추가 (예: childInfo, preferences 등)
-    childName: '',
-    childAge: '',
-    notes: '', // 기타 특이사항
-  });
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [serverError, setServerError] = useState('');
+  const { user } = useAuth();
 
-  // 컴포넌트 마운트 시 사용자 정보를 폼 데이터로 초기화
+  const [formData, setFormData] = useState({
+    profile: 1,
+    name: '',
+    nickname: '',
+    birthDate: '',
+    email: '',
+    tel1: '',
+    tel2: '',
+    city: '',
+    district: '',
+    dong: '',
+    detail: '',
+  });
+
+  const [editPhone, setEditPhone] = useState(false);
+  const [editAddress, setEditAddress] = useState(false);
+  const [showProfileSelect, setShowProfileSelect] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [tempAddress, setTempAddress] = useState({city: '', district: '', dong: '', detail: '',});
+  const [fadeOut, setFadeOut] = useState(false);
+
   useEffect(() => {
-    if (user) {
-      setFormData({
-        name: user.name || '',
-        email: user.userEmail || '',
-        phone: user.phone || '',
-        address: user.address || '',
-        childName: user.childName || '',
-        childAge: user.childAge || '',
-        notes: user.notes || '',
-      });
+    async function fetchUserInfo() {
+      try {
+        const res = await axios.get('/api/v1/members/me', {
+          headers: {
+            Authorization: `Bearer ${user.accessToken}`,
+          },
+        });
+        setFormData(res.data);
+      } catch (err) {
+        console.error('❌ 사용자 정보 조회 실패:', err);
+      }
     }
+    fetchUserInfo();
   }, [user]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    setErrors({ ...errors, [name]: null });
+  const showAlert = (msg) => {
+    setAlertMessage(msg);
+    setFadeOut(false); // 초기화
+
+    // 2.5초 후 페이드아웃 시작
+    setTimeout(() => {
+      setFadeOut(true);
+    }, 2500);
+
+    // 3초 후 메시지 제거
+    setTimeout(() => {
+      setAlertMessage('');
+      setFadeOut(false);
+    }, 3000);
   };
 
-  const validateForm = () => {
-    let newErrors = {};
-    if (!formData.name) newErrors.name = '이름은 필수입니다.';
-    if (!formData.email) newErrors.email = '이메일은 필수입니다.';
-    // TODO: 이메일 형식 유효성 검사 추가
-    if (!formData.phone) newErrors.phone = '휴대폰 번호는 필수입니다.';
-    // TODO: 기타 사용자 정보 필드의 유효성 검사 추가
+  const handleProfileChange = async (newProfileId) => {
+    try {
+      await axios.patch('/api/v1/members/me', {
+        profile: newProfileId,
+      }, {
+        headers: {
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+      });
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+      setFormData((prev) => ({ ...prev, profile: newProfileId }));
+      setShowProfileSelect(false);
+      showAlert('프로필 이미지가 수정되었습니다.');
+    } catch (err) {
+      console.error('❌ 프로필 수정 실패:', err);
+      alert('프로필 수정에 실패했습니다.');
+    }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setServerError('');
-    setSuccess(false);
+  const handlePhoneUpdate = async () => {
+    if (!formData.tel1) {
+      alert('전화번호 1은 필수입니다.');
+      return;
+    }
 
-    if (validateForm()) {
-      setLoading(true);
-      try {
-        // 실제 백엔드 API 호출
-        // const response = await api.put('/api/user/profile', formData);
-        console.log('사용자 정보 업데이트 시도:', formData);
+    try {
+      await axios.patch('/api/v1/members/me', {
+        tel1: formData.tel1,
+        tel2: formData.tel2 || '', // 선택 항목
+      }, {
+        headers: {
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+      });
 
-        // 목업: 성공 시
-        setSuccess(true);
-        setServerError('');
-        // TODO: AuthContext의 user 정보도 업데이트 (로그인 시와 유사)
-        // updateAuthUser(formData);
-      } catch (err) {
-        setServerError('정보 업데이트 중 오류가 발생했습니다. 다시 시도해주세요.');
-        console.error('정보 업데이트 오류:', err);
-      } finally {
-        setLoading(false);
+      setEditPhone(false);
+      showAlert('전화번호가 수정되었습니다.');
+    } catch (err) {
+      console.error('❌ 전화번호 수정 실패:', err);
+      alert('전화번호 수정에 실패했습니다.');
+    }
+  };
+
+
+  const handleAddressUpdate = async () => {
+    const { city, district, dong, detail } = tempAddress;
+
+    if (!city || !district || !dong) {
+      alert('시/군/구, 동(읍/면/리)을 모두 선택해주세요.');
+      return;
+    }
+
+    try {
+      await axios.patch('/api/v1/members/me', {
+        city,
+        district,
+        dong,
+        detail: detail || '',
+      }, {
+        headers: {
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+      });
+
+      // 저장 성공 시 원래 주소에도 반영
+      setFormData((prev) => ({
+        ...prev,
+        city,
+        district,
+        dong,
+        detail,
+      }));
+
+      setEditAddress(false);
+      showAlert('주소가 수정되었습니다.');
+    } catch (err) {
+      console.error('❌ 주소 수정 실패:', err);
+      alert('주소 수정에 실패했습니다.');
+    }
+  };
+
+
+  const handlePasswordUpdate = async () => {
+    if (!currentPassword || !newPassword || !newPasswordConfirm) {
+      alert('모든 입력 칸을 채워주세요.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      alert('비밀번호는 6자 이상이어야 합니다.');
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      alert('같은 비밀번호로 변경할 수 없습니다.');
+      return;
+    }
+
+    if (newPassword !== newPasswordConfirm) {
+      alert('비밀번호를 다시 확인해주세요.');
+      return;
+    }
+
+    try {
+      await axios.patch('/api/v1/members/me/password', {
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      }, {
+        headers: {
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+      });
+
+      setShowPasswordModal(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setNewPasswordConfirm('');
+      showAlert('비밀번호가 성공적으로 변경되었습니다.');
+      alert('비밀번호가 성공적으로 변경되었습니다.');
+    } catch (err) {
+      console.error('❌ 비밀번호 수정 실패:', err);
+
+      if (err.response?.status === 400) {
+        alert('기존 비밀번호가 틀렸습니다.');
+      } else {
+        alert('비밀번호 수정에 실패했습니다.');
       }
     }
   };
 
-  if (!user) {
-    return (
-      <Container className="my-5 text-center">
-        <Alert variant="warning">로그인 정보가 없습니다. 다시 로그인 해주세요.</Alert>
-        <Button as={Link} to="/login">로그인 페이지로</Button>
-      </Container>
-    );
-  }
+  const handleAddressEditClick = () => {
+    setTempAddress({
+      city: '',
+      district: '',
+      dong: '',
+      detail: '',
+    });
+    setEditAddress(true);
+  };
+
+  const handleAddressCancel = () => {
+    setEditAddress(false);
+  };
 
   return (
-    <Container className="my-5">
-      <Card className="p-4 shadow-sm">
-        <h2 className="text-center mb-4">내 정보 수정 (사용자)</h2>
+    <div className="user-my-info-container">
+      <h4>내 정보</h4>
 
-        {serverError && <Alert variant="danger">{serverError}</Alert>}
-        {success && <Alert variant="success">정보가 성공적으로 업데이트되었습니다!</Alert>}
+      {alertMessage && (
+        <Alert variant="success" className={`custom-alert ${fadeOut ? 'fade-out' : ''}`}>
+          {alertMessage}
+        </Alert>
+      )}
 
-        <Form onSubmit={handleSubmit}>
-          <Row className="mb-3">
-            <Form.Group as={Col} controlId="formGridName">
-              <Form.Label>이름</Form.Label>
-              <Form.Control
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                isInvalid={!!errors.name}
-                readOnly // 이름은 일반적으로 수정하지 못하게 (필요시 제거)
-              />
-              <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
-            </Form.Group>
-
-            <Form.Group as={Col} controlId="formGridEmail">
-              <Form.Label>이메일 주소</Form.Label>
-              <Form.Control
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                isInvalid={!!errors.email}
-                readOnly // 이메일은 일반적으로 수정하지 못하게
-              />
-              <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
-            </Form.Group>
-          </Row>
-
-          <Form.Group className="mb-3" controlId="formGridPhone">
-            <Form.Label>휴대폰 번호</Form.Label>
-            <Form.Control
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              isInvalid={!!errors.phone}
-            />
-            <Form.Control.Feedback type="invalid">{errors.phone}</Form.Control.Feedback>
-          </Form.Group>
-
-          <Form.Group className="mb-3" controlId="formGridAddress">
-            <Form.Label>주소 (선택 사항)</Form.Label>
-            <Form.Control
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              isInvalid={!!errors.address}
-            />
-            <Form.Control.Feedback type="invalid">{errors.address}</Form.Control.Feedback>
-          </Form.Group>
-
-          <hr className="my-4" />
-
-          {/* 자녀 정보 */}
-          <Row className="mb-3">
-            <Form.Group as={Col} controlId="formGridChildName">
-              <Form.Label>자녀 이름</Form.Label>
-              <Form.Control
-                type="text"
-                name="childName"
-                value={formData.childName}
-                onChange={handleChange}
-                isInvalid={!!errors.childName}
-              />
-              <Form.Control.Feedback type="invalid">{errors.childName}</Form.Control.Feedback>
-            </Form.Group>
-
-            <Form.Group as={Col} controlId="formGridChildAge">
-              <Form.Label>자녀 나이</Form.Label>
-              <Form.Control
-                type="number"
-                name="childAge"
-                value={formData.childAge}
-                onChange={handleChange}
-                isInvalid={!!errors.childAge}
-              />
-              <Form.Control.Feedback type="invalid">{errors.childAge}</Form.Control.Feedback>
-            </Form.Group>
-          </Row>
-
-          <Form.Group className="mb-4" controlId="formGridNotes">
-            <Form.Label>기타 특이사항</Form.Label>
-            <Form.Control
-              as="textarea"
-              name="notes"
-              rows={3}
-              value={formData.notes}
-              onChange={handleChange}
-              isInvalid={!!errors.notes}
-            />
-            <Form.Control.Feedback type="invalid">{errors.notes}</Form.Control.Feedback>
-          </Form.Group>
-
-
-          <Button variant="primary" type="submit" className="w-100" disabled={loading}>
-            {loading ? '저장 중...' : '정보 저장'}
+      <div className="profile-image-wrapper">
+        <img src={`/images/profile${formData.profile}.png`} alt="프로필" />
+        <div>
+          <Button size="sm" variant="outline-primary" onClick={() => setShowProfileSelect(true)}>
+            캐릭터 변경하기
           </Button>
-        </Form>
-      </Card>
-    </Container>
+        </div>
+      </div>
+
+      <div className="basic-info-box">
+        <h5 className="section-title">기본 정보</h5>
+
+        <div className="info-item-box">
+          <Form.Label>이름</Form.Label>
+          <div className="info-value-box">{formData.name}</div>
+        </div>
+
+        <div className="info-item-box">
+          <Form.Label>닉네임</Form.Label>
+          <div className="info-value-box">{formData.nickname}</div>
+        </div>
+
+        <div className="info-item-box">
+          <Form.Label>생년월일</Form.Label>
+          <div className="info-value-box">{formData.birthDate}</div>
+        </div>
+
+        <div className="info-item-box">
+          <Form.Label>이메일</Form.Label>
+          <div className="info-value-box">{formData.email}</div>
+        </div>
+      </div>
+
+      <div className="mb-3">
+        <Button variant="outline-secondary" size="sm" onClick={() => setShowPasswordModal(true)}>
+          비밀번호 재설정
+        </Button>
+      </div>
+
+      <Row className="edit-section">
+        <Col>
+          <Form.Label>전화번호 1</Form.Label>
+          <Form.Control
+            value={formData.tel1}
+            onChange={(e) => setFormData({ ...formData, tel1: e.target.value.replace(/[^0-9]/g, '') })}
+            readOnly={!editPhone}
+          />
+        </Col>
+        <Col>
+          <Form.Label>전화번호 2 (선택)</Form.Label>
+          <Form.Control
+            value={formData.tel2}
+            onChange={(e) => setFormData({ ...formData, tel2: e.target.value.replace(/[^0-9]/g, '') })}
+            readOnly={!editPhone}
+          />
+        </Col>
+        <Col xs="auto">
+          <Button onClick={editPhone ? handlePhoneUpdate : () => setEditPhone(true)}>
+            {editPhone ? '수정하기' : '수정'}
+          </Button>
+        </Col>
+      </Row>
+
+      <div className="mb-3">
+        <Form.Label>주소</Form.Label>
+        {editAddress ? (
+          <>
+            <AddressSelector
+              address={tempAddress}
+              onChange={(addr) => setTempAddress({ ...tempAddress, ...addr })}
+            />
+            <div className="mt-2">
+              <Button variant="primary" onClick={handleAddressUpdate}>수정하기</Button>{' '}
+              <Button variant="secondary" onClick={handleAddressCancel}>취소</Button>
+            </div>
+          </>
+        ) : (
+          <div>
+            <div className="address-display">
+              {formData.city} {formData.district} {formData.dong}
+              {formData.detail && ` ${formData.detail}`}
+            </div>
+            <Button className="mt-2" onClick={handleAddressEditClick}>수정</Button>
+          </div>
+        )}
+
+      </div>
+
+      <Modal show={showProfileSelect} onHide={() => setShowProfileSelect(false)}>
+        <Modal.Header closeButton><Modal.Title>캐릭터 선택</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <ProfileImageSelect
+            value={formData.profile}
+            onChange={handleProfileChange}
+          />
+        </Modal.Body>
+      </Modal>
+
+      <Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)}>
+        <Modal.Header closeButton><Modal.Title>비밀번호 변경</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <Form.Group className="mb-2">
+            <Form.Label>현재 비밀번호</Form.Label>
+            <Form.Control
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+          </Form.Group>
+          <Form.Group className="mb-2">
+            <Form.Label>새 비밀번호</Form.Label>
+            <Form.Control
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </Form.Group>
+          <Form.Group className="mb-2">
+            <Form.Label>비밀번호 확인</Form.Label>
+            <Form.Control
+              type="password"
+              value={newPasswordConfirm}
+              onChange={(e) => setNewPasswordConfirm(e.target.value)}
+            />
+          </Form.Group>
+          <Button onClick={handlePasswordUpdate}>비밀번호 수정</Button>
+        </Modal.Body>
+      </Modal>
+    </div>
   );
 }
 

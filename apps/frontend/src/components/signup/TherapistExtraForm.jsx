@@ -84,26 +84,26 @@ function TherapistExtraForm({
               <Form.Label>시작일</Form.Label>
               <Form.Control
                 type="date"
-                value={career.start_date}
-                onChange={(e) => handleCareerChange(index, 'start_date', e.target.value)}
+                value={career.startDate}
+                onChange={(e) => handleCareerChange(index, 'startDate', e.target.value)}
                 max="2099-12-31"
                 onInput={(e) => {
                   if (!/^\d{0,4}-?\d{0,2}-?\d{0,2}$/.test(e.target.value)) {
                     e.preventDefault();
                   }
                 }}
-                isInvalid={!!errors[`career-${index}-start_date`]}
+                isInvalid={!!errors[`career-${index}-startDate`]}
               />
               <Form.Control.Feedback type="invalid">
-                {errors[`career-${index}-start_date`]}
+                {errors[`career-${index}-startDate`]}
               </Form.Control.Feedback>
             </Col>
             <Col>
               <Form.Label>종료일</Form.Label>
               <Form.Control
                 type="date"
-                value={career.end_date}
-                onChange={(e) => handleCareerChange(index, 'end_date', e.target.value)}
+                value={career.endDate}
+                onChange={(e) => handleCareerChange(index, 'endDate', e.target.value)}
                 max="2099-12-31"
                 onInput={(e) => {
                   if (!/^\d{0,4}-?\d{0,2}-?\d{0,2}$/.test(e.target.value)) {
