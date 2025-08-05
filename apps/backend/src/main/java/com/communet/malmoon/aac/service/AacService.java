@@ -51,10 +51,10 @@ public class AacService {
 	 * @param req 필터 조건 (situation, action, emotion) 및 페이지 정보
 	 * @return 조건에 맞는 AAC 항목 페이지 (이미지 URL 포함)
 	 */
-	public Page<AacGetRes> getAacList(AacGetReq req, Long therapistId) {
+	public Page<AacGetRes> getAacList(AacGetReq req) {
 		Pageable pageable = PageRequest.of(req.getPage(), req.getSize(), Sort.by(Sort.Direction.DESC, "createdAt"));
 		// 동적 필터 조건 구성
-		var spec = AacSpecification.withFilters(req.getSituation(), req.getAction(), req.getEmotion(), therapistId);
+		var spec = AacSpecification.withFilters(req.getSituation(), req.getAction(), req.getEmotion());
 
 		// Specification 기반 조회
 		Page<Aac> page = aacRepository.findAll(spec, pageable);
