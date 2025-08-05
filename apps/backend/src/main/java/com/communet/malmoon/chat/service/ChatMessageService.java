@@ -29,4 +29,12 @@ public interface ChatMessageService {
 	 * @return 메시지 응답 DTO 리스트
 	 */
 	List<ChatMessageRes> getMessagesByRoomId(Long roomId);
+
+	/**
+	 * 특정 채팅방의 마지막 메시지를 조회합니다.
+	 *
+	 * @param roomId 조회할 채팅방 ID
+	 * @return 마지막 메시지 응답 DTO (없을 경우 null 또는 예외 처리 필요)
+	 */
+	ChatMessageRes getLastMessageByRoomId(Long roomId);
 }

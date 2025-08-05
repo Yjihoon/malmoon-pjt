@@ -50,4 +50,13 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 			.map(ChatMessageRes::from)
 			.toList();
 	}
+
+	@Override
+	public ChatMessageRes getLastMessageByRoomId(Long roomId) {
+		ChatMessage lastMessage = chatMessageRepository.findFirstByRoomIdOrderBySentAtDesc(roomId);
+		if (lastMessage == null) {
+			throw new ChatException(ChatErrorCode.NOT_FOUND);
+		}
+		return ChatMessageRes.from(lastMessage);
+	}
 }

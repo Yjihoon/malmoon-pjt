@@ -18,6 +18,8 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 public class ChatRoomCreateReq {
+	@Schema(description = "", example = "")
+	private String roomName;
 
 	@Schema(description = "채팅방 타입 (1:1 / 그룹)", example = "GROUP")
 	private RoomType roomType;

@@ -44,4 +44,10 @@ public class ChatRoomParticipant {
 			this.joinedAt = LocalDateTime.now();
 		}
 	}
+
+	public void setLeftAt() {
+		if (this.leftAt == null) {
+			this.leftAt = LocalDateTime.now();
+		}
+	}
 }
