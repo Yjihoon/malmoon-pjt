@@ -42,9 +42,12 @@ public class S3Config {
 	}
 
 	@Bean
-	public S3Presigner s3Presigner(@Value("${cloud.aws.region.static}") String region) {
+	public S3Presigner s3Presigner() {
+		AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
+
 		return S3Presigner.builder()
 			.region(Region.of(region))
+			.credentialsProvider(StaticCredentialsProvider.create(credentials))
 			.build();
 	}
 
