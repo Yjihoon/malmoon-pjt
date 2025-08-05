@@ -1,6 +1,7 @@
 package com.communet.malmoon.file.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -60,4 +61,19 @@ public class FileController {
 			return ResponseEntity.internalServerError().build();
 		}
 	}
+
+	/**
+	 * Presigned URL 반환 API
+	 *
+	 * @param fileId 파일 ID (file 테이블의 PK)
+	 * @return presigned URL (일정 시간 동안만 접근 가능한 S3 URL)
+	 */
+	@Operation(summary = "Presigned URL 조회", description = "파일 ID를 받아 AWS S3의 presigned 접근 URL을 반환합니다.")
+	@GetMapping("/{fileId}/presigned-url")
+	public ResponseEntity<String> getPresignedUrl(
+		@Parameter(description = "파일 ID", example = "1") @PathVariable(name = "fileId") Long fileId) {
+		String presignedUrl = fileService.getPresignedFileUrl(fileId);
+		return ResponseEntity.ok(presignedUrl);
+	}
+
 }
