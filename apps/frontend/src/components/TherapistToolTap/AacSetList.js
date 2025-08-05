@@ -1,7 +1,7 @@
 import React from 'react';
-import { ListGroup, Button, Badge } from 'react-bootstrap';
+import { ListGroup, Button } from 'react-bootstrap';
 
-const AacSetList = ({ aacSets, aacItems, onEdit, onDelete }) => {
+const AacSetList = ({ aacSets, onEdit, onDelete }) => {
     if (!aacSets || aacSets.length === 0) {
         return <p className="text-muted text-center">생성된 AAC 묶음이 없습니다.</p>;
     }
@@ -14,13 +14,10 @@ const AacSetList = ({ aacSets, aacItems, onEdit, onDelete }) => {
                         <div>
                             <h5>{set.name}</h5>
                             <p className="text-muted mb-2">{set.description}</p>
-                            <div>
-                                {(set.aac_item_ids || []).slice(0, 5).map(itemId => {
-                                    const item = aacItems.find(t => t.id === itemId);
-                                    return item ? <Badge pill bg="info" className="me-1" key={itemId}>{item.name}</Badge> : null;
-                                })}
-                                {(set.aac_item_ids || []).length > 5 && <Badge pill bg="secondary">+{set.aac_item_ids.length - 5}개 더</Badge>}
-                            </div>
+                            {/* 상세 아이템 목록 표시는 제거합니다.
+                                /my API는 아이템 목록을 포함하지 않기 때문입니다.
+                                필요 시, 상세 조회 API를 호출하여 구현할 수 있습니다.
+                            */}
                         </div>
                         <div className="ms-3">
                             <Button variant="outline-secondary" size="sm" className="me-2" onClick={() => onEdit(set)}>편집</Button>

@@ -1,14 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-import AacItemSelector from './AacItemSelector'; // [수정] AacSetList 대신 AacItemSelector를 사용
+import AacItemSelector from './AacItemSelector';
 
 const AacSetModal = ({ show, onHide, onSave, initialData, allAacItems }) => {
+    // initialData가 있을 경우, aac_item_ids도 함께 설정해야 합니다.
+    // 현재는 목록 조회 API에서 item id 리스트를 반환하지 않으므로,
+    // 편집 시에는 상세 조회 API를 호출하여 item id 리스트를 가져오는 로직이 추가되어야 합니다.
+    // 여기서는 생성 로직에 초점을 맞춥니다.
     const [form, setForm] = useState({ name: '', description: '', aac_item_ids: [] });
 
     useEffect(() => {
         if (initialData) {
-            setForm(initialData);
+            // 편집 시, 상세 정보를 불러와 aac_item_ids를 채워야 이상적으로 동작합니다.
+            // 지금은 초기 데이터의 기본 정보만 설정합니다.
+            setForm({
+                ...initialData,
+                aac_item_ids: initialData.aac_item_ids || []
+            });
         } else {
+            // 생성 시, 폼 초기화
             setForm({ name: '', description: '', aac_item_ids: [] });
         }
     }, [initialData, show]);

@@ -1,30 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col, InputGroup, Spinner, Card, Image } from 'react-bootstrap';
+import { Modal, Button, Form, Row, Col, Spinner, Card, Image } from 'react-bootstrap';
 
-// [수정] 부모로부터 onGenerate 함수를 props로 받도록 추가합니다.
 const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
-    const [form, setForm] = useState({ name: '', description: '', situation: '', action: '', emotion: '', status: 'public' });
+    const [form, setForm] = useState({ name: '', description: '', situation: '', action: '', emotion: '', status: 'PUBLIC' });
     const [creationMethod, setCreationMethod] = useState('direct');
     const [imagePreview, setImagePreview] = useState('');
     const [imageFile, setImageFile] = useState(null);
     
-    const [aiPrompt, setAiPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [aiGeneratedImage, setAiGeneratedImage] = useState(null);
 
     useEffect(() => {
         if (itemData) {
-            setForm(itemData);
+            setForm({
+                ...itemData,
+                status: itemData.status || 'PUBLIC' // 상태 필드 소문자로 변환
+            });
             if (itemData.file_id) setImagePreview(itemData.file_id);
-            setCreationMethod('direct');
+            setCreationMethod('direct'); // 편집 시에는 항상 직접 등록 모드
         } else {
-            setForm({ name: '', description: '', situation: '', action: '', emotion: '', status: 'public' });
-        }
-        if (!show) {
+            // 새로 만들 때 초기화
+            setForm({ name: '', description: '', situation: '', action: '', emotion: '', status: 'PUBLIC' });
+            setCreationMethod('direct');
             setImagePreview('');
             setImageFile(null);
             setAiGeneratedImage(null);
-            setCreationMethod('direct');
         }
     }, [itemData, show]);
 
@@ -43,13 +43,25 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
 
     const handleSaveClick = () => {
         const { name, description, situation, action } = form;
-        if (creationMethod === 'direct' && (!name || !description || !situation || !action)) {
-            alert('이름, 설명, 상황, 행동은 필수 입력 항목입니다.');
-            return;
+        if (creationMethod === 'direct') {
+            if(!name || !description || !situation || !action) {
+                alert('이름, 설명, 상황, 행동은 필수 입력 항목입니다.');
+                return;
+            }
+            if(!itemData && !imageFile) {
+                alert('이미지를 등록해주세요.');
+                return;
+            }
         }
-        if (creationMethod === 'ai' && !name) {
-            alert('아이템 이름은 필수 입력 항목입니다.');
-            return;
+        if (creationMethod === 'ai') {
+             if(!name) {
+                alert('아이템 이름은 필수 입력 항목입니다.');
+                return;
+            }
+            if(!aiGeneratedImage) {
+                alert('AI 이미지를 생성해주세요.');
+                return;
+            }
         }
         onSave({ ...form, imageFile, aiGeneratedImage });
     };
@@ -62,9 +74,7 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
         }
         setIsGenerating(true);
         try {
-            // [수정] 이제 onGenerate가 정상적으로 props로 전달되어 호출됩니다.
             const generatedUrl = await onGenerate({ situation, action, emotion, description });
-            // [수정] AI 서버가 제공하는 전체 URL을 그대로 사용합니다.
             setAiGeneratedImage(generatedUrl);
         } catch (error) { 
             alert(error.message || 'AI 이미지 생성에 실패했습니다.');
@@ -127,7 +137,7 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
                             </Row>
                             <hr className="my-4" />
                             <Form.Group className="mb-3"><Form.Label>이름</Form.Label><Form.Control type="text" name="name" placeholder="생성된 아이템의 이름 (예: 즐거운 학교생활)" value={form.name || ''} onChange={handleFormChange} /></Form.Group>
-                            <Form.Group className="mb-3"><Form.Label>상태</Form.Label><Form.Select name="status" value={form.status || 'public'} onChange={handleFormChange}><option value="public">공개</option><option value="private">비공개</option></Form.Select></Form.Group>
+                            <Form.Group className="mb-3"><Form.Label>상태</Form.Label><Form.Select name="status" value={form.status || 'PUBLIC'} onChange={handleFormChange}><option value="PUBLIC">공개</option><option value="PRIVATE">비공개</option></Form.Select></Form.Group>
                         </>
                     ) : (
                         <Row>
@@ -139,7 +149,7 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
                                     <Col><Form.Group className="mb-3"><Form.Label>행동 (소분류)</Form.Label><Form.Control type="text" name="action" placeholder="예: 밥먹기, 공부하기" value={form.action || ''} onChange={handleFormChange} /></Form.Group></Col>
                                     <Col><Form.Group className="mb-3"><Form.Label>감정 (선택)</Form.Label><Form.Control type="text" name="emotion" placeholder="예: 기쁨" value={form.emotion || ''} onChange={handleFormChange} /></Form.Group></Col>
                                 </Row>
-                                <Form.Group className="mb-3"><Form.Label>상태</Form.Label><Form.Select name="status" value={form.status || 'public'} onChange={handleFormChange}><option value="public">공개</option><option value="private">비공개</option></Form.Select></Form.Group>
+                                <Form.Group className="mb-3"><Form.Label>상태</Form.Label><Form.Select name="status" value={form.status || 'PUBLIC'} onChange={handleFormChange}><option value="PUBLIC">공개</option><option value="PRIVATE">비공개</option></Form.Select></Form.Group>
                             </Col>
                             <Col md={4}>
                                 <Form.Group className="mb-3">

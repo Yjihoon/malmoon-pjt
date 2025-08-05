@@ -11,14 +11,36 @@ import {
   ListGroup,
 } from "react-bootstrap";
 
-// --- [수정] props에 currentUser 추가 ---
-const AacItemList = ({ aacItems, onEdit, onDelete, currentUser }) => {
+const AacItemList = ({ aacItems, onEdit, onDelete, onViewDetails, currentUser }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSituation, setSelectedSituation] = useState(null);
   const [selectedAction, setSelectedAction] = useState(null);
   const [activeKey, setActiveKey] = useState(null);
   const itemsPerPage = 12;
+
+  // [수정 및 로그 추가] 잘못된 중복 URL과 한글/공백 문제를 해결하고 경로를 확인하는 함수
+  const getCorrectUrl = (url, itemName) => {
+    // --- [콘솔 로그 추가] ---
+    console.log(`[AacItemList - ${itemName}] 원본 URL:`, url);
+    // ------------------------
+
+    if (!url || typeof url !== 'string') {
+      return null;
+    }
+    let correctedUrl = url;
+    // URL이 'https://'로 여러 번 시작하는 경우, 마지막 'https://' 부분만 사용
+    if ((url.match(/https:\/\//g) || []).length > 1) {
+      const lastIndex = url.lastIndexOf('https://');
+      correctedUrl = url.substring(lastIndex);
+    }
+    
+    const finalUrl = encodeURI(correctedUrl);
+    // --- [콘솔 로그 추가] ---
+    console.log(`[AacItemList - ${itemName}] 최종 URL:`, finalUrl);
+    // ------------------------
+    return finalUrl;
+  };
 
   const categories = useMemo(() => {
     if (!aacItems) return {};
@@ -39,35 +61,32 @@ const AacItemList = ({ aacItems, onEdit, onDelete, currentUser }) => {
   const filteredItems = useMemo(() => {
     if (!aacItems) return [];
 
-    // 공개/비공개 필터
     const checkVisibility = (item) => {
-      // ?. (Optional Chaining)은 currentUser가 아직 로딩 중(null)일 때 오류를 방지합니다.
-      return (
-        item.status !== "private" ||
-        (item.status === "private" &&
-          item.therapist_id === currentUser?.therapist_id)
-      );
+      if (!currentUser) return false; 
+      if (item.status === "PUBLIC" || item.status === "DEFAULT") {
+        return true;
+      }
+      if (item.status === "PRIVATE" && item.therapistId === currentUser.memberId) {
+        return true;
+      }
+      return false;
     };
 
-    // 전체 보기 상태
     if (!selectedSituation) {
       return aacItems.filter((item) => {
         const searchMatch =
           !searchTerm ||
           item.name.toLowerCase().includes(searchTerm.toLowerCase());
-
         return searchMatch && checkVisibility(item);
       });
     }
 
-    // 특정 상황 선택
     return aacItems.filter((item) => {
       const matchesSituation = item.situation === selectedSituation;
       const matchesAction = !selectedAction || item.action === selectedAction;
       const matchesSearch =
         !searchTerm ||
         item.name.toLowerCase().includes(searchTerm.toLowerCase());
-
       return (
         matchesSituation &&
         matchesAction &&
@@ -75,7 +94,6 @@ const AacItemList = ({ aacItems, onEdit, onDelete, currentUser }) => {
         checkVisibility(item)
       );
     });
-    // --- [수정] useMemo 의존성 배열에 currentUser 추가 ---
   }, [aacItems, searchTerm, selectedSituation, selectedAction, currentUser]);
 
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
@@ -105,6 +123,23 @@ const AacItemList = ({ aacItems, onEdit, onDelete, currentUser }) => {
     setSelectedAction(null);
     setCurrentPage(1);
   };
+
+  const canModify = (item) => {
+      if (!currentUser || item.status === 'DEFAULT') {
+          return false;
+      }
+      return item.therapistId === currentUser.memberId;
+  }
+
+  const handleEditClick = (e, item) => {
+      e.stopPropagation();
+      onEdit(item);
+  }
+
+  const handleDeleteClick = (e, itemId) => {
+      e.stopPropagation();
+      onDelete(itemId);
+  }
 
   return (
     <Row>
@@ -158,11 +193,11 @@ const AacItemList = ({ aacItems, onEdit, onDelete, currentUser }) => {
           <Row xs={2} md={3} lg={4} className="g-3">
             {currentItems.map((item) => (
               <Col key={item.id}>
-                <Card className="h-100">
+                <Card className="h-100" onClick={() => onViewDetails(item)} style={{ cursor: 'pointer' }}>
                   <Card.Img
                     variant="top"
                     src={
-                      item.file_id ||
+                      getCorrectUrl(item.fileId, item.name) || 
                       "https://placehold.co/150x150?text=No+Image"
                     }
                     style={{ height: "120px", objectFit: "cover" }}
@@ -176,24 +211,24 @@ const AacItemList = ({ aacItems, onEdit, onDelete, currentUser }) => {
                       {item.name}
                     </Card.Title>
                     <div className="mt-auto text-center">
-                      {item.status !== "default" && (
-                        <Button
-                          variant="outline-secondary"
-                          size="sm"
-                          className="me-1"
-                          onClick={() => onEdit(item)}
-                        >
-                          편집
-                        </Button>
-                      )}
-                      {item.status !== "default" && (
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => onDelete(item.id)}
-                        >
-                          삭제
-                        </Button>
+                      {canModify(item) && (
+                        <>
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            className="me-1"
+                            onClick={(e) => handleEditClick(e, item)}
+                          >
+                            편집
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={(e) => handleDeleteClick(e, item.id)}
+                          >
+                            삭제
+                          </Button>
+                        </>
                       )}
                     </div>
                   </Card.Body>
@@ -212,13 +247,13 @@ const AacItemList = ({ aacItems, onEdit, onDelete, currentUser }) => {
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
             />
-            {[...Array(totalPages).keys()].map((num) => (
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
               <Pagination.Item
-                key={num + 1}
-                active={num + 1 === currentPage}
-                onClick={() => setCurrentPage(num + 1)}
+                key={num}
+                active={num === currentPage}
+                onClick={() => setCurrentPage(num)}
               >
-                {num + 1}
+                {num}
               </Pagination.Item>
             ))}
             <Pagination.Next
