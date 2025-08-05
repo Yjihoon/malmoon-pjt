@@ -26,4 +26,11 @@ public interface FileService {
 	 * @return S3 접근용 정적 URL
 	 */
 	String getFileUrl(Long fileId);
+
+	/**
+	 * fileId를 통해 S3의 presigned 이미지 URL을 반환합니다.
+	 * @param fileId 파일 테이블의 ID
+	 * @return Presigned URL (일정 시간만 접근 가능)
+	 */
+	String getPresignedFileUrl(Long fileId);
 }
