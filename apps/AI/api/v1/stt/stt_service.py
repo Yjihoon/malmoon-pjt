@@ -1,6 +1,6 @@
 import os, requests
 from fastapi import UploadFile, HTTPException
-from .stt_schema import TranscribeOut  # 절대 경로 import
+from .stt_schema import TranscribeOut
 
 
 GMS_URL = "https://gms.ssafy.io/gmsapi/api.openai.com/v1/audio/transcriptions"
