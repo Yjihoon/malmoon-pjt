@@ -50,8 +50,8 @@ public class AacController {
 	@Operation(summary = "AAC 검색 및 목록 조회", description = "상황, 감정, 동작 조건을 전달하면 해당 조건에 맞는 AAC 이모지를 검색합니다. 조건이 없으면 전체 목록을 반환합니다.")
 	@GetMapping
 	public ResponseEntity<Page<AacGetRes>> getAacList(
-		@Parameter(description = "AAC 필터 조건 및 페이징 정보") @ModelAttribute AacGetReq req) {
-		Page<AacGetRes> result = aacService.getAacList(req);
+		@Parameter(description = "AAC 필터 조건 및 페이징 정보") @ModelAttribute AacGetReq req, @CurrentMember Member member) {
+		Page<AacGetRes> result = aacService.getAacList(req, member.getMemberId());
 		return ResponseEntity.ok(result);
 	}
 
