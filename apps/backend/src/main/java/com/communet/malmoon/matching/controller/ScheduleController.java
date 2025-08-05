@@ -1,6 +1,7 @@
 package com.communet.malmoon.matching.controller;
 
 import com.communet.malmoon.common.auth.CurrentMember;
+import com.communet.malmoon.matching.domain.StatusType;
 import com.communet.malmoon.matching.dto.request.ScheduleGetReq;
 import com.communet.malmoon.matching.dto.request.SchedulePostReq;
 import com.communet.malmoon.matching.dto.request.ScheduleUpdateReq;
@@ -63,9 +64,22 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleService.getTherapists());
     }
 
-    @GetMapping("/me/therapist")
-    public ResponseEntity<List<MyTherapistScheduleRes>> getMyTherapists(@CurrentMember Member member) {
-        return ResponseEntity.ok(scheduleService.getMyTherapists(member));
+    @GetMapping("/me/therapist/accepted")
+    public ResponseEntity<List<MyTherapistScheduleRes>> getMyTherapistsAccepted(@CurrentMember Member member) {
+        return ResponseEntity.ok(scheduleService.getMyTherapists(member, StatusType.ACCEPTED));
+    }
+
+    @GetMapping("/me/therapist/not-accepted")
+    public ResponseEntity<List<MyTherapistScheduleRes>> getMyTherapistsNotAccepted(@CurrentMember Member member) {
+        return ResponseEntity.ok(scheduleService.getMyTherapists(member, StatusType.PENDING));
+    }
+
+    @DeleteMapping("/me/therapist")
+    public ResponseEntity<?> deleteSchedule(
+            @CurrentMember Member member,
+            @RequestParam Long scheduleId) {
+        scheduleService.deleteSchedule(member, scheduleId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me/today")

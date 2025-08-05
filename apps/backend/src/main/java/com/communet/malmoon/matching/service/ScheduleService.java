@@ -167,8 +167,14 @@ public class ScheduleService {
                 .toList();
     }
 
-    public List<MyTherapistScheduleRes> getMyTherapists(Member member) {
-        List<Schedule> schedules = scheduleRepository.findByMemberAndStatus(member, StatusType.ACCEPTED);
+    public List<MyTherapistScheduleRes> getMyTherapists(Member member, StatusType status) {
+        List<Schedule> schedules;
+        if (status == StatusType.ACCEPTED) {
+            schedules = scheduleRepository.findByMemberAndStatus(member, status);
+        } else {
+            schedules = scheduleRepository.findByMemberAndStatus(member, status);
+            schedules.addAll(scheduleRepository.findByMemberAndStatus(member, StatusType.REJECTED));
+        }
 
         return schedules.stream()
                 .map(schedule -> {
@@ -212,6 +218,10 @@ public class ScheduleService {
                     );
                 })
                 .toList();
+    }
+
+    public void deleteSchedule(Member member, Long scheduleId) {
+        scheduleRepository.deleteByScheduleIdAndMember(scheduleId, member);
     }
 
     public List<MemberScheduleRes> getMemberSchedules(Long memberId) {
