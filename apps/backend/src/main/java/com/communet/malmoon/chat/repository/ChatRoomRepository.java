@@ -22,4 +22,6 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 		HAVING COUNT(DISTINCT p1.memberId) = 1 AND COUNT(DISTINCT p2.memberId) = 1
 		""")
 	Optional<ChatRoom> findOneToOneRoomByParticipants(@Param("member1") Long aLong, @Param("member2") Long aLong1);
+
+	Optional<ChatRoom> findBySessionId(String sessionId);
 }

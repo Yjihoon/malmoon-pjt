@@ -6,9 +6,9 @@ import com.communet.malmoon.chat.domain.RoomType;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 /**
  * 채팅방 생성 요청 DTO
@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class ChatRoomCreateReq {
 
 	@Schema(description = "채팅방 타입 (1:1 / 그룹)", example = "GROUP")

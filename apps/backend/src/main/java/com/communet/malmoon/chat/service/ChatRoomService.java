@@ -13,4 +13,6 @@ public interface ChatRoomService {
 	 * @return 생성된 채팅방 정보
 	 */
 	ChatRoomCreateRes createOrGetRoom(ChatRoomCreateReq request);
+
+	void deleteSessionRoom(Long chatRoomId);
 }

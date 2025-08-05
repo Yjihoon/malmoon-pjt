@@ -9,6 +9,6 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class ChatSessionMessageReq extends ChatMessageReq {
+public class ChatRoomSessionCreateReq extends ChatRoomCreateReq {
 	private String sessionId;
 }

@@ -48,4 +48,8 @@ public class ChatRoom {
 			this.createdAt = LocalDateTime.now();
 		}
 	}
+
+	public void setEndedAt(LocalDateTime endedAt) {
+		this.endedAt = endedAt;
+	}
 }
