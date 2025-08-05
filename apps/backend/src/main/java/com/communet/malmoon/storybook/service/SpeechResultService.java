@@ -47,7 +47,7 @@ public class SpeechResultService {
         //2. FastAPI로 전송
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", new FileSystemResource(savePath.toFile()));
-        String sttText = restTemplate.postForObject("http://localhost:8000/stt", body, String.class);
+        String sttText = restTemplate.postForObject("http://localhost:8000/api/v1/stt/transcribe", body, String.class);
 
         //3. DB 저장
         SpeechResult result = SpeechResult.builder()

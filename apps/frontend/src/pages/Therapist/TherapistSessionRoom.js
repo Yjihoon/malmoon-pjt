@@ -33,8 +33,12 @@ function TherapistSessionRoom() {
   const [fairyTaleInfo, setFairyTaleInfo] = useState(null);
   const [fairyTaleContent, setFairyTaleContent] = useState({});
   const [currentFairyTalePage, setCurrentFairyTalePage] = useState(1);
-  const [selectedSentence, setSelectedSentence] = useState('');
+  const [selectedSentence, setSelectedSentence] = useState(null); // Changed to null
   const [isFetchingSentences, setIsFetchingSentences] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const [childId, setChildId] = useState(null);
 
   const handleRemoteTrackMuted = (trackPublication, participant) => {
     if (trackPublication.kind === Track.Kind.Video) {
@@ -84,12 +88,14 @@ function TherapistSessionRoom() {
     });
 
     try {
-      const response = await axios.post('/api/v1/sessions/room', { clientId: 2 }, {
+      const response = await axios.post('/api/v1/sessions/room', { clientId: 2 }, { // TODO: 실제 childId로 변경 필요
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${user.accessToken}`
         }
       });
+      // TODO: 백엔드 응답에서 childId를 받아와 설정하는 로직 추가 필요
+      setChildId(2); // 임시로 2로 설정
       const token = response.data.token;
 
       await room.connect(LIVEKIT_URL, token);
@@ -161,7 +167,7 @@ function TherapistSessionRoom() {
         const response = await axios.get('/api/v1/storybooks/sentences', {
           params: { ...fairyTaleInfo, page },
         });
-        setFairyTaleContent(prev => ({ ...prev, [page]: [...new Set(response.data.sentences.map(s => s.sentence))] }));
+        setFairyTaleContent(prev => ({ ...prev, [page]: Array.from(new Map(response.data.sentences.map(item => [item.sentenceId, item])).values()) })); // Modified
       } catch (error) {
         console.error(`Error fetching page ${page}:`, error);
       } finally {
@@ -171,6 +177,72 @@ function TherapistSessionRoom() {
 
     fetchSentences(currentFairyTalePage);
   }, [fairyTaleInfo, currentFairyTalePage]);
+
+  const uploadAudio = async (audioBlob) => {
+    if (!childId || !selectedSentence) {
+      alert('아동 정보 또는 선택된 문장이 없습니다.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('childId', childId);
+    formData.append('sentenceId', selectedSentence.sentenceId);
+    formData.append('srcTextId', selectedSentence.srcTextId);
+    formData.append('page', currentFairyTalePage);
+    formData.append('audioFile', audioBlob, 'recording.webm');
+
+    try {
+      const response = await axios.post('/api/v1/speech', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${user.accessToken}`
+        }
+      });
+      console.log('오디오 업로드 성공:', response.data);
+      alert('녹음 파일이 성공적으로 업로드되었습니다.');
+    } catch (error) {
+      console.error('오디오 업로드 실패:', error);
+      alert('녹음 파일 업로드에 실패했습니다.');
+    }
+  };
+
+  const startRecording = async () => {
+    if (!remoteAudioTrack) {
+      alert('녹음할 오디오 트랙이 없습니다.');
+      return;
+    }
+
+    try {
+      const stream = new MediaStream([remoteAudioTrack.mediaStreamTrack]);
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await uploadAudio(audioBlob);
+        audioChunksRef.current = [];
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      console.log('녹음 시작');
+    } catch (error) {
+      console.error('녹음 시작 실패:', error);
+      alert('녹음 시작에 실패했습니다.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      console.log('녹음 중지');
+    }
+  };
 
   const toggleMute = () => roomRef.current?.localParticipant.setMicrophoneEnabled(!isMuted, { stopMicTrack: false }).then(() => setIsMuted(!isMuted));
   const toggleVideo = () => roomRef.current?.localParticipant.setCameraEnabled(!isVideoOff).then(() => setIsVideoOff(!isVideoOff));
@@ -196,7 +268,7 @@ function TherapistSessionRoom() {
     if (roomRef.current && selectedSentence) {
       try {
         const encoder = new TextEncoder();
-        const data = encoder.encode(JSON.stringify({ type: 'sentence', payload: selectedSentence }));
+        const data = encoder.encode(JSON.stringify({ type: 'sentence', payload: selectedSentence.sentence }));
         await roomRef.current.localParticipant.publishData(data, { reliable: true });
         alert('문장을 전송했습니다.');
       } catch (error) {
@@ -265,7 +337,7 @@ function TherapistSessionRoom() {
 
                 {selectedSentence && (
                   <div className="selected-sentence-display text-center p-2 mb-3">
-                    {selectedSentence}
+                    {selectedSentence.sentence} {/* Modified */}
                   </div>
                 )}
 
@@ -322,15 +394,15 @@ function TherapistSessionRoom() {
                             <h6 className="text-center mb-3">{fairyTaleInfo.title} (페이지 {currentFairyTalePage}/{fairyTaleInfo.endPage})</h6>
                             <ListGroup className="mb-3" style={{maxHeight: '400px', overflowY: 'auto'}}>
                               {fairyTaleContent[currentFairyTalePage] ? (
-                                fairyTaleContent[currentFairyTalePage].map((sentence, index) => (
+                                fairyTaleContent[currentFairyTalePage].map((sentence) => (
                                   <ListGroup.Item
-                                    key={index}
+                                    key={sentence.sentenceId} // Modified
                                     action
-                                    onClick={() => setSelectedSentence(prev => prev === sentence ? '' : sentence)}
-                                    active={selectedSentence === sentence}
+                                    onClick={() => setSelectedSentence(prev => prev && prev.sentenceId === sentence.sentenceId ? null : sentence)} // Modified
+                                    active={selectedSentence && selectedSentence.sentenceId === sentence.sentenceId} // Modified
                                     className="fairy-tale-sentence"
                                   >
-                                    {sentence}
+                                    {sentence.sentence} {/* Modified */}
                                   </ListGroup.Item>
                                 ))
                               ) : (
@@ -348,11 +420,17 @@ function TherapistSessionRoom() {
                             {selectedSentence && (
                               <div className="mt-3">
                                 <Alert variant="success" className="text-center">
-                                  선택된 문장: <strong>{selectedSentence}</strong>
+                                  선택된 문장: <strong>{selectedSentence.sentence}</strong> {/* Modified */}
                                 </Alert>
                                 <div className="d-grid">
                                   <Button variant="primary" onClick={sendSentence}>
                                     <i className="bi bi-send-fill me-2"></i>선택한 문장 전송
+                                  </Button>
+                                </div>
+                                <div className="d-grid mt-2">
+                                  <Button variant={isRecording ? "danger" : "success"} onClick={isRecording ? stopRecording : startRecording}>
+                                    <i className={`bi bi-mic${isRecording ? "-mute-fill" : "-fill"} me-2`}></i>
+                                    {isRecording ? '녹음 중지' : '녹음 시작'}
                                   </Button>
                                 </div>
                               </div>

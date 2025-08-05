@@ -1,7 +1,9 @@
 import os, requests
 from fastapi import UploadFile, HTTPException
 from .stt_schema import TranscribeOut
+from dotenv import load_dotenv
 
+load_dotenv()
 
 GMS_URL = "https://gms.ssafy.io/gmsapi/api.openai.com/v1/audio/transcriptions"
 GMS_KEY = os.getenv("GMS_KEY")
