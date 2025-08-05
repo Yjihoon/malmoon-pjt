@@ -15,9 +15,14 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.communet.malmoon.chat.domain.ChatMessage;
+import com.communet.malmoon.chat.domain.ChatMessageType;
 import com.communet.malmoon.chat.domain.RoomType;
 import com.communet.malmoon.chat.dto.request.ChatRoomSessionCreateReq;
 import com.communet.malmoon.chat.dto.response.ChatRoomCreateRes;
+import com.communet.malmoon.chat.exception.ChatErrorCode;
+import com.communet.malmoon.chat.exception.ChatException;
+import com.communet.malmoon.chat.repository.ChatMessageRepository;
 import com.communet.malmoon.chat.service.ChatRedisService;
 import com.communet.malmoon.chat.service.ChatRoomService;
 import com.communet.malmoon.member.domain.Member;
@@ -50,6 +55,7 @@ public class SessionService {
 
 	private final ChatRoomService chatRoomService;
 	private final ChatRedisService chatRedisService;
+	private final ChatMessageRepository chatMessageRepository;
 
 	public SessionService(
 		@Qualifier("redisTemplate0") RedisTemplate<String, Object> redisTemplate,
@@ -57,7 +63,8 @@ public class SessionService {
 		LiveKitConfig liveKitConfig,
 		RoomServiceClient roomServiceClient,
 		ChatRoomService chatRoomService,
-		ChatRedisService chatRedisService) {
+		ChatRedisService chatRedisService,
+		ChatMessageRepository chatMessageRepository) {
 		this.liveKitConfig = liveKitConfig;
 		this.redisTemplate = redisTemplate;
 		this.hashOps = redisTemplate.opsForHash();
@@ -65,6 +72,7 @@ public class SessionService {
 		this.roomServiceClient = roomServiceClient;
 		this.chatRoomService = chatRoomService;
 		this.chatRedisService = chatRedisService;
+		this.chatMessageRepository = chatMessageRepository;
 	}
 
 	/**
@@ -100,21 +108,31 @@ public class SessionService {
 		hashOps.putAll(sessionKey, sessionData);
 
 		// 채팅방 자동 생성
-		ChatRoomCreateRes createdRoom = chatRoomService.createOrGetRoom(
-			ChatRoomSessionCreateReq.builder()
-				.roomType(RoomType.SESSION)
-				.participantIds(List.of(therapist.getMemberId(), clientId))
-				.sessionId(roomName)
-				.build());
+		createSessionChatRoom(roomName, therapist.getMemberId(), clientId);
 
 		// Redis String에 therapist/client → roomName 매핑 저장
 		redisTemplate.opsForValue().set(REDIS_THERAPIST_PREFIX + therapist.getEmail(), roomName);
 		redisTemplate.opsForValue().set(REDIS_CLIENT_PREFIX + clientEmail, roomName);
 
-		// Redis: sessionId → chatRoomId 매핑 저장
-		redisTemplate.opsForValue().set(REDIS_CHAT_ROOM_PREFIX + roomName, createdRoom.getRoomId().toString());
-
 		return generateAccessToken(therapist, roomName);
+	}
+
+	/**
+	 * 세션용 채팅방 생성 및 Redis 매핑 저장
+	 */
+	private void createSessionChatRoom(String roomName, Long therapistId, Long clientId) {
+		ChatRoomCreateRes createdRoom = chatRoomService.createOrGetRoom(
+			ChatRoomSessionCreateReq.builder()
+				.sessionId(roomName)
+				.roomName("세션 채팅방")
+				.roomType(RoomType.SESSION)
+				.participantIds(List.of(therapistId, clientId))
+				.build(), therapistId);
+
+		redisTemplate.opsForValue().set(
+			REDIS_CHAT_ROOM_PREFIX + roomName,
+			createdRoom.getRoomId().toString()
+		);
 	}
 
 	/**
@@ -126,20 +144,51 @@ public class SessionService {
 		String roomName = Objects.requireNonNull(
 			redisTemplate.opsForValue().get(REDIS_THERAPIST_PREFIX + therapistEmail), "생성한 세션이 없습니다.").toString();
 		String clientEmail = Objects.requireNonNull(hashOps.get(REDIS_ROOM_PREFIX + roomName, "client")).toString();
+
 		redisTemplate.delete(REDIS_ROOM_PREFIX + roomName);
 		redisTemplate.delete(REDIS_THERAPIST_PREFIX + therapistEmail);
 		redisTemplate.delete(REDIS_CLIENT_PREFIX + clientEmail);
 
-		// 5. 채팅방 ID 조회 및 삭제 (또는 상태 변경)
-		String chatRoomIdStr = (String)redisTemplate.opsForValue().get(REDIS_CHAT_ROOM_PREFIX + roomName);
-		if (chatRoomIdStr != null && !chatRoomIdStr.isBlank()) {
-			Long chatRoomId = Long.valueOf(chatRoomIdStr);
-			chatRoomService.deleteSessionRoom(chatRoomId);
-			chatRedisService.flushSessionMessagesToDb(roomName);
-			redisTemplate.delete(REDIS_CHAT_ROOM_PREFIX + roomName);
-		}
+		handleChatRoomOnSessionEnd(therapistEmail, roomName);
 
 		roomServiceClient.deleteRoom(roomName);
+	}
+
+	/**
+	 * 세션 종료 시 채팅방 상태 및 메시지를 처리합니다.
+	 * - 채팅방 종료 메시지 저장
+	 * - 채팅방 soft delete 처리
+	 * - Redis → DB flush 처리
+	 *
+	 * @param therapistEmail 치료사 이메일
+	 * @param roomName       세션 이름 (roomName)
+	 */
+	private void handleChatRoomOnSessionEnd(String therapistEmail, String roomName) {
+		Member member = memberRepository.getMemberInfoByEmail(therapistEmail);
+		if (member == null) {
+			throw new ChatException(ChatErrorCode.NOT_FOUND_MEMBER);
+		}
+
+		String chatRoomIdStr = (String)redisTemplate.opsForValue().get(REDIS_CHAT_ROOM_PREFIX + roomName);
+
+		if (chatRoomIdStr != null && !chatRoomIdStr.isBlank()) {
+			Long chatRoomId = Long.valueOf(chatRoomIdStr);
+
+			ChatMessage leaveMessage = ChatMessage.builder()
+				.roomId(chatRoomId)
+				.senderId(member.getMemberId())
+				.messageType(ChatMessageType.LEAVE)
+				.content("치료 세션 종료")
+				.sentAt(LocalDateTime.now())
+				.build();
+			chatMessageRepository.save(leaveMessage);
+
+			chatRoomService.deleteSessionRoom(chatRoomId);
+
+			chatRedisService.flushSessionMessagesToDb(roomName);
+
+			redisTemplate.delete(REDIS_CHAT_ROOM_PREFIX + roomName);
+		}
 	}
 
 	/**

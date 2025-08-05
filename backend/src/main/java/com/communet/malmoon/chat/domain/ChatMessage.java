@@ -2,52 +2,44 @@ package com.communet.malmoon.chat.domain;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Table(name = "chat_room_participant")
+@Table(name = "chat_message")
 @Getter
-@AllArgsConstructor
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
-public class ChatRoomParticipant {
+public class ChatMessage {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	@Column(name = "message_id", nullable = false, updatable = false)
+	private Long messageId;
 
 	@Column(name = "room_id", nullable = false)
 	private Long roomId;
 
-	@Column(name = "member_id", nullable = false)
-	private Long memberId;
+	@Column(name = "sender_id", nullable = false)
+	private Long senderId;
 
-	@Column(name = "joined_at", nullable = false)
-	private LocalDateTime joinedAt;
+	@Column(name = "content", columnDefinition = "TEXT", nullable = false)
+	private String content;
 
-	@Column(name = "left_at")
-	private LocalDateTime leftAt;
-
-	@PrePersist
-	protected void onJoin() {
-		if (this.joinedAt == null) {
-			this.joinedAt = LocalDateTime.now();
-		}
-	}
-
-	public void setLeftAt() {
-		if (this.leftAt == null) {
-			this.leftAt = LocalDateTime.now();
-		}
-	}
+	@Column(name = "sent_at", nullable = false, updatable = false)
+	@CreationTimestamp
+	private LocalDateTime sentAt;
 }
