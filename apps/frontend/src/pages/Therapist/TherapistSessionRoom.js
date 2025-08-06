@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Container } from 'react-bootstrap';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import './TherapistSessionRoom.css';
@@ -9,6 +9,7 @@ import SessionRoomContent from '../../components/TherapistSession/SessionRoomCon
 import { useLiveKitSession } from '../../hooks/useLiveKitSession';
 import { useFairyTaleLogic } from '../../hooks/useFairyTaleLogic';
 import { useChatLogic } from '../../hooks/useChatLogic';
+import { useFilterLogic } from '../../hooks/useFilterLogic';
 
 function TherapistSessionRoom() {
   const { roomId } = useParams();
@@ -22,16 +23,34 @@ function TherapistSessionRoom() {
   const [selectedSentence, setSelectedSentence] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
 
+  // useLiveKitSession을 먼저 호출하여 roomRef와 localVideoRef를 얻습니다.
   const { 
     isMuted, setIsMuted, isVideoOff, setIsVideoOff, isRemoteVideoOff, setIsRemoteVideoOff,
     rtcStatus, setRtcStatus, remoteVideoTrack, remoteAudioTrack,
     localVideoRef, remoteVideoRef, remoteAudioRef, roomRef,
-    chatRoomId, childId,
-    connectToLiveKit, toggleMute, toggleVideo, endSession
+    chatRoomId, childId, isLiveKitReady,
+    connectToLiveKit, toggleMute, endSession, 
+    toggleVideo: liveKitToggleVideo // useLiveKitSession의 toggleVideo를 다른 이름으로 가져옵니다.
   } = useLiveKitSession(user, navigate, 
     (sender, message) => setChatMessages(prevMessages => [...prevMessages, { sender, message }]),
     (sentence) => setSelectedSentence(sentence)
   );
+
+  // useFilterLogic을 호출할 때 useLiveKitSession에서 얻은 ref들을 전달합니다.
+  const { 
+    isFilterActive, useCameraKit, backgroundImages, selectedBackgroundImage,
+    containerRef, outputCanvasRef, outputCKCanvasRef,
+    applyLensById, applyBackgroundFilter, removeBackgroundFilter, stopCameraKit
+  } = useFilterLogic(roomRef, localVideoRef, rtcStatus, isVideoOff, isLiveKitReady);
+
+  // toggleVideo 함수를 여기서 정의하여 useFilterLogic의 stopCameraKit을 호출합니다.
+  const toggleVideo = useCallback(() => {
+    const newVideoOffState = !isVideoOff;
+    if (newVideoOffState) {
+      stopCameraKit(); // 비디오를 끌 때 필터도 중지합니다.
+    }
+    liveKitToggleVideo(); // LiveKit의 비디오 토글 함수를 호출합니다.
+  }, [isVideoOff, stopCameraKit, liveKitToggleVideo]);
 
   const { 
     fairyTaleInfo, fairyTaleContent, currentFairyTalePage,
@@ -88,6 +107,15 @@ function TherapistSessionRoom() {
         isRecording={isRecording}
         startRecording={() => startRecording(remoteAudioTrack)}
         stopRecording={stopRecording}
+        backgroundImages={backgroundImages}
+        selectedBackgroundImage={selectedBackgroundImage}
+        isFilterActive={isFilterActive}
+        applyBackgroundFilter={applyBackgroundFilter}
+        removeBackgroundFilter={removeBackgroundFilter}
+        applyLensById={applyLensById}
+        containerRef={containerRef}
+        outputCanvasRef={outputCanvasRef}
+        outputCKCanvasRef={outputCKCanvasRef}
       />
     </Container>
   );

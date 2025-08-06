@@ -9,6 +9,7 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isRemoteVideoOff, setIsRemoteVideoOff] = useState(true);
   const [rtcStatus, setRtcStatus] = useState('disconnected');
+  const [isLiveKitReady, setIsLiveKitReady] = useState(false);
 
   const [remoteVideoTrack, setRemoteVideoTrack] = useState(null);
   const [remoteAudioTrack, setRemoteAudioTrack] = useState(null);
@@ -42,7 +43,10 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
     roomRef.current = room;
 
     room.on(RoomEvent.Connected, () => setRtcStatus('connected'));
-    room.on(RoomEvent.Disconnected, () => setRtcStatus('disconnected'));
+    room.on(RoomEvent.Disconnected, () => {
+        setRtcStatus('disconnected');
+        setIsLiveKitReady(false);
+    });
 
     room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
       if (track.kind === 'video') {
@@ -87,8 +91,13 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
       for (const track of localTracks) {
         if (track.kind === 'video' && localVideoRef.current) {
           track.attach(localVideoRef.current);
+          localVideoRef.current.onloadedmetadata = () => {
+            setIsLiveKitReady(true);
+          };
+          await room.localParticipant.publishTrack(track);
+        } else if (track.kind === 'audio') {
+          await room.localParticipant.publishTrack(track);
         }
-        await room.localParticipant.publishTrack(track);
       }
     } catch (error) {
       console.error('LiveKit 연결 실패:', error);
@@ -124,7 +133,9 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
   }, [remoteAudioTrack]);
 
   const toggleMute = useCallback(() => roomRef.current?.localParticipant.setMicrophoneEnabled(!isMuted, { stopMicTrack: false }).then(() => setIsMuted(!isMuted)), [isMuted]);
-  const toggleVideo = useCallback(() => roomRef.current?.localParticipant.setCameraEnabled(!isVideoOff).then(() => setIsVideoOff(!isVideoOff)), [isVideoOff]);
+  const toggleVideo = useCallback(() => {
+    setIsVideoOff(prev => !prev);
+  }, []);
 
   const endSession = useCallback(async () => {
     if (window.confirm('정말로 수업을 종료하시겠습니까?')) {
@@ -154,7 +165,7 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
     isMuted, setIsMuted, isVideoOff, setIsVideoOff, isRemoteVideoOff, setIsRemoteVideoOff,
     rtcStatus, setRtcStatus, remoteVideoTrack, remoteAudioTrack,
     localVideoRef, remoteVideoRef, remoteAudioRef, roomRef,
-    chatRoomId, childId,
+    chatRoomId, childId, isLiveKitReady,
     connectToLiveKit, toggleMute, toggleVideo, endSession
   };
 }

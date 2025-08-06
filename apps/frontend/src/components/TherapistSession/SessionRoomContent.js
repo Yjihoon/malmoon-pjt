@@ -11,7 +11,10 @@ function SessionRoomContent({
   isMuted, toggleMute, toggleVideo, activeToolTab, toggleToolPanel, fairyTaleInfo, endSession,
   showToolPanel, setShowToolPanel,
   chatMessages, chatInput, setChatInput, sendChatMessage,
-  fairyTaleContent, currentFairyTalePage, setSelectedSentence, handlePageChange, sendSentence, isRecording, startRecording, stopRecording
+  fairyTaleContent, currentFairyTalePage, setSelectedSentence, handlePageChange, sendSentence, isRecording, startRecording, stopRecording,
+  backgroundImages, selectedBackgroundImage, isFilterActive,
+  applyBackgroundFilter, removeBackgroundFilter, applyLensById,
+  containerRef, outputCanvasRef, outputCKCanvasRef
 }) {
   switch (rtcStatus) {
     case 'disconnected':
@@ -93,6 +96,12 @@ function SessionRoomContent({
                   isRecording={isRecording}
                   startRecording={startRecording}
                   stopRecording={stopRecording}
+                  backgroundImages={backgroundImages}
+                  selectedBackgroundImage={selectedBackgroundImage}
+                  isFilterActive={isFilterActive}
+                  applyBackgroundFilter={applyBackgroundFilter}
+                  removeBackgroundFilter={removeBackgroundFilter}
+                  applyLensById={applyLensById}
                 />
               </Col>
             )}

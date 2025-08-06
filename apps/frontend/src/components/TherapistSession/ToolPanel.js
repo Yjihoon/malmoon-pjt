@@ -2,13 +2,16 @@ import React from 'react';
 import { Card, Button, Alert } from 'react-bootstrap';
 import ChatTool from './ChatTool';
 import FairyTaleTool from './FairyTaleTool';
+import FilterTool from './FilterTool';
 
 function ToolPanel({
   activeToolTab, setShowToolPanel,
   chatMessages, chatInput, setChatInput, sendChatMessage,
   fairyTaleInfo, fairyTaleContent, currentFairyTalePage,
   selectedSentence, setSelectedSentence, handlePageChange,
-  sendSentence, isRecording, startRecording, stopRecording
+  sendSentence, isRecording, startRecording, stopRecording,
+  backgroundImages, selectedBackgroundImage, isFilterActive,
+  applyBackgroundFilter, removeBackgroundFilter, applyLensById
 }) {
   return (
     <Card className="h-100 shadow-sm">
@@ -22,7 +25,6 @@ function ToolPanel({
       </Card.Header>
       <Card.Body className="p-2">
         {activeToolTab === 'aac' && ( <Alert variant="info" className="text-center m-2">AAC 도구 기능 구현 예정</Alert> )}
-        {activeToolTab === 'filter' && ( <Alert variant="info" className="text-center m-2">필터 도구 기능 구현 예정</Alert> )}
         {activeToolTab === 'chat' && (
           <ChatTool
             chatMessages={chatMessages}
@@ -43,6 +45,16 @@ function ToolPanel({
             isRecording={isRecording}
             startRecording={startRecording}
             stopRecording={stopRecording}
+          />
+        )}
+        {activeToolTab === 'filter' && (
+          <FilterTool
+            backgroundImages={backgroundImages}
+            selectedBackgroundImage={selectedBackgroundImage}
+            isFilterActive={isFilterActive}
+            applyBackgroundFilter={applyBackgroundFilter}
+            removeBackgroundFilter={removeBackgroundFilter}
+            applyLensById={applyLensById}
           />
         )}
       </Card.Body>
