@@ -62,6 +62,8 @@ dependencies {
     // === 테스트 관련 ===
     testImplementation 'org.springframework.boot:spring-boot-starter-test'          // Spring Boot 테스트 도구
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'                    // JUnit 런처
+    testImplementation 'org.mockito:mockito-core:5.12.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.12.0'
 
     // === openVidu(Livekit) ===
     implementation "io.livekit:livekit-server:0.8.5"
