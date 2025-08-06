@@ -18,11 +18,4 @@ public interface SpeechResultRepository extends JpaRepository<SpeechResult, Long
             @Param("end") LocalDateTime end
     );
 
-    @Query("SELECT s FROM SpeechResult s WHERE s.child.memberId = :childId AND s.createdAt BETWEEN :start AND :end")
-    List<SpeechResult> findByChildIdAndCreatedAtBetween(
-            @Param("childId") Long childId,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end
-    );
 }
-
