@@ -11,7 +11,7 @@ export function useDuplicateCheck() {
     setChecking(true);
     try {
       const encodedEmail = encodeURIComponent(email);  // ✅ 인코딩 필수!
-      const res = await axios.get(`/api/v1/members/email/${encodedEmail}`);
+      const res = await axios.get(`/api/v1/members/email?email=${encodedEmail}`);
       
       const result =
         typeof res.data === 'boolean'
