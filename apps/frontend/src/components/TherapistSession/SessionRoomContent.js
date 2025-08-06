@@ -14,7 +14,7 @@ function SessionRoomContent({
   fairyTaleContent, currentFairyTalePage, setSelectedSentence, handlePageChange, sendSentence, isRecording, startRecording, stopRecording,
   backgroundImages, selectedBackgroundImage, isFilterActive,
   applyBackgroundFilter, removeBackgroundFilter, applyLensById,
-  containerRef, outputCanvasRef, outputCKCanvasRef
+  outputCanvasRef, outputCKCanvasRef, containerRef
 }) {
   switch (rtcStatus) {
     case 'disconnected':
@@ -57,6 +57,9 @@ function SessionRoomContent({
                 isRemoteVideoOff={isRemoteVideoOff}
                 isVideoOff={isVideoOff}
                 remoteAudioTrack={remoteAudioTrack}
+                outputCanvasRef={outputCanvasRef}
+                outputCKCanvasRef={outputCKCanvasRef}
+                containerRef={containerRef}
               />
 
               {selectedSentence && (

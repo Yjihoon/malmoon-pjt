@@ -42,8 +42,9 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
     const room = new Room({ adaptiveStream: true, dynacast: true });
     roomRef.current = room;
 
-    room.on(RoomEvent.Connected, () => setRtcStatus('connected'));
-    room.on(RoomEvent.Disconnected, () => {
+    room.on(RoomEvent.Connected, () => { /* rtcStatus는 connect 성공 후 바로 설정 */ });
+    room.on(RoomEvent.Disconnected, (reason) => {
+        console.log('LiveKit Room Disconnected:', reason);
         setRtcStatus('disconnected');
         setIsLiveKitReady(false);
     });
@@ -74,6 +75,8 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
     });
 
     try {
+      console.log("LiveKit 연결 요청 직전 user 객체:", user);
+      console.log("LiveKit 연결 요청 직전 accessToken:", user?.accessToken);
       const response = await axios.post('/api/v1/sessions/room', { clientId: 2 }, {
         headers: {
           "Content-Type": "application/json",
@@ -86,10 +89,12 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
       setChildId(2);
     
       await room.connect(LIVEKIT_URL, token);
+      setRtcStatus('connected');
 
       const localTracks = await createLocalTracks({ audio: true, video: true });
       for (const track of localTracks) {
         if (track.kind === 'video' && localVideoRef.current) {
+          localVideoRef.current.srcObject = track.mediaStream; // Explicitly set srcObject
           track.attach(localVideoRef.current);
           localVideoRef.current.onloadedmetadata = () => {
             setIsLiveKitReady(true);

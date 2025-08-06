@@ -1,6 +1,6 @@
 import React from 'react';
 
-function VideoCallArea({ localVideoRef, remoteVideoRef, remoteAudioRef, isRemoteVideoOff, isVideoOff, remoteAudioTrack, containerRef, outputCanvasRef, outputCKCanvasRef }) {
+function VideoCallArea({ localVideoRef, remoteVideoRef, remoteAudioRef, isRemoteVideoOff, isVideoOff, remoteAudioTrack, outputCanvasRef, outputCKCanvasRef, containerRef }) {
   return (
     <div className="main-video-area">
       {remoteAudioTrack && <audio ref={remoteAudioRef} autoPlay />}
@@ -14,10 +14,10 @@ function VideoCallArea({ localVideoRef, remoteVideoRef, remoteAudioRef, isRemote
         )}
       </div>
 
-      <div ref={containerRef} className="pip-video-container">
-        <video ref={localVideoRef} autoPlay playsInline muted style={{ display: 'none' }} />
-        <canvas ref={outputCanvasRef} className="local-video" style={{ display: 'none' }} />
-        <canvas ref={outputCKCanvasRef} className="local-video" style={{ display: 'none' }} />
+      <div className="pip-video-container" ref={containerRef}>
+        <video ref={localVideoRef} autoPlay playsInline muted />
+        <canvas ref={outputCanvasRef} className="local-video" />
+        <canvas ref={outputCKCanvasRef} className="local-video" />
         {isVideoOff && (
           <div className="text-center video-overlay-text">
             <i className="bi bi-camera-video-off-fill" style={{ fontSize: '1.5em' }}></i>
