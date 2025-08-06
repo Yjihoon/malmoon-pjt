@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+      - backend
+      - ai
+
+  frontend:
+    image: inttype/malmoon:frontend
+    env_file:
+      - ./apps/frontend/.env
+    container_name: frontend
+    expose:
+      - "80"
+
+  backend:
+    image: inttype/malmoon:backend
+    env_file:
+      - ./apps/backend/.env
+    container_name: backend
+    expose:
+      - "8080"
+
+  ai:
+    image: inttype/malmoon:ai
+    env_file:
+      - ./apps/AI/.env
+    container_name: ai
+    expose:
+      - "8000"
