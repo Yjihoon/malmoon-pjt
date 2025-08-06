@@ -14,7 +14,7 @@ function TherapistSessionRoom() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
 
-  console.log('User object in TherapistSessionRoom (on render):', user); // 여기 추가함
+  
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -56,7 +56,7 @@ function TherapistSessionRoom() {
   const connectToLiveKit = useCallback(async () => {
     if (!user) return;
 
-    console.log('User object in TherapistSessionRoom (on connect):', user); // 여기 추가함
+    
 
     setRtcStatus('connecting');
 
@@ -108,7 +108,7 @@ function TherapistSessionRoom() {
         }
       });
       const { token, chatRoomId: newChatRoomId } = response.data; // 여기 수정함
-      console.log('Backend response data:', response.data); // 여기 추가함
+      
       setChatRoomId(newChatRoomId); // 여기 추가함
 
       await room.connect(LIVEKIT_URL, token);
