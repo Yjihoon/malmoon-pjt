@@ -14,12 +14,11 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
         if (itemData) {
             setForm({
                 ...itemData,
-                status: itemData.status || 'PUBLIC' // 상태 필드 소문자로 변환
+                status: itemData.status || 'PUBLIC'
             });
-            if (itemData.file_id) setImagePreview(itemData.file_id);
-            setCreationMethod('direct'); // 편집 시에는 항상 직접 등록 모드
+            if (itemData.imageUrl) setImagePreview(itemData.imageUrl);
+            setCreationMethod('direct');
         } else {
-            // 새로 만들 때 초기화
             setForm({ name: '', description: '', situation: '', action: '', emotion: '', status: 'PUBLIC' });
             setCreationMethod('direct');
             setImagePreview('');
@@ -172,4 +171,4 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
     );
 };
 
-export default AacItemModal;
+export default AacItemModal

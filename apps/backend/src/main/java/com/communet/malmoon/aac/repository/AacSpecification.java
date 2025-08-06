@@ -43,7 +43,7 @@ public class AacSpecification {
 			if (therapistId != null) {
 				Predicate ownPrivatePredicate = builder.and(
 					builder.equal(root.get("status"), AacStatus.PRIVATE),
-					builder.equal(root.get("therapist").get("id"), therapistId)
+					builder.equal(root.get("therapistId"), therapistId)
 				);
 				predicates.add(builder.or(publicPredicate, ownPrivatePredicate));
 			} else {

@@ -1,27 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import AacItemSelector from './AacItemSelector';
 
-const AacSetModal = ({ show, onHide, onSave, initialData, allAacItems }) => {
-    // initialData가 있을 경우, aac_item_ids도 함께 설정해야 합니다.
-    // 현재는 목록 조회 API에서 item id 리스트를 반환하지 않으므로,
-    // 편집 시에는 상세 조회 API를 호출하여 item id 리스트를 가져오는 로직이 추가되어야 합니다.
-    // 여기서는 생성 로직에 초점을 맞춥니다.
+const AacSetModal = ({ show, onHide, onSave, initialData, allAacItems, getAuthHeader }) => {
     const [form, setForm] = useState({ name: '', description: '', aac_item_ids: [] });
+    const [loadingDetails, setLoadingDetails] = useState(false);
+
+    const fetchSetDetails = useCallback(async (setId) => {
+        if (typeof getAuthHeader !== 'function') return;
+        const headers = getAuthHeader();
+        if (!headers) return;
+        
+        setLoadingDetails(true);
+        try {
+            const response = await fetch(`/api/v1/aacs/sets/my/${setId}`, { headers });
+            if (!response.ok) {
+                throw new Error('묶음 상세 정보를 불러오는데 실패했습니다.');
+            }
+            const itemsInSet = await response.json();
+            const itemIds = itemsInSet.map(item => item.id);
+            setForm(prev => ({ ...prev, aac_item_ids: itemIds }));
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            setLoadingDetails(false);
+        }
+    }, [getAuthHeader]);
 
     useEffect(() => {
-        if (initialData) {
-            // 편집 시, 상세 정보를 불러와 aac_item_ids를 채워야 이상적으로 동작합니다.
-            // 지금은 초기 데이터의 기본 정보만 설정합니다.
-            setForm({
-                ...initialData,
-                aac_item_ids: initialData.aac_item_ids || []
-            });
-        } else {
-            // 생성 시, 폼 초기화
-            setForm({ name: '', description: '', aac_item_ids: [] });
+        if (show) {
+            if (initialData) {
+                setForm({
+                    id: initialData.id,
+                    name: initialData.name,
+                    description: initialData.description,
+                    aac_item_ids: []
+                });
+                fetchSetDetails(initialData.id);
+            } else {
+                setForm({ name: '', description: '', aac_item_ids: [] });
+            }
         }
-    }, [initialData, show]);
+    }, [initialData, show, fetchSetDetails]);
 
     const handleFormChange = (e) => {
         const { name, value } = e.target;
@@ -55,15 +75,21 @@ const AacSetModal = ({ show, onHide, onSave, initialData, allAacItems }) => {
                 <Modal.Title>{initialData ? 'AAC 묶음 편집' : '새 AAC 묶음 추가'}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <Form.Group className="mb-3"><Form.Label>묶음 이름</Form.Label><Form.Control type="text" name="name" value={form.name || ''} onChange={handleFormChange} /></Form.Group>
-                <Form.Group className="mb-3"><Form.Label>설명</Form.Label><Form.Control as="textarea" name="description" value={form.description || ''} onChange={handleFormChange} /></Form.Group>
-                <hr />
-                <h5 className="mb-3">AAC 아이템 선택 ({(form.aac_item_ids || []).length}개 선택됨)</h5>
-                <AacItemSelector
-                    aacItems={allAacItems}
-                    selectedItemIds={form.aac_item_ids || []}
-                    onToggleItem={handleToggleItem}
-                />
+                {loadingDetails ? (
+                    <div className="text-center"><Spinner animation="border" /> <p>묶음 정보를 불러오는 중...</p></div>
+                ) : (
+                    <>
+                        <Form.Group className="mb-3"><Form.Label>묶음 이름</Form.Label><Form.Control type="text" name="name" value={form.name || ''} onChange={handleFormChange} /></Form.Group>
+                        <Form.Group className="mb-3"><Form.Label>설명</Form.Label><Form.Control as="textarea" name="description" value={form.description || ''} onChange={handleFormChange} /></Form.Group>
+                        <hr />
+                        <h5 className="mb-3">AAC 아이템 선택 ({(form.aac_item_ids || []).length}개 선택됨)</h5>
+                        <AacItemSelector
+                            aacItems={allAacItems}
+                            selectedItemIds={form.aac_item_ids || []}
+                            onToggleItem={handleToggleItem}
+                        />
+                    </>
+                )}
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={onHide}>취소</Button>
