@@ -44,10 +44,28 @@ public class SpeechResultService {
         Files.createDirectories(savePath.getParent());
         Files.write(savePath, audioFile.getBytes());
 
+        //2. FastAPI로 전송 전 디버깅 로그
+        File audio = savePath.toFile();
+        System.out.println("🟡 [Spring → FastAPI] 보내는 파일 경로: " + audio.getAbsolutePath());
+        System.out.println("🟡 [Spring → FastAPI] 파일 존재 여부: " + audio.exists());
+        System.out.println("🟡 [Spring → FastAPI] 파일 크기(bytes): " + audio.length());
+        System.out.println("🟡 [Spring → FastAPI] 파일 이름: " + audio.getName());
+        System.out.println("🟡 [Spring → FastAPI] 파일 MIME Type: " + Files.probeContentType(savePath));
+
         //2. FastAPI로 전송
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", new FileSystemResource(savePath.toFile()));
         String sttText = restTemplate.postForObject("http://localhost:8000/api/v1/stt/transcribe", body, String.class);
+
+        // ✅ FastAPI 응답 디버깅 로그
+        System.out.println("🟢 [Spring] Whisper(FastAPI)로부터 받은 STT 텍스트:");
+        System.out.println("     " + sttText);
+
+        if (sttText == null || sttText.trim().isEmpty()) {
+            System.out.println("🔴 [Spring] STT 결과가 비어있거나 null입니다!");
+        } else {
+            System.out.println("🟢 [Spring] STT 결과 길이: " + sttText.length());
+        }
 
         //3. DB 저장
         SpeechResult result = SpeechResult.builder()

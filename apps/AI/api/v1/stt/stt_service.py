@@ -24,6 +24,8 @@ async def transcribe_to_text(file: UploadFile, language: str) -> TranscribeOut:
 
     try:
         r = requests.post(GMS_URL, headers=headers, data=data, files=files, timeout=60)
+        print("🔵 [FastAPI → Whisper] 응답 코드:", r.status_code)
+        print("🔵 [FastAPI → Whisper] 응답 내용:", r.text)
     except requests.RequestException as e:
         raise HTTPException(status_code=502, detail=f"Proxy error: {e}")
 
