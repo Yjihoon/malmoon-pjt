@@ -18,5 +18,6 @@ public class MemberMeChangeReq {
 	private String district;
 	private String dong;
 	private String detail;
+	private Integer careerYears;
 	private List<CareerReq> careers; // 치료사만 수정 가능
 }

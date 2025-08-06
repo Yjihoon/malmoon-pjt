@@ -12,7 +12,12 @@ import com.communet.malmoon.member.domain.Member;
 @Repository
 public interface MemberRepository extends JpaRepository<Member, Long> {
 	boolean existsByEmail(String email);
+
 	Optional<Member> getByEmail(String email);
+
 	Optional<Member> findByEmail(String email);
+
 	List<Member> findByRole(MemberType role);
+
+	Member getMemberInfoByEmail(String therapistEmail);
 }

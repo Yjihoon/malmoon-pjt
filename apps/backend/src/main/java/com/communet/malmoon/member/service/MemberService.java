@@ -1,19 +1,27 @@
 package com.communet.malmoon.member.service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.communet.malmoon.file.domain.FileType;
 import com.communet.malmoon.file.dto.response.FileUploadRes;
 import com.communet.malmoon.file.service.FileService;
-import com.communet.malmoon.member.domain.*;
-import com.communet.malmoon.member.dto.request.*;
+import com.communet.malmoon.member.domain.Address;
+import com.communet.malmoon.member.domain.Career;
+import com.communet.malmoon.member.domain.Member;
+import com.communet.malmoon.member.domain.MemberStatusType;
+import com.communet.malmoon.member.domain.MemberType;
+import com.communet.malmoon.member.domain.Therapist;
+import com.communet.malmoon.member.dto.request.CareerReq;
+import com.communet.malmoon.member.dto.request.MemberJoinReq;
+import com.communet.malmoon.member.dto.request.MemberMeChangeReq;
+import com.communet.malmoon.member.dto.request.MemberPasswordChangeReq;
+import com.communet.malmoon.member.dto.request.TherapistJoinReq;
 import com.communet.malmoon.member.dto.response.CareerRes;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
 import com.communet.malmoon.member.dto.response.MemberMeRes;
 import com.communet.malmoon.member.exception.DuplicateEmailException;
 import com.communet.malmoon.member.repository.CareerRepository;
@@ -22,7 +30,7 @@ import com.communet.malmoon.member.repository.TherapistRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -49,11 +57,11 @@ public class MemberService {
 			throw new DuplicateEmailException("이미 사용 중인 이메일입니다.");
 		}
 		Address address = Address.builder()
-				.city(memberJoinReq.getCity())
-				.district(memberJoinReq.getDistrict())
-				.dong(memberJoinReq.getDong())
-				.detail(memberJoinReq.getDetail())
-				.build();
+			.city(memberJoinReq.getCity())
+			.district(memberJoinReq.getDistrict())
+			.dong(memberJoinReq.getDong())
+			.detail(memberJoinReq.getDetail())
+			.build();
 
 		Member member = Member.builder()
 			.email(memberJoinReq.getEmail())
@@ -82,17 +90,17 @@ public class MemberService {
 	 * @throws DuplicateEmailException 이메일 중복 시 예외 발생
 	 */
 	@Transactional
-	public void joinTherapist(TherapistJoinReq therapistJoinReq, MultipartFile  qualification) {
+	public void joinTherapist(TherapistJoinReq therapistJoinReq, MultipartFile qualification) {
 		if (checkEmail(therapistJoinReq.getEmail())) {
 			throw new DuplicateEmailException("이미 사용 중인 이메일입니다.");
 		}
 
 		Address address = Address.builder()
-				.city(therapistJoinReq.getCity())
-				.district(therapistJoinReq.getDistrict())
-				.dong(therapistJoinReq.getDong())
-				.detail(therapistJoinReq.getDetail())
-				.build();
+			.city(therapistJoinReq.getCity())
+			.district(therapistJoinReq.getDistrict())
+			.dong(therapistJoinReq.getDong())
+			.detail(therapistJoinReq.getDetail())
+			.build();
 
 		Member member = Member.builder()
 			.email(therapistJoinReq.getEmail())
@@ -113,18 +121,18 @@ public class MemberService {
 		FileUploadRes fileUploadRes = fileService.uploadFile(String.valueOf(FileType.QUALIFICATION), qualification);
 
 		Therapist therapist = Therapist.builder()
-				.therapistId(member.getMemberId())
-				.careerYears(therapistJoinReq.getCareerYears())
-				.fileId(fileUploadRes.getFileId())
-				.build();
+			.therapistId(member.getMemberId())
+			.careerYears(therapistJoinReq.getCareerYears())
+			.fileId(fileUploadRes.getFileId())
+			.build();
 
 		for (CareerReq careerDto : therapistJoinReq.getCareers()) {
 			Career career = Career.builder()
-					.company(careerDto.getCompany())
-					.position(careerDto.getPosition())
-					.startDate(careerDto.getStartDate())
-					.endDate(careerDto.getEndDate())
-					.build();
+				.company(careerDto.getCompany())
+				.position(careerDto.getPosition())
+				.startDate(careerDto.getStartDate())
+				.endDate(careerDto.getEndDate())
+				.build();
 			therapist.addCareer(career);
 		}
 
@@ -175,14 +183,14 @@ public class MemberService {
 
 		List<Career> careers = careerRepository.findByTherapist_TherapistId(member.getMemberId());
 		List<CareerRes> careerResList = careers.stream()
-				.map(c -> CareerRes.builder()
-						.careerId(c.getCareerId())
-						.company(c.getCompany())
-						.position(c.getPosition())
-						.startDate(c.getStartDate())
-						.endDate((c.getEndDate()))
-						.build())
-				.toList();
+			.map(c -> CareerRes.builder()
+				.careerId(c.getCareerId())
+				.company(c.getCompany())
+				.position(c.getPosition())
+				.startDate(c.getStartDate())
+				.endDate((c.getEndDate()))
+				.build())
+			.toList();
 
 		Optional<Therapist> therapist = therapistRepository.findById(member.getMemberId());
 		String fileUrl = "";
@@ -197,6 +205,7 @@ public class MemberService {
 			.birthDate(member.getBirthDate())
 			.tel1(member.getTel1())
 			.tel2(member.getTel2())
+			.careerYears(therapist.get().getCareerYears())
 			.careers(careerResList)
 			.city(member.getAddress().getCity())
 			.district(member.getAddress().getDistrict())
@@ -226,9 +235,9 @@ public class MemberService {
 		if (memberMeChangeReq.getTel2() != null) {
 			member.setTel2(memberMeChangeReq.getTel2());
 		}
-		 if (memberMeChangeReq.getProfile() != null) {
-		 	member.setProfile(memberMeChangeReq.getProfile());
-		 }
+		if (memberMeChangeReq.getProfile() != null) {
+			member.setProfile(memberMeChangeReq.getProfile());
+		}
 		if (memberMeChangeReq.getCity() != null) {
 			member.getAddress().setCity(memberMeChangeReq.getCity());
 		}
@@ -242,24 +251,28 @@ public class MemberService {
 			member.getAddress().setDetail(memberMeChangeReq.getDetail());
 		}
 
-		if (memberMeChangeReq.getCareers() != null) {
+		if (memberMeChangeReq.getCareerYears() != null || memberMeChangeReq.getCareers() != null) {
 			Therapist therapist = therapistRepository.findById(member.getMemberId())
 				.orElseThrow(() -> new IllegalArgumentException("일반 회원은 경력을 수정할 수 없습니다."));
 
-			careerRepository.deleteByTherapist_TherapistId(member.getMemberId());
+			if (memberMeChangeReq.getCareerYears() != null) {
+				therapist.setCareerYears(memberMeChangeReq.getCareerYears());
+			}
+			if (memberMeChangeReq.getCareers() != null) {
+				careerRepository.deleteByTherapist_TherapistId(member.getMemberId());
 
-			therapist.getCareers().clear();
+				therapist.getCareers().clear();
 
-			for (CareerReq careerReq : memberMeChangeReq.getCareers()) {
-				Career career = Career.builder()
+				for (CareerReq careerReq : memberMeChangeReq.getCareers()) {
+					Career career = Career.builder()
 						.company(careerReq.getCompany())
 						.position(careerReq.getPosition())
 						.startDate(careerReq.getStartDate())
 						.endDate(careerReq.getEndDate())
 						.build();
-				therapist.addCareer(career);
+					therapist.addCareer(career);
+				}
 			}
-
 			therapistRepository.save(therapist);
 		}
 	}
@@ -279,5 +292,11 @@ public class MemberService {
 		String encodedNewPassword = passwordEncoder.encode(req.getNewPassword());
 		member.setPassword(encodedNewPassword);
 		memberRepository.save(member);
+	}
+
+	public String getNicknameById(Long opponentId) {
+		return memberRepository.findById(opponentId)
+			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."))
+			.getNickname();
 	}
 }

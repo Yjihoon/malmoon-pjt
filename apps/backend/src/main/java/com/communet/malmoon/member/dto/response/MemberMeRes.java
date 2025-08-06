@@ -21,5 +21,6 @@ public class MemberMeRes {
 	private String dong;
 	private String detail;
 	private String fileUrl;
+	private Integer careerYears;
 	private List<CareerRes> careers;
 }

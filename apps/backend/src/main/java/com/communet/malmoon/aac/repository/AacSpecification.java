@@ -32,13 +32,25 @@ public class AacSpecification {
 	 * @param emotion 감정 필터 조건 (nullable)
 	 * @return JPA Criteria 기반 Specification 조건 객체
 	 */
-	public static Specification<Aac> withFilters(String situation, String action, String emotion) {
+	public static Specification<Aac> withFilters(String situation, String action, String emotion, Long therapistId) {
 		return (root, query, builder) -> {
 			List<Predicate> predicates = new ArrayList<>();
 
-			// 상태 필터: DEFAULT 또는 PUBLIC만
-			predicates.add(root.get("status").in(AacStatus.DEFAULT, AacStatus.PUBLIC));
+			// 기본적으로 DEFAULT, PUBLIC 상태인 AAC 조회
+			Predicate publicPredicate = root.get("status").in(AacStatus.DEFAULT, AacStatus.PUBLIC);
 
+			// therapistId가 있을 경우, 본인이 생성한 PRIVATE도 포함
+			if (therapistId != null) {
+				Predicate ownPrivatePredicate = builder.and(
+					builder.equal(root.get("status"), AacStatus.PRIVATE),
+					builder.equal(root.get("therapist").get("id"), therapistId)
+				);
+				predicates.add(builder.or(publicPredicate, ownPrivatePredicate));
+			} else {
+				// 비로그인 사용자 또는 therapistId가 없는 경우, PUBLIC/DEFAULT만
+				predicates.add(publicPredicate);
+			}
+			
 			// 선택적 필터
 			if (situation != null && !situation.isBlank()) {
 				predicates.add(builder.equal(root.get("situation"), situation));
