@@ -17,7 +17,7 @@ public class SessionFeedbackController {
     public ResponseEntity<String> endSessionAndGenerateFeedback(
             @RequestBody SessionFeedbackRequestDto requestDto
     ) {
-        SessionFeedbackService.processFeedbackAfterLesson(requestDto);
+        sessionFeedbackService.processFeedbackAfterLesson(requestDto);
         return ResponseEntity.ok("세션 종료 및 피드백 생성 완료");
     }
 }

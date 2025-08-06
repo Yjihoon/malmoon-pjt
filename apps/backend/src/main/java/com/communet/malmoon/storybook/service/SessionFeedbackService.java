@@ -76,7 +76,7 @@ public class SessionFeedbackService {
         HttpEntity<FeedbackEvalRequestDto> httpEntity = new HttpEntity<>(requestBody, headers);
 
         ResponseEntity<FeedbackEvalResponseDto> response = restTemplate.postForEntity(
-                "http://localhost:8000/api/v1/feedback/eval",  // 주소는 실제 FastAPI 주소로 교체
+                "http://localhost:8000/api/v1/feedback/eval",
                 httpEntity,
                 FeedbackEvalResponseDto.class
         );
