@@ -3,7 +3,7 @@ import { Container, Row, Col, Card, Button, Alert, ListGroup } from 'react-boots
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import './TherapistSessionRoom.css';
 import axios from 'axios';
-import { Room, RoomEvent, createLocalTracks, RemoteParticipant, Track } from 'livekit-client';
+import { Room, RoomEvent, createLocalTracks, Track } from 'livekit-client';
 import { useAuth } from '../../contexts/AuthContext';
 
 const LIVEKIT_URL = 'wss://i13c107.p.ssafy.io:8443';
@@ -12,10 +12,7 @@ function TherapistSessionRoom() {
   const { roomId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, token } = useAuth();
-
-  
-
+  const { user } = useAuth();
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isRemoteVideoOff, setIsRemoteVideoOff] = useState(true);
@@ -35,19 +32,23 @@ function TherapistSessionRoom() {
   const [fairyTaleInfo, setFairyTaleInfo] = useState(null);
   const [fairyTaleContent, setFairyTaleContent] = useState({});
   const [currentFairyTalePage, setCurrentFairyTalePage] = useState(1);
-  const [selectedSentence, setSelectedSentence] = useState('');
+  const [selectedSentence, setSelectedSentence] = useState(null);
   const [isFetchingSentences, setIsFetchingSentences] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
-  const [chatRoomId, setChatRoomId] = useState(null); // 여기 추가함
+  const [chatRoomId, setChatRoomId] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const [childId, setChildId] = useState(null);
 
-  const handleRemoteTrackMuted = (trackPublication, participant) => {
+  const handleRemoteTrackMuted = (trackPublication) => {
     if (trackPublication.kind === Track.Kind.Video) {
       setIsRemoteVideoOff(true);
     }
   };
 
-  const handleRemoteTrackUnmuted = (trackPublication, participant) => {
+  const handleRemoteTrackUnmuted = (trackPublication) => {
     if (trackPublication.kind === Track.Kind.Video) {
       setIsRemoteVideoOff(false);
     }
@@ -55,8 +56,6 @@ function TherapistSessionRoom() {
 
   const connectToLiveKit = useCallback(async () => {
     if (!user) return;
-
-    
 
     setRtcStatus('connecting');
 
@@ -77,26 +76,13 @@ function TherapistSessionRoom() {
       }
     });
 
-    room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
-      if (track.kind === 'video') {
-        track.detach();
-        setRemoteVideoTrack(null);
-        setIsRemoteVideoOff(true);
-        participant.off(RoomEvent.TrackMuted, handleRemoteTrackMuted);
-        participant.off(RoomEvent.TrackUnmuted, handleRemoteTrackUnmuted);
-      } else if (track.kind === 'audio') {
-        track.detach();
-        setRemoteAudioTrack(null);
-      }
-    });
-
     room.on(RoomEvent.DataReceived, (payload, participant) => {
       const decoder = new TextDecoder();
       const data = JSON.parse(decoder.decode(payload));
       if (data.type === 'chat') {
         setChatMessages(prevMessages => [...prevMessages, { sender: participant.identity, message: data.payload }]);
       } else if (data.type === 'sentence') {
-        setSelectedSentence(data.payload);
+        setSelectedSentence({ sentence: data.payload, sentenceId: null });
       }
     });
 
@@ -107,10 +93,11 @@ function TherapistSessionRoom() {
           "Authorization": `Bearer ${user.accessToken}`
         }
       });
-      const { token, chatRoomId: newChatRoomId } = response.data; // 여기 수정함
+      const { token, chatRoomId: newChatRoomId } = response.data;
       
-      setChatRoomId(newChatRoomId); // 여기 추가함
-
+      setChatRoomId(newChatRoomId);
+      setChildId(2);
+    
       await room.connect(LIVEKIT_URL, token);
 
       const localTracks = await createLocalTracks({ audio: true, video: true });
@@ -180,7 +167,7 @@ function TherapistSessionRoom() {
         const response = await axios.get('/api/v1/storybooks/sentences', {
           params: { ...fairyTaleInfo, page },
         });
-        setFairyTaleContent(prev => ({ ...prev, [page]: [...new Set(response.data.sentences.map(s => s.sentence))] }));
+        setFairyTaleContent(prev => ({ ...prev, [page]: Array.from(new Map(response.data.sentences.map(item => [item.sentenceId, item])).values()) }));
       } catch (error) {
         console.error(`Error fetching page ${page}:`, error);
       } finally {
@@ -191,29 +178,91 @@ function TherapistSessionRoom() {
     fetchSentences(currentFairyTalePage);
   }, [fairyTaleInfo, currentFairyTalePage]);
 
+  const uploadAudio = async (audioBlob) => {
+    if (!childId || !selectedSentence) {
+      alert('아동 정보 또는 선택된 문장이 없습니다.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('childId', childId);
+    formData.append('sentenceId', selectedSentence.sentenceId);
+    formData.append('srcTextId', selectedSentence.srcTextId);
+    formData.append('page', currentFairyTalePage);
+    formData.append('audioFile', audioBlob, 'recording.webm');
+
+    try {
+      const response = await axios.post('/api/v1/speech', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${user.accessToken}`
+        }
+      });
+      console.log('오디오 업로드 성공:', response.data);
+      alert('녹음 파일이 성공적으로 업로드되었습니다.');
+    } catch (error) {
+      console.error('오디오 업로드 실패:', error);
+      alert('녹음 파일 업로드에 실패했습니다.');
+    }
+  };
+
+  const startRecording = async () => {
+    if (!remoteAudioTrack) {
+      alert('녹음할 오디오 트랙이 없습니다.');
+      return;
+    }
+
+    try {
+      const stream = new MediaStream([remoteAudioTrack.mediaStreamTrack]);
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await uploadAudio(audioBlob);
+        audioChunksRef.current = [];
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      console.log('녹음 시작');
+    } catch (error) {
+      console.error('녹음 시작 실패:', error);
+      alert('녹음 시작에 실패했습니다.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      console.log('녹음 중지');
+    }
+  };
+
   const toggleMute = () => roomRef.current?.localParticipant.setMicrophoneEnabled(!isMuted, { stopMicTrack: false }).then(() => setIsMuted(!isMuted));
   const toggleVideo = () => roomRef.current?.localParticipant.setCameraEnabled(!isVideoOff).then(() => setIsVideoOff(!isVideoOff));
 
-  const endSession = async () => { // 여기 수정함
+  const endSession = async () => {
     if (window.confirm('정말로 수업을 종료하시겠습니까?')) {
       try {
-        // 1. 백엔드에 세션 삭제 요청
         await axios.delete('/api/v1/sessions/room', {
           headers: { "Authorization": `Bearer ${user.accessToken}` }
         });
 
-        // 2. LiveKit 세션 연결 종료
         if (roomRef.current) {
           roomRef.current.disconnect();
         }
 
-        // 3. 페이지 이동
         navigate('/therapist/mypage/schedule');
 
       } catch (error) {
         console.error('Failed to end session:', error);
         alert('세션 종료에 실패했습니다. 콘솔을 확인해주세요.');
-        // 실패하더라도 연결은 끊고 페이지는 이동
         if (roomRef.current) {
           roomRef.current.disconnect();
         }
@@ -237,7 +286,7 @@ function TherapistSessionRoom() {
     if (roomRef.current && selectedSentence) {
       try {
         const encoder = new TextEncoder();
-        const data = encoder.encode(JSON.stringify({ type: 'sentence', payload: selectedSentence }));
+        const data = encoder.encode(JSON.stringify({ type: 'sentence', payload: selectedSentence.sentence }));
         await roomRef.current.localParticipant.publishData(data, { reliable: true });
         alert('문장을 전송했습니다.');
       } catch (error) {
@@ -252,7 +301,6 @@ function TherapistSessionRoom() {
       const messageContent = chatInput;
       setChatInput('');
 
-      // 1. 실시간 전송을 위해 LiveKit으로 데이터 전송
       try {
         const encoder = new TextEncoder();
         const data = encoder.encode(JSON.stringify({ type: 'chat', payload: messageContent }));
@@ -263,7 +311,6 @@ function TherapistSessionRoom() {
         alert('채팅 메시지 실시간 전송에 실패했습니다.');
       }
 
-      // 2. DB 저장을 위해 백엔드 API로 전송
       try {
         await axios.post('/api/v1/chat/session/message', {
           sessionId: roomRef.current.name,
@@ -332,6 +379,7 @@ function TherapistSessionRoom() {
                     {isVideoOff && (
                       <div className="text-center video-overlay-text">
                         <i className="bi bi-camera-video-off-fill" style={{ fontSize: '1.5em' }}></i>
+                        <p>내 카메라 꺼짐</p>
                       </div>
                     )}
                   </div>
@@ -339,7 +387,7 @@ function TherapistSessionRoom() {
 
                 {selectedSentence && (
                   <div className="selected-sentence-display text-center p-2 mb-3">
-                    {selectedSentence}
+                    {selectedSentence.sentence}
                   </div>
                 )}
 
@@ -362,10 +410,10 @@ function TherapistSessionRoom() {
                           <span>필터</span>
                       </Button>
                       {fairyTaleInfo && (
-                        <Button variant={activeToolTab === 'fairyTale' ? "info" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('fairyTale')}>
-                            <i className="bi bi-book-fill"></i>
-                            <span>동화</span>
-                        </Button>
+                          <Button variant={activeToolTab === 'fairyTale' ? "info" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('fairyTale')}>
+                              <i className="bi bi-book-fill"></i>
+                              <span>동화</span>
+                          </Button>
                       )}
                       <Button variant={activeToolTab === 'chat' ? "warning" : "light"} className="control-button me-3" onClick={() => toggleToolPanel('chat')}>
                           <i className="bi bi-chat-right-text-fill"></i>
@@ -383,7 +431,11 @@ function TherapistSessionRoom() {
                 <Col md={3} className="tool-panel p-0">
                   <Card className="h-100 shadow-sm">
                     <Card.Header className="d-flex justify-content-between align-items-center">
-                      <h5 className="mb-0">{activeToolTab === 'aac' ? 'AAC 도구' : activeToolTab === 'filter' ? '필터 도구' : activeToolTab === 'chat' ? '' : '동화 도구'}</h5>
+                      <h5 className="mb-0">
+                        {activeToolTab === 'aac' ? 'AAC 도구' : 
+                         activeToolTab === 'filter' ? '필터 도구' : 
+                         activeToolTab === 'chat' ? '채팅' : '동화 도구'}
+                      </h5>
                       <Button variant="light" size="sm" onClick={() => setShowToolPanel(false)}>&times;</Button>
                     </Card.Header>
                     <Card.Body className="p-2">
@@ -420,48 +472,52 @@ function TherapistSessionRoom() {
                         </div>
                       )}
                       {activeToolTab === 'fairyTale' && fairyTaleInfo && (
-                        <ListGroup variant="flush">
-                          <div className="p-2">
-                            <h6 className="text-center mb-3">{fairyTaleInfo.title} (페이지 {currentFairyTalePage}/{fairyTaleInfo.endPage})</h6>
-                            <ListGroup className="mb-3" style={{maxHeight: '400px', overflowY: 'auto'}}>
-                              {fairyTaleContent[currentFairyTalePage] ? (
-                                fairyTaleContent[currentFairyTalePage].map((sentence, index) => (
-                                  <ListGroup.Item
-                                    key={index}
-                                    action
-                                    onClick={() => setSelectedSentence(prev => prev === sentence ? '' : sentence)}
-                                    active={selectedSentence === sentence}
-                                    className="fairy-tale-sentence"
-                                  >
-                                    {sentence}
-                                  </ListGroup.Item>
-                                ))
-                              ) : (
-                                <ListGroup.Item>페이지를 불러오는 중...</ListGroup.Item>
-                              )}
-                            </ListGroup>
-                            <div className="d-flex justify-content-between">
-                              <Button variant="outline-secondary" onClick={() => handlePageChange(currentFairyTalePage - 1)} disabled={currentFairyTalePage <= fairyTaleInfo.startPage}>
-                                이전 페이지
-                              </Button>
-                              <Button variant="outline-secondary" onClick={() => handlePageChange(currentFairyTalePage + 1)} disabled={currentFairyTalePage >= fairyTaleInfo.endPage}>
-                                다음 페이지
-                              </Button>
-                            </div>
-                            {selectedSentence && (
-                              <div className="mt-3">
-                                <Alert variant="success" className="text-center">
-                                  선택된 문장: <strong>{selectedSentence}</strong>
-                                </Alert>
-                                <div className="d-grid">
-                                  <Button variant="primary" onClick={sendSentence}>
-                                    <i className="bi bi-send-fill me-2"></i>선택한 문장 전송
-                                  </Button>
-                                </div>
-                              </div>
+                        <div className="p-2">
+                          <h6 className="text-center mb-3">{fairyTaleInfo.title} (페이지 {currentFairyTalePage}/{fairyTaleInfo.endPage})</h6>
+                          <ListGroup className="mb-3" style={{maxHeight: '400px', overflowY: 'auto'}}>
+                            {fairyTaleContent[currentFairyTalePage] ? (
+                              fairyTaleContent[currentFairyTalePage].map((sentence) => (
+                                <ListGroup.Item
+                                  key={sentence.sentenceId}
+                                  action
+                                  onClick={() => setSelectedSentence(prev => prev && prev.sentenceId === sentence.sentenceId ? null : sentence)}
+                                  active={selectedSentence && selectedSentence.sentenceId === sentence.sentenceId}
+                                  className="fairy-tale-sentence"
+                                >
+                                  {sentence.sentence}
+                                </ListGroup.Item>
+                              ))
+                            ) : (
+                              <ListGroup.Item>페이지를 불러오는 중...</ListGroup.Item>
                             )}
+                          </ListGroup>
+                          <div className="d-flex justify-content-between">
+                            <Button variant="outline-secondary" onClick={() => handlePageChange(currentFairyTalePage - 1)} disabled={currentFairyTalePage <= fairyTaleInfo.startPage}>
+                              이전 페이지
+                            </Button>
+                            <Button variant="outline-secondary" onClick={() => handlePageChange(currentFairyTalePage + 1)} disabled={currentFairyTalePage >= fairyTaleInfo.endPage}>
+                              다음 페이지
+                            </Button>
                           </div>
-                        </ListGroup>
+                          {selectedSentence && (
+                            <div className="mt-3">
+                              <Alert variant="success" className="text-center">
+                                선택된 문장: <strong>{selectedSentence.sentence}</strong>
+                              </Alert>
+                              <div className="d-grid">
+                                <Button variant="primary" onClick={sendSentence}>
+                                  <i className="bi bi-send-fill me-2"></i>선택한 문장 전송
+                                </Button>
+                              </div>
+                              <div className="d-grid mt-2">
+                                <Button variant={isRecording ? "danger" : "success"} onClick={isRecording ? stopRecording : startRecording}>
+                                  <i className={`bi bi-mic${isRecording ? "-mute-fill" : "-fill"} me-2`}></i>
+                                  {isRecording ? '녹음 중지' : '녹음 시작'}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </Card.Body>
                   </Card>

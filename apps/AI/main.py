@@ -5,6 +5,7 @@ from apps.AI.api.v1.aac_create import aac_router
 from apps.AI.api.v1.stt.stt_router import router as stt_router
 
 from dotenv import load_dotenv
+from pathlib import Path
 
 # 환경변수 로딩
 load_dotenv()
