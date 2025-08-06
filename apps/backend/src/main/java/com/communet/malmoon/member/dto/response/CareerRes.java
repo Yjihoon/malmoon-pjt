@@ -1,6 +1,5 @@
 package com.communet.malmoon.member.dto.response;
 
-import com.communet.malmoon.member.domain.Therapist;
 import lombok.Builder;
 import lombok.Getter;
 
