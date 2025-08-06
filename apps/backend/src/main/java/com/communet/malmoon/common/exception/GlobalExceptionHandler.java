@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -13,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
  * 모든 예외를 가로채고 일관된 에러 응답을 제공합니다.
  */
 @Slf4j
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "com.communet.malmoon")
 public class GlobalExceptionHandler {
 
 	/**
@@ -27,10 +28,19 @@ public class GlobalExceptionHandler {
 	}
 
 	/**
-	 * 그 외 모든 예외 처리
+	 * 그 외 모든 예외 처리 + (Swagger 요청 제외)
 	 */
 	@ExceptionHandler(Exception.class)
-	public ResponseEntity<ApiErrorRes> handleAllExceptions(Exception e, WebRequest request) {
+	public ResponseEntity<ApiErrorRes> handleAllExceptions(Exception e, WebRequest request,
+		HttpServletRequest httpRequest) {
+		String uri = httpRequest.getRequestURI();
+
+		if (uri.startsWith("/v3/api-docs") || uri.startsWith("/swagger-ui")) {
+			// Swagger 문서 요청은 무시하여 500 에러 방지
+			log.warn("Swagger 요청 예외 무시: {}", uri);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+
 		log.error("Unhandled Exception: {}", e.getMessage(), e);
 		return ResponseEntity.internalServerError()
 			.body(ExceptionResponseUtils.build(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.", request));
