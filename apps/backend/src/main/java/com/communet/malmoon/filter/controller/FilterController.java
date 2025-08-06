@@ -40,10 +40,9 @@ public class FilterController {
         return ResponseEntity.ok(filterService.getFiltersByIds(ids));
     }
 
-
     @PostMapping
     public ResponseEntity<?> storeFilter(
-            @RequestBody FilterStoreReq filterStoreReq,
+            FilterStoreReq filterStoreReq,
             @RequestPart(value = "filter") MultipartFile file) {
         filterService.storeFilter(filterStoreReq, file);
         return ResponseEntity.status(HttpStatus.CREATED).build();
