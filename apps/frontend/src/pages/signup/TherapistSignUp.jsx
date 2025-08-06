@@ -28,8 +28,8 @@ function TherapistSignUp() {
       {
         company: '',
         position: '',
-        start_date: '',
-        end_date: '',
+        startDate: '',
+        endDate: '',
       },
     ],
   });
@@ -94,7 +94,7 @@ function TherapistSignUp() {
   const handleAddCareer = () => {
     setFormData((prev) => ({
       ...prev,
-      careerHistory: [...prev.careerHistory, { company: '', position: '', start_date: '', end_date: '' }],
+      careerHistory: [...prev.careerHistory, { company: '', position: '', startDate: '', endDate: '' }],
     }));
   };
 
@@ -136,7 +136,7 @@ function TherapistSignUp() {
     f.careerHistory.forEach((career, idx) => {
       if (!career.company) err[`career-${idx}-company`] = '기관명을 입력해주세요.';
       if (!career.position) err[`career-${idx}-position`] = '직책을 입력해주세요.';
-      if (!career.start_date) err[`career-${idx}-start_date`] = '시작일을 입력해주세요.';
+      if (!career.startDate) err[`career-${idx}-startDate`] = '시작일을 입력해주세요.';
     });
 
     setErrors(err);

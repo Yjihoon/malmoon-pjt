@@ -1,176 +1,204 @@
-/* src/pages/Therapist/TherapistSessionRoom.css */
-
-/* 전체 세션 룸 컨테이너 */
 .session-room-container {
-    height: 100vh; /* 뷰포트 전체 높이 사용 (필요시 NavBar, Footer 높이 제외) */
-    display: flex; /* flexbox를 사용하여 내부 요소 정렬 */
-    flex-direction: column; /* 세로 방향 정렬 */
-    padding: 0 !important; /* Bootstrap 기본 패딩 제거 */
-    max-width: none !important; /* Bootstrap 최대 너비 제한 제거 */
-    background-color: var(--session-bg-dark); /* 전체 배경색 설정 (다크 계열) */
-    overflow: hidden; /* 내용이 넘치지 않도록 */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f0f2f5;
+  padding: 0;
 }
 
-/* 메인 콘텐츠 영역 (비디오 + 제어판) */
 .session-main-content {
-    flex-grow: 1; /* 남은 공간을 모두 차지하여 비디오 영역을 최대한 크게 */
-    display: flex;
-    flex-direction: column; /* 비디오 영역과 제어판을 세로로 정렬 */
-    position: relative; /* PIP 비디오의 absolute 위치 지정을 위함 */
-    height: 100%; /* 부모의 높이 상속 */
-    transition: flex 0.3s ease-in-out; /* 도구 패널 토글 시 부드러운 전환 */
-    padding: 10px; /* 내부 여백 추가 */
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
-/* 메인 비디오 영역 (원격 캠 + PIP 로컬 캠) */
+.join-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 .main-video-area {
-    flex-grow: 1; /* 남은 공간을 모두 차지 */
-    position: relative; /* PIP 비디오의 absolute 위치 지정을 위함 */
-    background-color: var(--session-bg-medium); /* 비디오 영역 배경색 */
-    border-radius: var(--border-radius-sm); /* 모서리 둥글게 */
-    overflow: hidden; /* 비디오가 넘치는 것을 방지 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 10px; /* 제어판과의 간격 */
-    color: var(--session-text-light); /* 텍스트 색상 */
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #343a40; /* Dark background for video area */
+  position: relative;
+  overflow: hidden;
 }
 
-/* 원격 내담자 비디오 컨테이너 (크게) */
 .main-video-container {
-    width: 100%;
-    height: 100%;
-    position: relative; /* 오버레이 텍스트 위치 지정을 위함 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--session-bg-light); /* 플레이어 배경색 */
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
 }
 
-/* 로컬 치료사 비디오 컨테이너 (PIP 모드) */
-.pip-video-container {
-    position: absolute; /* 메인 비디오 위에 오버레이 */
-    bottom: 20px; /* 하단에서 20px 위 */
-    right: 20px; /* 오른쪽에서 20px 안쪽 */
-    width: 240px; /* PIP 비디오의 너비 (조금 더 키움) */
-    height: 180px; /* PIP 비디오의 높이 */
-    background-color: var(--secondary-color);
-    border-radius: var(--border-radius-sm);
-    overflow: hidden;
-    z-index: 10; /* 메인 비디오 위에 표시 */
-    border: 3px solid #fff; /* 테두리 */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* 그림자 강화 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--session-text-light); /* 텍스트 색상 */
+.main-video-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Ensure the video fits within the container */
+  background-color: black;
 }
 
-/* 비디오 오버레이 텍스트 (로딩, 꺼짐 등) */
 .video-overlay-text {
-    position: absolute;
-    color: #fff;
-    text-align: center;
-    font-size: 1.1em;
-    z-index: 20;
-    padding: 10px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  font-size: 1.2em;
 }
 
-/* Agora SDK 비디오 엘리먼트 (div)에 적용될 스타일 - 실제 비디오 스트림이 들어갈 부분 */
-/* Agora SDK가 동적으로 생성하는 div 요소에 적용되므로, #remote-player-name > div 와 같이 자식 선택자를 사용 */
-#remote-player-name > div,
-#local-player-name > div {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover; /* 비디오가 컨테이너를 채우도록 설정 */
+.pip-video-container {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 200px;
+  height: 150px;
+  background-color: #000;
+  border: 2px solid #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* 하단 제어판 */
+.pip-video-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .control-panel {
-    height: 90px; /* 제어판 높이 약간 증가 */
-    background-color: var(--session-bg-medium); /* 어두운 배경색 */
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center; /* 버튼들을 가운데 정렬 */
-    padding: 0 20px;
-    border-radius: var(--border-radius-sm);
-    box-shadow: 0 -4px 10px rgba(0,0,0,0.2); /* 그림자 */
-    width: 100%; /* 너비 전체 사용 */
+  background-color: #ffffff;
+  padding: 10px 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70px;
 }
 
 .control-button {
-    width: 70px; /* 버튼 고정 너비 */
-    height: 70px; /* 버튼 고정 높이 */
-    border-radius: 50%; /* 원형 버튼 */
-    display: flex;
-    flex-direction: column; /* 아이콘과 텍스트를 세로로 정렬 */
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9em; /* 폰트 크기 조정 */
-    color: var(--session-text-light); /* 아이콘 색상 */
-    background-color: var(--accent-color); /* 버튼 기본 배경색을 accent-color로 변경 */
-    border: 1px solid var(--accent-color); /* 버튼 기본 테두리 색을 accent-color로 변경 */
-    transition: all 0.2s ease-in-out;
-    padding: 5px; /* 내부 여백 */
-    text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8em;
+  padding: 8px 12px;
+  border-radius: 8px;
+  min-width: 80px;
 }
 
-.control-button:hover {
-    background-color: var(--session-button-hover); /* A slightly darker yellow */
-    border-color: var(--session-button-hover);
-    transform: translateY(-2px); /* 호버 시 살짝 위로 이동 */
+.control-button i {
+  font-size: 1.5em;
+  margin-bottom: 5px;
 }
 
-.control-button.btn-danger {
-    background-color: var(--session-danger);
-    border-color: var(--session-danger-dark);
-}
-
-.control-button.btn-danger:hover {
-    background-color: var(--session-danger-dark);
-    border-color: var(--session-danger-darker);
-}
-
-.control-button.btn-primary {
-    background-color: var(--accent-color);
-    border-color: var(--accent-color);
-}
-.control-button.btn-primary:hover {
-    background-color: var(--session-button-hover);
-    border-color: var(--session-button-hover);
-}
-
-.control-button.btn-success {
-    background-color: var(--session-success);
-    border-color: var(--session-success-dark);
-}
-.control-button.btn-success:hover {
-    background-color: var(--session-success-dark);
-    border-color: var(--session-success-darker);
-}
-
-.remote-video,
-.local-video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.control-button span {
+  font-size: 0.9em;
 }
 
 .received-sentence-display {
   position: absolute;
-  bottom: 110px; /* 컨트롤 패널 바로 위에 위치 */
+  bottom: 80px; /* 컨트롤 패널 위에 위치 */
   left: 50%;
   transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.6); /* 반투명 검은색 배경 */
-  color: #FFFFFF; /* 흰색 글씨 */
-  padding: 12px 24px;
-  border-radius: 15px;
-  font-size: 1.5em; /* 폰트 크기 증가 */
-  font-weight: bold; /* 폰트 굵게 */
-  text-align: center;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 1.2em;
+  font-weight: bold;
+  z-index: 10;
   max-width: 80%;
-  z-index: 30; /* 다른 요소들 위에 표시 */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  transition: opacity 0.3s ease-in-out;
+  text-align: center;
+}
+
+/* Chat Panel Styles */
+.chat-panel {
+  position: absolute;
+  top: 60px; /* Adjust based on navbar height */
+  right: 0;
+  height: calc(100% - 60px); /* Adjust based on navbar height */
+  width: 300px; /* Adjust width as needed */
+  background-color: #ffffff;
+  border-left: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+}
+
+.chat-messages {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-message {
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 15px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.my-message {
+  align-self: flex-end;
+  background-color: #dcf8c6; /* Light green for my messages */
+  color: #333;
+}
+
+.other-message {
+  align-self: flex-start;
+  background-color: #e0e0e0; /* Light gray for other messages */
+  color: #333;
+}
+
+.chat-input-area {
+  padding: 10px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+}
+
+.chat-input-area input {
+  flex-grow: 1;
+  border: 1px solid #ced4da;
+  border-radius: 20px;
+  padding: 8px 15px;
+  margin-right: 10px;
+}
+
+.chat-input-area button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 15px;
+  cursor: pointer;
+}
+
+.chat-input-area button:hover {
+  background-color: #0056b3;
+}
+
+.main-video-container.speaking {
+  border: 5px solid #007bff; /* Blue border when speaking */
+  box-shadow: 0 0 15px rgba(0, 123, 255, 0.8);
 }

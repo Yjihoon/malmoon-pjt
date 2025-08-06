@@ -14,6 +14,8 @@ function TherapistSessionRoom() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
 
+  
+
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isRemoteVideoOff, setIsRemoteVideoOff] = useState(true);
@@ -35,10 +37,6 @@ function TherapistSessionRoom() {
   const [currentFairyTalePage, setCurrentFairyTalePage] = useState(1);
   const [selectedSentence, setSelectedSentence] = useState(null); // Changed to null
   const [isFetchingSentences, setIsFetchingSentences] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const [childId, setChildId] = useState(null);
 
   const handleRemoteTrackMuted = (trackPublication, participant) => {
     if (trackPublication.kind === Track.Kind.Video) {
@@ -54,6 +52,8 @@ function TherapistSessionRoom() {
 
   const connectToLiveKit = useCallback(async () => {
     if (!user) return;
+
+    
 
     setRtcStatus('connecting');
 
@@ -87,6 +87,26 @@ function TherapistSessionRoom() {
       }
     });
 
+    room.on(RoomEvent.DataReceived, (payload, participant) => {
+      const decoder = new TextDecoder();
+      const data = JSON.parse(decoder.decode(payload));
+      if (data.type === 'chat') {
+        setChatMessages(prevMessages => [...prevMessages, { sender: participant.identity, message: data.payload }]);
+      } else if (data.type === 'sentence') {
+        setSelectedSentence(data.payload);
+      }
+    });
+
+    room.on(RoomEvent.DataReceived, (payload, participant) => {
+      const decoder = new TextDecoder();
+      const data = JSON.parse(decoder.decode(payload));
+      if (data.type === 'chat') {
+        setChatMessages(prevMessages => [...prevMessages, { sender: participant.identity, message: data.payload }]);
+      } else if (data.type === 'sentence') {
+        setSelectedSentence(data.payload);
+      }
+    });
+
     try {
       const response = await axios.post('/api/v1/sessions/room', { clientId: 2 }, { // TODO: 실제 childId로 변경 필요
         headers: {
@@ -94,6 +114,9 @@ function TherapistSessionRoom() {
           "Authorization": `Bearer ${user.accessToken}`
         }
       });
+      const { token, chatRoomId: newChatRoomId } = response.data; // 여기 수정함
+      
+      setChatRoomId(newChatRoomId); // 여기 추가함
       // TODO: 백엔드 응답에서 childId를 받아와 설정하는 로직 추가 필요
       setChildId(2); // 임시로 2로 설정
       const token = response.data.token;
@@ -247,9 +270,31 @@ function TherapistSessionRoom() {
   const toggleMute = () => roomRef.current?.localParticipant.setMicrophoneEnabled(!isMuted, { stopMicTrack: false }).then(() => setIsMuted(!isMuted));
   const toggleVideo = () => roomRef.current?.localParticipant.setCameraEnabled(!isVideoOff).then(() => setIsVideoOff(!isVideoOff));
 
-  const endSession = () => {
+  const endSession = async () => { // 여기 수정함
     if (window.confirm('정말로 수업을 종료하시겠습니까?')) {
-      navigate('/therapist/mypage/schedule');
+      try {
+        // 1. 백엔드에 세션 삭제 요청
+        await axios.delete('/api/v1/sessions/room', {
+          headers: { "Authorization": `Bearer ${user.accessToken}` }
+        });
+
+        // 2. LiveKit 세션 연결 종료
+        if (roomRef.current) {
+          roomRef.current.disconnect();
+        }
+
+        // 3. 페이지 이동
+        navigate('/therapist/mypage/schedule');
+
+      } catch (error) {
+        console.error('Failed to end session:', error);
+        alert('세션 종료에 실패했습니다. 콘솔을 확인해주세요.');
+        // 실패하더라도 연결은 끊고 페이지는 이동
+        if (roomRef.current) {
+          roomRef.current.disconnect();
+        }
+        navigate('/therapist/mypage/schedule');
+      }
     }
   };
 
@@ -274,6 +319,39 @@ function TherapistSessionRoom() {
       } catch (error) {
         console.error('Failed to send sentence:', error);
         alert('문장 전송에 실패했습니다.');
+      }
+    }
+  };
+
+  const sendChatMessage = async () => {
+    if (roomRef.current && chatInput.trim() !== '' && chatRoomId) {
+      const messageContent = chatInput;
+      setChatInput('');
+
+      // 1. 실시간 전송을 위해 LiveKit으로 데이터 전송
+      try {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(JSON.stringify({ type: 'chat', payload: messageContent }));
+        await roomRef.current.localParticipant.publishData(data, { reliable: true });
+        setChatMessages(prev => [...prev, { sender: '나', message: messageContent }]);
+      } catch (error) {
+        console.error('Failed to send chat message via LiveKit:', error);
+        alert('채팅 메시지 실시간 전송에 실패했습니다.');
+      }
+
+      // 2. DB 저장을 위해 백엔드 API로 전송
+      try {
+        await axios.post('/api/v1/chat/session/message', {
+          sessionId: roomRef.current.name,
+          roomId: chatRoomId,
+          senderId: user.memberId,
+          content: messageContent,
+          messageType: 'TALK'
+        }, {
+          headers: { "Authorization": `Bearer ${user.accessToken}` }
+        });
+      } catch (error) {
+        console.error('Failed to save chat message to backend:', error);
       }
     }
   };
@@ -381,15 +459,44 @@ function TherapistSessionRoom() {
                 <Col md={3} className="tool-panel p-0">
                   <Card className="h-100 shadow-sm">
                     <Card.Header className="d-flex justify-content-between align-items-center">
-                      <h5 className="mb-0">{activeToolTab === 'aac' ? 'AAC 도구' : activeToolTab === 'filter' ? '필터 도구' : activeToolTab === 'chat' ? '채팅' : '동화 도구'}</h5>
+                      <h5 className="mb-0">{activeToolTab === 'aac' ? 'AAC 도구' : activeToolTab === 'filter' ? '필터 도구' : activeToolTab === 'chat' ? '' : '동화 도구'}</h5>
                       <Button variant="light" size="sm" onClick={() => setShowToolPanel(false)}>&times;</Button>
                     </Card.Header>
                     <Card.Body className="p-2">
-                      <ListGroup variant="flush">
-                        {activeToolTab === 'aac' && ( <Alert variant="info" className="text-center m-2">AAC 도구 기능 구현 예정</Alert> )}
-                        {activeToolTab === 'filter' && ( <Alert variant="info" className="text-center m-2">필터 도구 기능 구현 예정</Alert> )}
-                        {activeToolTab === 'chat' && ( <Alert variant="warning" className="text-center m-2">채팅 기능 구현 예정</Alert> )}
-                        {activeToolTab === 'fairyTale' && fairyTaleInfo && (
+                      {activeToolTab === 'aac' && ( <Alert variant="info" className="text-center m-2">AAC 도구 기능 구현 예정</Alert> )}
+                      {activeToolTab === 'filter' && ( <Alert variant="info" className="text-center m-2">필터 도구 기능 구현 예정</Alert> )}
+                      {activeToolTab === 'chat' && (
+                        <div className="chat-panel d-flex flex-column h-100">
+                          <div className="chat-messages flex-grow-1 overflow-auto p-2">
+                            {chatMessages.map((msg, index) => (
+                              <div key={index} className={`chat-message ${msg.sender === '나' ? 'my-message' : 'other-message'}`}>
+                                <strong>{msg.sender}:</strong> {msg.message}
+                              </div>
+                            ))}
+                          </div>
+                          <div className="chat-input-area p-2 border-top">
+                            <div className="input-group">
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="메시지를 입력하세요..."
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    sendChatMessage();
+                                  }
+                                }}
+                              />
+                              <Button variant="primary" onClick={sendChatMessage}>
+                                전송
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {activeToolTab === 'fairyTale' && fairyTaleInfo && (
+                        <ListGroup variant="flush">
                           <div className="p-2">
                             <h6 className="text-center mb-3">{fairyTaleInfo.title} (페이지 {currentFairyTalePage}/{fairyTaleInfo.endPage})</h6>
                             <ListGroup className="mb-3" style={{maxHeight: '400px', overflowY: 'auto'}}>
@@ -436,8 +543,8 @@ function TherapistSessionRoom() {
                               </div>
                             )}
                           </div>
-                        )}
-                      </ListGroup>
+                        </ListGroup>
+                      )}
                     </Card.Body>
                   </Card>
                 </Col>

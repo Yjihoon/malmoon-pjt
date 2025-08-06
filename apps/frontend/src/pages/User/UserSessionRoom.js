@@ -20,6 +20,10 @@ function UserSessionRoom() {
   const [rtcStatus, setRtcStatus] = useState('disconnected');
   const [isRemoteSpeaking, setIsRemoteSpeaking] = useState(false);
   const [receivedSentence, setReceivedSentence] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [showChatPanel, setShowChatPanel] = useState(false);
+  const [chatRoomId, setChatRoomId] = useState(null); // 여기 추가함
 
   const [remoteVideoTrack, setRemoteVideoTrack] = useState(null);
   const [remoteAudioTrack, setRemoteAudioTrack] = useState(null);
@@ -101,6 +105,8 @@ function UserSessionRoom() {
       const data = JSON.parse(decoder.decode(payload));
       if (data.type === 'sentence') {
         setReceivedSentence(data.payload);
+      } else if (data.type === 'chat') {
+        setChatMessages(prevMessages => [...prevMessages, { sender: participant.identity, message: data.payload }]);
       }
     });
 
@@ -111,7 +117,8 @@ function UserSessionRoom() {
           "Content-Type": "application/json"
         }
       });
-      const livekitToken = response.data.token;
+      const { token: livekitToken, chatRoomId: newChatRoomId } = response.data; // 여기 수정함
+      setChatRoomId(newChatRoomId); // 여기 추가함
 
       await room.connect(LIVEKIT_URL, livekitToken);
 
@@ -187,6 +194,39 @@ function UserSessionRoom() {
     }
   };
 
+  const sendChatMessage = async () => {
+    if (roomRef.current && chatInput.trim() !== '' && chatRoomId) {
+      const messageContent = chatInput;
+      setChatInput('');
+
+      // 1. 실시간 전송을 위해 LiveKit으로 데이터 전송
+      try {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(JSON.stringify({ type: 'chat', payload: messageContent }));
+        await roomRef.current.localParticipant.publishData(data, { reliable: true });
+        setChatMessages(prev => [...prev, { sender: '나', message: messageContent }]);
+      } catch (error) {
+        console.error('Failed to send chat message via LiveKit:', error);
+        alert('채팅 메시지 실시간 전송에 실패했습니다.');
+      }
+
+      // 2. DB 저장을 위해 백엔드 API로 전송
+      try {
+        await axios.post('/api/v1/chat/session/message', {
+          sessionId: roomRef.current.name,
+          roomId: chatRoomId,
+          senderId: user.memberId,
+          content: messageContent,
+          messageType: 'TALK'
+        }, {
+          headers: { "Authorization": `Bearer ${user.accessToken}` }
+        });
+      } catch (error) {
+        console.error('Failed to save chat message to backend:', error);
+      }
+    }
+  };
+
   const renderContent = () => {
     switch (rtcStatus) {
       case 'disconnected':
@@ -259,7 +299,7 @@ function UserSessionRoom() {
                       <i className={`bi bi-camera-video${isVideoOff ? "-off-fill" : "-fill"}`}></i>
                       <span>캠 끄기</span>
                   </Button>
-                  <Button variant="light" className="control-button me-3" onClick={() => alert('채팅 기능은 준비 중입니다.')}>
+                  <Button variant="light" className="control-button me-3" onClick={() => setShowChatPanel(prev => !prev)}>
                       <i className="bi bi-chat-right-text-fill"></i>
                       <span>채팅</span>
                   </Button>
@@ -269,6 +309,8 @@ function UserSessionRoom() {
                   </Button>
               </div>
             </div>
+
+            
           </>
         );
       default:
@@ -278,10 +320,42 @@ function UserSessionRoom() {
 
   return (
     <Container fluid className="session-room-container">
-      <Row className="h-100">
-        <Col className="session-main-content p-0">
+      <Row className="h-100 flex-nowrap">
+        <Col className={`session-main-content ${showChatPanel ? 'col-md-9' : 'col-md-12'} p-0`}>
           {renderContent()}
         </Col>
+        {showChatPanel && (
+          <Col md={3} className="tool-panel p-0">
+            <div className="chat-panel d-flex flex-column h-100">
+              <div className="chat-messages flex-grow-1 overflow-auto p-2">
+                {chatMessages.map((msg, index) => (
+                  <div key={index} className={`chat-message ${msg.sender === '나' ? 'my-message' : 'other-message'}`}>
+                    <strong>{msg.sender}:</strong> {msg.message}
+                  </div>
+                ))}
+              </div>
+              <div className="chat-input-area p-2 border-top">
+                <div className="input-group">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="메시지를 입력하세요..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        sendChatMessage();
+                      }
+                    }}
+                  />
+                  <Button variant="primary" onClick={sendChatMessage}>
+                    전송
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Col>
+        )}
       </Row>
     </Container>
   );

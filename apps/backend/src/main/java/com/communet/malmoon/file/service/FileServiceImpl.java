@@ -1,6 +1,7 @@
 package com.communet.malmoon.file.service;
 
 import java.io.IOException;
+import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,10 @@ import com.communet.malmoon.file.repository.FileRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 /**
  * 파일 서비스 구현체
@@ -23,11 +28,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FileServiceImpl implements FileService {
 
+	private final S3Presigner s3Presigner;
 	private final S3Uploader s3Uploader;
 	private final FileRepository fileRepository;
 
 	@Value("${cloud.aws.s3.url-prefix}")
 	private String s3Prefix;
+
+	@Value("${cloud.aws.s3.bucket}")
+	private String bucket;
 
 	@Override
 	public FileUploadRes uploadFile(String directory, MultipartFile file) {
@@ -95,6 +104,31 @@ public class FileServiceImpl implements FileService {
 		}
 
 		return s3Prefix + file.getFilename();
+	}
+
+	@Override
+	public String getPresignedFileUrl(Long fileId) {
+		File file = fileRepository.findById(fileId)
+			.orElseThrow(() -> new IllegalArgumentException("해당 파일이 존재하지 않습니다. ID=" + fileId));
+
+		if (file.isDeleted()) {
+			throw new IllegalStateException("삭제된 파일입니다. ID=" + fileId);
+		}
+
+		String key = file.getFilename();
+
+		GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+			.bucket(bucket)
+			.key(key)
+			.build();
+
+		GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+			.signatureDuration(Duration.ofMinutes(10))
+			.getObjectRequest(getObjectRequest)
+			.build();
+
+		PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
+		return presignedRequest.url().toString();
 	}
 
 	private String resolveContentType(String filename) {
