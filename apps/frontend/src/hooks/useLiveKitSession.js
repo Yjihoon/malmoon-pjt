@@ -4,7 +4,7 @@ import api from '../api/axios'; // axios 인스턴스, 기본 baseURL 세팅
 
 const LIVEKIT_URL = 'wss://i13c107.p.ssafy.io:8443';
 
-export function useLiveKitSession(user, navigate, onChatMessageReceived, onSentenceReceived) {
+export function useLiveKitSession(user, navigate, clientId, onChatMessageReceived, onSentenceReceived) {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isRemoteVideoOff, setIsRemoteVideoOff] = useState(true);
@@ -77,7 +77,7 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
       console.log("LiveKit 연결 요청 직전 accessToken:", user?.accessToken);
 
       // 토큰이 상태에 있으니 헤더에 넣어 요청
-      const response = await api.post('/sessions/room', { clientId: 2 }, {
+      const response = await api.post('/sessions/room', { clientId: clientId }, {
         headers: {
           Authorization: `Bearer ${user.accessToken}`,
         }
@@ -86,7 +86,7 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
       const { token, chatRoomId: newChatRoomId } = response.data;
 
       setChatRoomId(newChatRoomId);
-      setChildId(2);
+      setChildId(clientId); // 전달받은 clientId 사용
 
       await room.connect(LIVEKIT_URL, token);
       setRtcStatus('connected');
@@ -109,7 +109,7 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
       setRtcStatus('error');
       alert('LiveKit 연결에 실패했습니다. 콘솔을 확인해주세요.');
     }
-  }, [user, handleRemoteTrackMuted, handleRemoteTrackUnmuted, onChatMessageReceived, onSentenceReceived]);
+  }, [user, clientId, handleRemoteTrackMuted, handleRemoteTrackUnmuted, onChatMessageReceived, onSentenceReceived]);
 
   useEffect(() => {
     return () => roomRef.current?.disconnect();

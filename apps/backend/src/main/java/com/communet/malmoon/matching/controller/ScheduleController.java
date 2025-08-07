@@ -62,9 +62,9 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleService.getPendingSchedules(member.getMemberId()));
     }
 
-    @GetMapping("/therapist")
-    public ResponseEntity<List<TherapistRes>> getTherapists() {
-        return ResponseEntity.ok(scheduleService.getTherapists());
+        @GetMapping("/therapist")
+    public ResponseEntity<List<TherapistRes>> getTherapists(@CurrentMember Member member) {
+        return ResponseEntity.ok(scheduleService.getTherapists(member));
     }
 
     @GetMapping("/me/therapist/accepted")

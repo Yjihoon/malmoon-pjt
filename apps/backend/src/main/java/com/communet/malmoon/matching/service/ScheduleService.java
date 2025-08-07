@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -155,29 +156,39 @@ public class ScheduleService {
                 .toList();
     }
 
-    public List<TherapistRes> getTherapists() {
-        List<Member> members = memberRepository.findByRole(MemberType.ROLE_THERAPIST);
+    // 윤지훈: 사용자와 이미 연결된 치료사를 제외하고 반환하도록 로직 수정
+    public List<TherapistRes> getTherapists(Member member) {
+        // 현재 사용자가 요청했거나 수락된 스케줄에 연결된 치료사 ID 목록을 가져옴
+        List<Schedule> pendingSchedules = scheduleRepository.findByMemberAndStatus(member, StatusType.PENDING);
+        List<Schedule> acceptedSchedules = scheduleRepository.findByMemberAndStatus(member, StatusType.ACCEPTED);
 
-        return members.stream()
-                .map(member -> {
-                    Therapist therapist = therapistRepository.findById(member.getMemberId()).get();
+        Set<Long> excludedTherapistIds = Stream.concat(pendingSchedules.stream(), acceptedSchedules.stream())
+                .map(schedule -> schedule.getTherapist().getMemberId())
+                .collect(Collectors.toSet());
+
+        List<Member> allTherapists = memberRepository.findByRole(MemberType.ROLE_THERAPIST);
+
+        return allTherapists.stream()
+                // 제외 목록에 없는 치료사만 필터링
+                .filter(therapistMember -> !excludedTherapistIds.contains(therapistMember.getMemberId()))
+                .map(therapistMember -> {
+                    Therapist therapist = therapistRepository.findById(therapistMember.getMemberId()).orElseThrow();
                     List<CareerRes> careerResList = therapist.getCareers().stream()
                             .map(career -> CareerRes.builder()
                                     .company(career.getCompany())
                                     .position(career.getPosition())
                                     .startDate(career.getStartDate())
                                     .endDate(career.getEndDate())
-                                    .build()
-                            )
+                                    .build())
                             .toList();
 
                     return new TherapistRes(
-                            member.getMemberId(),
-                            member.getName(),
-                            member.getEmail(),
-                            member.getTel1(),
-                            member.getBirthDate(),
-                            member.getProfile(),
+                            therapistMember.getMemberId(),
+                            therapistMember.getName(),
+                            therapistMember.getEmail(),
+                            therapistMember.getTel1(),
+                            therapistMember.getBirthDate(),
+                            therapistMember.getProfile(),
                             therapist.getCareerYears(),
                             careerResList
                     );
@@ -271,6 +282,7 @@ public class ScheduleService {
         );
 
         return schedules.stream()
+                .filter(schedule -> schedule.getMember() != null && schedule.getMember().getMemberId() != null) // 윤지훈: member 및 memberId가 null이 아닌 경우만 필터링
                 .flatMap(schedule ->
                         schedule.getDayTimes().stream()
                                 .filter(dt -> dt.getDay().toString().equals(day))

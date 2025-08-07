@@ -12,13 +12,17 @@ import { useLiveKitSession } from '../../hooks/useLiveKitSession';
 import { useFairyTaleLogic } from '../../hooks/useFairyTaleLogic';
 import { useChatLogic } from '../../hooks/useChatLogic';
 
-const CAMERA_KIT_API_TOKEN = "eyJhbGciOiJIUzI1NiIsImtpZCI6IkNhbnZhc1MyU0hNQUNQcm9kIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjYW52YXMtY2FudmFzYXBpIiwiaXNzIjoiY2FudmFzLXMyc3Rva2VuIiwibmJmIjoxNzU0MDQ4MTI2LCJzdWIiOiJlODY4YTg3Ny1jYjVkLTQyMWEtOGE5Zi02MzlkZjExMDAyNTJ-U1RBR0lOR35hZGM0OWFjMy02NTU5LTRmNTctOWQ4Ny0yNTRjYzkwZjNhYzAifQ.EqNFYVSRYv7iEBCTBM-bxGvDEYOYernbf3ozbEhzB6g";
+const CAMERA_KIT_API_TOKEN = "eyJhbGciOiJIUzI1NiIsImtpZCI6IkNhbnZhc2MyU2hNQUNQcm9kIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjYW52YXMtY2FudmFzYXBpIiwiaXNzIjoiY2FudmFzLXMyc3Rva2VuIiwibmJmIjoxNzU0MDQ4MTI2LCJzdWIiOiJlODY4YTg3Ny1jYjVkLTQyMWEtOGE5Zi02MzlkZjExMDAyNTJ-U1RBR0lOR35hZGM0OWFjMy02NTU5LTRmNTctOWQ4Ny0yNTRjYzkwZjNhYzAifQ.EqNFYVSRYv7iEBCTBM-bxGvDEYOYernbf3ozbEhzB6g";
 
 function TherapistSessionRoom() {
   const { roomId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // URL 쿼리 파라미터에서 clientId 추출 및 숫자로 변환
+  const queryParams = new URLSearchParams(location.search);
+  const clientId = parseInt(queryParams.get('clientId'), 10); 
 
   const [showToolPanel, setShowToolPanel] = useState(false);
   const [activeToolTab, setActiveToolTab] = useState(null);
@@ -51,10 +55,11 @@ function TherapistSessionRoom() {
     isMuted, setIsMuted, isVideoOff, setIsVideoOff, isRemoteVideoOff, setIsRemoteVideoOff,
     rtcStatus, setRtcStatus, remoteVideoTrack, remoteAudioTrack,
     localVideoRef, remoteVideoRef, remoteAudioRef, roomRef,
-    chatRoomId, childId, isLiveKitReady,
+    chatRoomId, 
+    isLiveKitReady,
     connectToLiveKit, toggleMute, endSession, 
     toggleVideo: liveKitToggleVideo // useLiveKitSession의 toggleVideo를 다른 이름으로 가져옵니다.
-  } = useLiveKitSession(user, navigate, 
+  } = useLiveKitSession(user, navigate, clientId, // clientId 전달
     (sender, message) => setChatMessages(prevMessages => [...prevMessages, { sender, message }]),
     (sentence) => setSelectedSentence(sentence)
   );
@@ -161,7 +166,7 @@ function TherapistSessionRoom() {
     fairyTaleInfo, fairyTaleContent, currentFairyTalePage,
     isRecording, setIsRecording,
     handlePageChange, sendSentence, startRecording, stopRecording
-  } = useFairyTaleLogic(location, user, childId, selectedSentence, roomRef);
+  } = useFairyTaleLogic(location, user, clientId, selectedSentence, roomRef); // clientId 전달
 
   const { 
     chatInput, setChatInput, sendChatMessage
