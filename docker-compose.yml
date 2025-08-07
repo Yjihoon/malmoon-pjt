@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   nginx:
     image: nginx:latest
@@ -18,8 +16,6 @@ services:
 
   frontend:
     image: inttype/malmoon:frontend
-    env_file:
-      - ./apps/frontend/.env
     container_name: frontend
     expose:
       - "80"
