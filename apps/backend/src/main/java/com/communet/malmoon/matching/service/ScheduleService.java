@@ -1,10 +1,7 @@
 package com.communet.malmoon.matching.service;
 
-import com.communet.malmoon.matching.domain.DayTime;
-import com.communet.malmoon.matching.domain.Schedule;
-import com.communet.malmoon.matching.domain.StatusType;
+import com.communet.malmoon.matching.domain.*;
 import com.communet.malmoon.matching.dto.request.DayTimeReq;
-import com.communet.malmoon.matching.dto.request.ScheduleGetReq;
 import com.communet.malmoon.matching.dto.request.SchedulePostReq;
 import com.communet.malmoon.matching.dto.request.ScheduleUpdateReq;
 import com.communet.malmoon.matching.dto.response.*;
@@ -23,9 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.time.Period;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,29 +30,50 @@ public class ScheduleService {
 
     private final MemberRepository memberRepository;
     private final TherapistRepository therapistRepository;
+    private final TreatmentTimeService treatmentTimeService;
     private final ScheduleRepository scheduleRepository;
 
     /**
      * 치료사 ID와 기간을 기준으로 겹치는 스케줄 목록을 조회
      * 스케줄 안의 dayTime 리스트를 평탄화(flatMap)하여 모두 반환
      */
-    public ScheduleGetRes getSchedules(ScheduleGetReq scheduleGetReq) {
-        if (!memberRepository.existsById(scheduleGetReq.getTherapistId())) {
+    public ScheduleGetRes getSchedules(Long therapistId, LocalDate startDate, LocalDate endDate) {
+        if (!memberRepository.existsById(therapistId)) {
             throw new EntityNotFoundException("해당 치료사가 존재하지 않습니다.");
         }
 
+        Map<DayType, List<Integer>> treatmentTimes = treatmentTimeService.getTreatmentTime(therapistId).getTreatmentTimes();
+
         List<Schedule> schedules =
                 scheduleRepository.findAllByTherapist_MemberIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                        scheduleGetReq.getTherapistId(),
-                        scheduleGetReq.getEndDate(),
-                        scheduleGetReq.getStartDate());
+                        therapistId,
+                        endDate,
+                        startDate);
 
-        List<DayTimeReq> allDayTimes = schedules.stream()
+        List<DayTimeReq> busyList = schedules.stream()
                 .flatMap(schedule -> schedule.getDayTimes().stream())
                 .map(dt -> new DayTimeReq(dt.getDay(), dt.getTime()))
                 .toList();
 
-        return new ScheduleGetRes(allDayTimes);
+        // DayType 별로 busy 시간을 Set으로 그룹화
+        Map<DayType, Set<Integer>> busyMap = busyList.stream()
+                .collect(Collectors.groupingBy(
+                        DayTimeReq::getDay,
+                        Collectors.mapping(DayTimeReq::getTime, Collectors.toSet())
+                ));
+
+        List<DayTimeReq> availableList = treatmentTimes.entrySet().stream()
+                .flatMap(entry -> {
+                    DayType day = entry.getKey();
+                    Set<Integer> busy = busyMap.getOrDefault(day, Set.of());
+                    return entry.getValue().stream()
+                            .filter(hour -> !busy.contains(hour))
+                            .map(hour -> new DayTimeReq(day, hour));
+                })
+                .toList();
+
+        // ScheduleGetRes 에 담아서 반환
+        return new ScheduleGetRes(availableList);
     }
 
     /**
@@ -265,5 +283,25 @@ public class ScheduleService {
                                 })
                 )
                 .toList();
+    }
+
+    public List<TherapistClientRes> getTherapistClients(Member member) {
+        List<Schedule> schedules = scheduleRepository.findByTherapistAndStatus(member, StatusType.ACCEPTED);
+
+        return schedules.stream()
+                .map(Schedule::getMember)
+                .filter(Objects::nonNull)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(Member::getMemberId, m -> m, (m1, m2) -> m1),
+                        map -> map.values().stream()
+                                .map(m -> TherapistClientRes.builder()
+                                        .clientId(m.getMemberId())
+                                        .name(m.getName())
+                                        .email(m.getEmail())
+                                        .age(Period.between(m.getBirthDate(), LocalDate.now()).getYears())
+                                        .telephone(m.getTel1())
+                                        .build())
+                                .collect(Collectors.toList())
+                ));
     }
 }

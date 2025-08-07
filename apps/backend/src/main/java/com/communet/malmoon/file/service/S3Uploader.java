@@ -51,7 +51,7 @@ public class S3Uploader {
 			RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
 		// 업로드된 파일 URL 반환
-		return getFileUrl(fileName);
+		return fileName;
 	}
 
 	/**

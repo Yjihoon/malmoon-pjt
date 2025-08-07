@@ -59,7 +59,7 @@ const ToolBundleModal = ({ show, onHide, onSave, bundleData, allAacSets, allFilt
                             <Form.Label>포함할 AAC 묶음</Form.Label>
                             <ListGroup style={{maxHeight: '200px', overflowY: 'auto'}}>
                                 {allAacSets.map(set => (
-                                    <ListGroup.Item key={set.ACC_set_id} action active={(form.AAC_set_id || []).includes(set.ACC_set_id)} onClick={() => handleToggle('AAC_set_id', set.ACC_set_id)}>
+                                    <ListGroup.Item key={set.id} action active={(form.AAC_set_id || []).includes(set.id)} onClick={() => handleToggle('AAC_set_id', set.id)}>
                                         {set.name}
                                     </ListGroup.Item>
                                 ))}
