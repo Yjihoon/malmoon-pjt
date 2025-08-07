@@ -4,6 +4,7 @@ import com.communet.malmoon.storybook.domain.SpeechResult;
 import com.communet.malmoon.storybook.dto.FeedbackEvalRequestDto;
 import com.communet.malmoon.storybook.dto.FeedbackEvalResponseDto;
 import com.communet.malmoon.storybook.dto.SessionFeedbackRequestDto;
+import com.communet.malmoon.storybook.dto.FeedbackDetailResponseDto;
 import com.communet.malmoon.storybook.domain.SessionFeedback;
 import com.communet.malmoon.storybook.repository.SpeechResultRepository;
 import com.communet.malmoon.storybook.repository.SessionFeedbackRepository;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -31,9 +33,11 @@ public class SessionFeedbackService {
     private final SessionFeedbackRepository sessionFeedbackRepository;
     private final MemberRepository memberRepository;
     private final StorybookRepository storybookRepository;
+    private final SessionFeedbackRepository feedbackRepository;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    // 치료 영역 (STT 결과 및 원문 문장 기반 피드백 생성)
     public void processFeedbackAfterLesson(SessionFeedbackRequestDto requestDto) {
         Long childId = requestDto.getChildId();
 
@@ -110,5 +114,24 @@ public class SessionFeedbackService {
 
         sessionFeedbackRepository.save(feedback);
         System.out.println("✅ SessionFeedback 저장 완료");
+    }
+
+    // 관리 영역 (피드백 열람)
+    // 1. 해당 아동의 피드백 날짜 조회
+    public List<LocalDate> findFeedbackDatesByChild(Long childId) {
+        return feedbackRepository.findDistinctDatesByChildId(childId);
+    }
+
+    // 2. 해당 날짜의 상세 피드백 조회
+    public FeedbackDetailResponseDto getFeedbackDetail(Long childId, LocalDate date) {
+        SessionFeedback feedback = feedbackRepository
+                .findByChildIdAndDate(childId, date)
+                .orElseThrow(() -> new RuntimeException("해당 날짜의 피드백이 존재하지 않습니다."));
+
+        return FeedbackDetailResponseDto.builder()
+                .storybookTitle(feedback.getStorybook().getTitle())
+                .accuracy(feedback.getAccuracy())
+                .feedbackText(feedback.getFeedbackText())
+                .build();
     }
 }
