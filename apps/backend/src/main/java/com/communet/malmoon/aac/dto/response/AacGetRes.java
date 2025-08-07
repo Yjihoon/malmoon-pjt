@@ -41,7 +41,7 @@ public class AacGetRes {
 	private String description;
 
 	@Schema(description = "이미지 URL", example = "https://s3.amazonaws.com/bucket/image.png")
-	private String fileId;
+	private String fileUrl;
 
 	@Schema(description = "공개 여부", example = "PUBLIC")
 	private AacStatus status;
@@ -50,10 +50,10 @@ public class AacGetRes {
 	 * AAC 도메인 객체와 이미지 URL을 기반으로 응답 DTO를 생성합니다.
 	 *
 	 * @param aac AAC 도메인 객체
-	 * @param fileId S3에서 생성한 이미지 URL
+	 * @param fileUrl S3에서 생성한 이미지 URL
 	 * @return AacRes DTO
 	 */
-	public static AacGetRes from(Aac aac, String fileId) {
+	public static AacGetRes from(Aac aac, String fileUrl) {
 		return AacGetRes.builder()
 			.id(aac.getId())
 			.name(aac.getName())
@@ -61,7 +61,7 @@ public class AacGetRes {
 			.action(aac.getAction())
 			.emotion(aac.getEmotion())
 			.description(aac.getDescription())
-			.fileId(fileId)
+			.fileUrl(fileUrl)
 			.status(aac.getStatus())
 			.build();
 	}
