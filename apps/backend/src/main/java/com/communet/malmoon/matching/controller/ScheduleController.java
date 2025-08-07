@@ -28,8 +28,11 @@ public class ScheduleController {
     // [GET] 치료사의 스케줄 조회 (요청: 치료사 ID, 기간)
     // -> 클라이언트(치료대상자)가 특정 치료사의 스케줄(불가능한 요일/시간)을 조회할 때 사용
     @GetMapping
-    public ResponseEntity<ScheduleGetRes> getSchedule(@RequestBody ScheduleGetReq scheduleGetReq) {
-        return ResponseEntity.ok().body(scheduleService.getSchedules(scheduleGetReq));
+    public ResponseEntity<ScheduleGetRes> getSchedule(
+            @RequestParam Long therapistId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate) {
+        return ResponseEntity.ok().body(scheduleService.getSchedules(therapistId, startDate, endDate));
     }
 
     // [POST] 치료 대상자 → 치료사에게 스케줄 요청
@@ -93,5 +96,12 @@ public class ScheduleController {
             @CurrentMember Member member,
             @RequestParam LocalDate date) {
         return ResponseEntity.ok(scheduleService.getTherapistSchedules(member.getMemberId(), date));
+    }
+
+    // 치료사에 해당되는 치료 아동
+    @GetMapping("/therapist/client")
+    @PreAuthorize("hasRole('ROLE_THERAPIST')")
+    public ResponseEntity<?> getTherapistClients(@CurrentMember Member member) {
+        return ResponseEntity.ok(scheduleService.getTherapistClients(member));
     }
 }

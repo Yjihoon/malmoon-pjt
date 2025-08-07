@@ -28,6 +28,8 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
     void deleteByScheduleIdAndMember(Long scheduleId, Member member);
 
+    List<Schedule> findByTherapistAndStatus(Member therapist, StatusType status);
+
     @Query("""
     SELECT s FROM Schedule s
     JOIN FETCH s.member m
