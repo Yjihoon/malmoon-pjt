@@ -164,7 +164,11 @@ function TherapistMatchingPage() {
 
   return (
     <Container className="my-5 main-container">
-      <h2 className="text-center mb-4">나의 매칭 클라이언트</h2>
+      <h2 className="text-center mb-4">나의 매칭 클라이언트
+        <Link to="/therapist/mypage/manage" className="ms-3">
+          <button className="btn btn-outline-primary btn-sm">관리 클라이언트 보기</button>
+        </Link>
+      </h2>
       <Row>
         <Col md={12}>
           <Card className="shadow-sm p-3 card-base">
