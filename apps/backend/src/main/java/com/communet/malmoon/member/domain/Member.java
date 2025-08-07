@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.communet.malmoon.common.entity.BaseEntity;
 
+import com.communet.malmoon.filter.domain.Filter;
 import com.communet.malmoon.matching.domain.Schedule;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -66,4 +67,8 @@ public class Member extends BaseEntity {
 	@OneToMany(mappedBy = "therapist", cascade = CascadeType.ALL)
 	@Builder.Default
 	private List<Schedule> schedules = new ArrayList<>();
+
+	@OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+	@Builder.Default
+	private List<Filter> filters = new ArrayList<>();
 }
