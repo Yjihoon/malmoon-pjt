@@ -1,6 +1,6 @@
 // useDuplicateCheck.js
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../../api/axios';
 
 export function useDuplicateCheck() {
   const [checking, setChecking] = useState(false);
@@ -10,7 +10,9 @@ export function useDuplicateCheck() {
   const checkEmail = async (email) => {
     setChecking(true);
     try {
-      const res = await axios.get(`/api/v1/members/email?email=${email}`);
+            const res = await api.get('/members/email', {
+        params: { email }, 
+      });
       const result =
         typeof res.data === 'boolean'
           ? res.data

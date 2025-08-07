@@ -62,7 +62,7 @@ public class AacService {
 		// 파일 URL 포함하여 응답 객체로 변환
 		return page.map(aac -> {
 			try {
-				String imageUrl = fileService.getFileUrl(aac.getFileId());
+				String imageUrl = fileService.getPresignedFileUrl(aac.getFileId());
 				return AacGetRes.from(aac, imageUrl);
 			} catch (Exception e) {
 				throw new AacException(AacErrorCode.NOT_FOUND);
