@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api/axios';
 import './AuthPages.css';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -33,7 +33,7 @@ function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await axios.post('/api/v1/auth/login', {
+      const res = await api.post(`/auth/login`, {
         email,
         password,
       });
