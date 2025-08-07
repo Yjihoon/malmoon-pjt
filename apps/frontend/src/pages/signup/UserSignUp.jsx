@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 import CommonSignUpForm from '../../components/signup/CommonSignUpForm';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api/axios';
 import './SignupPage.css';
 import { useDuplicateCheck } from '../../components/signup/useDuplicateCheck';
 
 function UserSignUp() {
   const [formData, setFormData] = useState({
-    profile: 1, // ✅ 이름 변경됨
+    profile: 1, 
     name: '',
     nickname: '',
     birthDate: '',
@@ -127,7 +127,7 @@ function UserSignUp() {
         ...formData,
         role: 'user',
       };
-      await axios.post('/api/v1/members', payload);
+      await api.post('/members', payload);
       setSuccess(true);
       navigate('/login');
     } catch (err) {

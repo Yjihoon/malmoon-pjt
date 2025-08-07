@@ -3,7 +3,7 @@ import { Form, Button, Alert } from 'react-bootstrap';
 import CommonSignUpForm from '../../components/signup/CommonSignUpForm';
 import TherapistExtraForm from '../../components/signup/TherapistExtraForm';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api/axios';
 import './SignupPage.css';
 import { useDuplicateCheck } from '../../components/signup/useDuplicateCheck';
 
@@ -189,7 +189,7 @@ function TherapistSignUp() {
       });
       form.append('therapistJoinReq', jsonBlob);
 
-      await axios.post('/api/v1/therapists', form, {
+      await api.post(`/therapists`, form, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
