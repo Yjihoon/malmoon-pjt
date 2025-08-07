@@ -4,7 +4,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
-group = 'com.communET'
+group = 'com.communet'
 version = '0.0.1-SNAPSHOT'
 
 java {
@@ -30,7 +30,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'       // Redis 사용
     implementation 'org.springframework.boot:spring-boot-starter-websocket'        // WebSocket 사용
     implementation 'org.springframework.boot:spring-boot-starter-validation'       // Bean Validation
-
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    
     // === OpenAPI (Swagger) 문서화 ===
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'       // Swagger UI + OpenAPI 3.0
 
