@@ -18,23 +18,23 @@ public class TreatmentTimeController {
     private final TreatmentTimeService treatmentTimeService;
 
     @GetMapping
-    public ResponseEntity<TreatmentTimeRes> getTreatmentTime(@CurrentMember Member member) {
-        return ResponseEntity.ok(treatmentTimeService.getTreatmentTime(member.getMemberId()));
+    public ResponseEntity<TreatmentTimeRes> getTreatmentTime(@RequestParam Long therapistId) {
+        return ResponseEntity.ok(treatmentTimeService.getTreatmentTime(therapistId));
     }
 
     @PostMapping
     public ResponseEntity<?> createTreatmentTime(
             @CurrentMember Member member,
-            @RequestBody TreatmentTimeReq treatmentTimeCreateReq) {
-        treatmentTimeService.createTreatmentTime(member.getMemberId(), treatmentTimeCreateReq);
+            @RequestBody TreatmentTimeReq treatmentTimes) {
+        treatmentTimeService.createTreatmentTime(member.getMemberId(), treatmentTimes);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PatchMapping
     public ResponseEntity<?> updateTreatmentTime(
             @CurrentMember Member member,
-            @RequestBody TreatmentTimeReq treatmentTimeUpdateReq) {
-        treatmentTimeService.updateTreatmentTimes(member.getMemberId(), treatmentTimeUpdateReq);
+            @RequestBody TreatmentTimeReq treatmentTimes) {
+        treatmentTimeService.updateTreatmentTimes(member.getMemberId(), treatmentTimes);
         return ResponseEntity.ok().build();
 
     }

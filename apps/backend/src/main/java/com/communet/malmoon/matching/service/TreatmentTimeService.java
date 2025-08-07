@@ -23,8 +23,8 @@ public class TreatmentTimeService {
     private final TherapistRepository therapistRepository;
     private final TreatmentTimeRepository treatmentTimeRepository;
 
-    public TreatmentTimeRes getTreatmentTime(Long memberId) {
-        Therapist therapist = therapistRepository.findByTherapistId(memberId)
+    public TreatmentTimeRes getTreatmentTime(Long therapistId) {
+        Therapist therapist = therapistRepository.findByTherapistId(therapistId)
                 .orElseThrow(() -> new EntityNotFoundException("치료사를 찾을 수 없습니다."));
 
         List<TreatmentTime> times = therapist.getTreatmentTimes();
