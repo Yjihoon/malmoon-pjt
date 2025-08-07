@@ -9,6 +9,6 @@ import lombok.Data;
 
 @Data
 public class FeedbackEvalResponseDto {
-    private double accuracy;
+    private String accuracy;
     private String feedbackText;
 }

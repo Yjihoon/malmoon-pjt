@@ -32,4 +32,9 @@ public class SessionFeedback {
     private int lastPage;
 
     private LocalDateTime createdAt;
+
+    // ✅ 새로 추가된 필드
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "storybook_id")
+    private Storybook storybook;
 }

@@ -8,8 +8,9 @@ import com.communet.malmoon.storybook.domain.SessionFeedback;
 import com.communet.malmoon.storybook.repository.SpeechResultRepository;
 import com.communet.malmoon.storybook.repository.SessionFeedbackRepository;
 import com.communet.malmoon.member.domain.Member;
+import com.communet.malmoon.storybook.domain.Storybook;
 import com.communet.malmoon.member.repository.MemberRepository;
-
+import com.communet.malmoon.storybook.repository.StorybookRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.Data;
 
@@ -29,6 +30,7 @@ public class SessionFeedbackService {
     private final SpeechResultRepository speechResultRepository;
     private final SessionFeedbackRepository sessionFeedbackRepository;
     private final MemberRepository memberRepository;
+    private final StorybookRepository storybookRepository;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -92,8 +94,13 @@ public class SessionFeedbackService {
         Member child = memberRepository.findById(childId)
                 .orElseThrow(() -> new IllegalArgumentException("아동이 존재하지 않습니다."));
 
+        Storybook storybook = storybookRepository.findById(requestDto.getStorybookId())
+                .orElseThrow(() -> new RuntimeException("동화책 정보를 찾을 수 없습니다."));
+
+
         SessionFeedback feedback = SessionFeedback.builder()
                 .child(child)
+                .storybook(storybook)
                 .date(requestDto.getDate())
                 .accuracy(res.getAccuracy())
                 .feedbackText(res.getFeedbackText())
