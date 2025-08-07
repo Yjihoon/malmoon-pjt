@@ -1,6 +1,7 @@
 from typing import Union
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from apps.AI.api.v1.aac_create import aac_router
 from apps.AI.api.v1.stt.stt_router import router as stt_router
 
@@ -11,6 +12,19 @@ from pathlib import Path
 load_dotenv()
 
 app = FastAPI()
+
+# CORS 설정
+origins = [
+    "http://localhost:3000",  # 프론트엔드 주소
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 정적 파일 서빙
 app.mount("/static", StaticFiles(directory="apps/AI/static"), name="static")

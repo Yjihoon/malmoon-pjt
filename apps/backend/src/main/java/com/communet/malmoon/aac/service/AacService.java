@@ -93,6 +93,7 @@ public class AacService {
 				.emotion(request.getEmotion())
 				.description(request.getDescription())
 				.fileId(fileUploadRes.getFileId())
+				.therapistId(memberId)
 				.status(request.getStatus())
 				.build();
 
