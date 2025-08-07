@@ -15,5 +15,5 @@ public interface SessionFeedbackRepository extends JpaRepository<SessionFeedback
     List<LocalDate> findDistinctDatesByChildId(@Param("childId") Long childId);
 
     // 📌 2. 특정 날짜 피드백 상세 조회
-    Optional<SessionFeedback> findByChildIdAndDate(Long childId, LocalDate date);
+    Optional<SessionFeedback> findByChild_MemberIdAndDate(Long childId, LocalDate date);
 }

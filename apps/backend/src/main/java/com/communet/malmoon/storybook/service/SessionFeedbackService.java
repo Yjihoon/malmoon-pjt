@@ -125,7 +125,7 @@ public class SessionFeedbackService {
     // 2. 해당 날짜의 상세 피드백 조회
     public FeedbackDetailResponseDto getFeedbackDetail(Long childId, LocalDate date) {
         SessionFeedback feedback = feedbackRepository
-                .findByChildIdAndDate(childId, date)
+                .findByChild_MemberIdAndDate(childId, date)
                 .orElseThrow(() -> new RuntimeException("해당 날짜의 피드백이 존재하지 않습니다."));
 
         return FeedbackDetailResponseDto.builder()
