@@ -1,9 +1,11 @@
 package com.communet.malmoon.filter.controller;
 
+import com.communet.malmoon.common.auth.CurrentMember;
 import com.communet.malmoon.filter.dto.request.FilterStoreReq;
 import com.communet.malmoon.filter.dto.response.FilterLensApiRes;
 import com.communet.malmoon.filter.dto.response.FilterListRes;
 import com.communet.malmoon.filter.service.FilterService;
+import com.communet.malmoon.member.domain.Member;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,8 +33,8 @@ public class FilterController {
     }
 
     @GetMapping
-    public ResponseEntity<FilterListRes> getFilters() {
-        return ResponseEntity.ok(filterService.getFilters());
+    public ResponseEntity<FilterListRes> getFilters(@CurrentMember Member member) {
+        return ResponseEntity.ok(filterService.getFilters(member));
     }
 
     @GetMapping("by-ids")
@@ -40,12 +42,20 @@ public class FilterController {
         return ResponseEntity.ok(filterService.getFiltersByIds(ids));
     }
 
-
     @PostMapping
     public ResponseEntity<?> storeFilter(
-            @RequestBody FilterStoreReq filterStoreReq,
+            @CurrentMember Member member,
+            FilterStoreReq filterStoreReq,
             @RequestPart(value = "filter") MultipartFile file) {
-        filterService.storeFilter(filterStoreReq, file);
+        filterService.storeFilter(member, filterStoreReq, file);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @DeleteMapping
+    public ResponseEntity<?> deleteFilter(
+            @CurrentMember Member member,
+            Long filterId) {
+        filterService.deleteFilter(member, filterId);
+        return ResponseEntity.noContent().build();
     }
 }
