@@ -24,7 +24,7 @@ public class SessionFeedback {
 
     private LocalDate date;
 
-    private String accuracy;
+    private double accuracy;
 
     @Column(length = 1000)
     private String feedbackText;

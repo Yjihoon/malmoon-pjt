@@ -12,6 +12,6 @@ import lombok.Data;
 @Builder
 public class FeedbackDetailResponseDto {
     private String storybookTitle;
-    private String accuracy;
+    private double accuracy;
     private String feedbackText;
 }
