@@ -41,9 +41,10 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
     };
 
     const handleSaveClick = () => {
-        const { name, description, situation, action } = form;
+        let payloadToSave = { ...form }; // 기본 폼 데이터
+
         if (creationMethod === 'direct') {
-            if(!name || !description || !situation || !action) {
+            if(!form.name || !form.description || !form.situation || !form.action) {
                 alert('이름, 설명, 상황, 행동은 필수 입력 항목입니다.');
                 return;
             }
@@ -51,18 +52,25 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
                 alert('이미지를 등록해주세요.');
                 return;
             }
-        }
-        if (creationMethod === 'ai') {
-             if(!name) {
+            payloadToSave.imageFile = imageFile; // 직접 등록 시 imageFile 추가
+        } else if (creationMethod === 'ai') {
+             if(!form.name) {
                 alert('아이템 이름은 필수 입력 항목입니다.');
                 return;
             }
+            // AI 생성 방식일 경우, aiGeneratedImage가 설정되어 있는지 확인
             if(!aiGeneratedImage) {
                 alert('AI 이미지를 생성해주세요.');
                 return;
             }
+            payloadToSave.aiGeneratedImage = aiGeneratedImage; // AI 생성 이미지 URL 추가
+            payloadToSave.imageFile = imageFile; // File 객체도 함께 전달 (TherapistToolsPage에서 사용될 수 있음)
         }
-        onSave({ ...form, imageFile, aiGeneratedImage });
+        
+        console.log("handleSaveClick - creationMethod:", creationMethod);
+        console.log("handleSaveClick - imageFile:", imageFile);
+        console.log("handleSaveClick - aiGeneratedImage:", aiGeneratedImage);
+        onSave(payloadToSave); // 수정된 payloadToSave 객체 전달
     };
 
     const handleAiGenerate = async () => {
@@ -74,9 +82,20 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
         setIsGenerating(true);
         try {
             const generatedUrl = await onGenerate({ situation, action, emotion, description });
-            setAiGeneratedImage(generatedUrl);
+            setAiGeneratedImage(generatedUrl); // AI 생성 이미지 URL 저장 (미리보기용)
+
+            // AI 생성 이미지를 Blob으로 가져와 File 객체로 변환
+            const response = await fetch(generatedUrl);
+            const blob = await response.blob();
+            const filename = generatedUrl.substring(generatedUrl.lastIndexOf('/') + 1);
+            const aiImageFile = new File([blob], filename, { type: blob.type });
+            
+            setImageFile(aiImageFile); // File 객체를 imageFile 상태에 저장
+            setImagePreview(URL.createObjectURL(aiImageFile)); // 미리보기 업데이트
+
         } catch (error) { 
-            alert(error.message || 'AI 이미지 생성에 실패했습니다.');
+            console.error("AI 이미지 생성 중 오류 발생:", error);
+            alert(error.message || 'AI 이미지 생성에 실패했습니다. 콘솔을 확인해주세요.');
         } finally {
             setIsGenerating(false);
         }
@@ -129,7 +148,7 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
                                         {isGenerating ? (
                                             <Spinner animation="border" />
                                         ) : (
-                                            aiGeneratedImage ? <Image src={aiGeneratedImage} fluid thumbnail /> : <div className="text-muted">AI가 이미지를 생성합니다.</div>
+                                            imagePreview ? <Image src={imagePreview} fluid thumbnail /> : <div className="text-muted">AI가 이미지를 생성합니다.</div> // aiGeneratedImage 대신 imagePreview 사용
                                         )}
                                     </Card>
                                 </Col>
@@ -145,8 +164,8 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
                                 <Form.Group className="mb-3"><Form.Label>설명</Form.Label><Form.Control as="textarea" name="description" rows={2} placeholder="이 아이템에 대한 간단한 설명" value={form.description || ''} onChange={handleFormChange} /></Form.Group>
                                 <Row>
                                     <Col><Form.Group className="mb-3"><Form.Label>상황 (대분류)</Form.Label><Form.Control type="text" name="situation" placeholder="예: 집, 학교" value={form.situation || ''} onChange={handleFormChange} /></Form.Group></Col>
-                                    <Col><Form.Group className="mb-3"><Form.Label>행동 (소분류)</Form.Label><Form.Control type="text" name="action" placeholder="예: 밥먹기, 공부하기" value={form.action || ''} onChange={handleFormChange} /></Form.Group></Col>
-                                    <Col><Form.Group className="mb-3"><Form.Label>감정 (선택)</Form.Label><Form.Control type="text" name="emotion" placeholder="예: 기쁨" value={form.emotion || ''} onChange={handleFormChange} /></Form.Group></Col>
+                                    <Col><Form.Group className="mb-3"><Form.Label>행동</Form.Label><Form.Control type="text" name="action" placeholder="예: 친구와 놀기" value={form.action || ''} onChange={handleFormChange} /></Form.Group></Col>
+                                    <Col><Form.Group className="mb-3"><Form.Label>감정</Form.Label><Form.Control type="text" name="emotion" placeholder="예: 기쁨" value={form.emotion || ''} onChange={handleFormChange} /></Form.Group></Col>
                                 </Row>
                                 <Form.Group className="mb-3"><Form.Label>상태</Form.Label><Form.Select name="status" value={form.status || 'PUBLIC'} onChange={handleFormChange}><option value="PUBLIC">공개</option><option value="PRIVATE">비공개</option></Form.Select></Form.Group>
                             </Col>
@@ -171,4 +190,4 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
     );
 };
 
-export default AacItemModal
+export default AacItemModal;

@@ -114,10 +114,11 @@ const AacItemList = ({ aacItems, currentUser, onEdit, onDelete, onViewDetails })
   };
 
   const canModify = (item) => {
-      if (!currentUser || item.status === 'DEFAULT') {
+      if (!currentUser) {
           return false;
       }
-      return item.therapistId === currentUser.memberId;
+      // 변경: 아이템의 상태가 'PRIVATE'이고, 현재 사용자가 해당 아이템의 소유자일 경우에만 수정/삭제 가능
+      return item.status === 'PRIVATE' && item.therapistId === currentUser.memberId;
   }
 
   const handleEditClick = (e, item) => {

@@ -53,8 +53,11 @@ function TherapistToolsPage() {
             const listData = await listResponse.json();
             const items = listData.content;
 
+            // 추가: isDeleted가 false인 아이템만 필터링
+            const activeItems = items.filter(item => !item.isDeleted);
+
             const itemsWithPresignedUrls = await Promise.all(
-                items.map(async (item) => {
+                activeItems.map(async (item) => { // 필터링된 activeItems 사용
                     if (item.id && !isNaN(parseInt(item.id, 10))) {
                         try {
                             const urlResponse = await fetch(`/api/v1/files/${item.id}/presigned-url`, { headers });
@@ -164,6 +167,11 @@ function TherapistToolsPage() {
     };
 
     const handleSaveAacItem = async (itemToSave) => {
+        console.log("handleSaveAacItem - itemToSave:", itemToSave);
+        // 추가된 콘솔 로그: aiGeneratedImage와 imageFile의 실제 값 확인
+        console.log("handleSaveAacItem - checking aiGeneratedImage:", itemToSave.aiGeneratedImage);
+        console.log("handleSaveAacItem - checking imageFile:", itemToSave.imageFile);
+
         const headers = getAuthHeader();
         if (!headers) return;
 
@@ -176,15 +184,16 @@ function TherapistToolsPage() {
                     emotion: itemToSave.emotion,
                     description: itemToSave.description,
                     status: itemToSave.status.toUpperCase(),
-                    file: itemToSave.aiGeneratedImage.replace('http://localhost:8000', '')
+                    imagePath: itemToSave.aiGeneratedImage.replace('http://localhost:8000', '')
                 };
-                const response = await fetch('/api/v1/aacs/custom', {
+                console.log("Sending request to /api/v1/aacs/confirm with payload:", payload); // 추가된 콘솔 로그
+                const response = await fetch('/api/v1/aacs/confirm', {
                     method: 'POST',
                     headers: { ...headers, 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 if (!response.ok) throw new Error('AAC 아이템 확정에 실패했습니다.');
-            } 
+            }
             else if (itemToSave.imageFile) {
                 const formData = new FormData();
                 formData.append('name', itemToSave.name);
@@ -195,6 +204,7 @@ function TherapistToolsPage() {
                 formData.append('status', itemToSave.status.toUpperCase());
                 formData.append('file', itemToSave.imageFile);
 
+                console.log("Sending request to /api/v1/aacs/custom with formData:", formData); // 추가된 콘솔 로그
                 const response = await fetch('/api/v1/aacs/custom', {
                     method: 'POST',
                     headers: headers,
@@ -232,7 +242,7 @@ function TherapistToolsPage() {
         if (!headers['Authorization']) return;
 
         const isEditing = !!set.id;
-        const url = isEditing ? `/api/v1/aacs/sets/${set.id}` : '/api/v1/aacs/sets/create';
+        const url = isEditing ? `/api/v1/aacs/sets/${set.id}` : `/api/v1/aacs/sets/create`;
         const method = isEditing ? 'PATCH' : 'POST';
         
         const payload = {
