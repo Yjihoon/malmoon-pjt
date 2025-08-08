@@ -104,4 +104,10 @@ public class ScheduleController {
     public ResponseEntity<?> getTherapistClients(@CurrentMember Member member) {
         return ResponseEntity.ok(scheduleService.getTherapistClients(member));
     }
+
+    @GetMapping("/therapist/client/detail")
+    @PreAuthorize("hasRole('ROLE_THERAPIST')")
+    public ResponseEntity<?> getClientDetail(@RequestParam Long clientId) {
+        return ResponseEntity.ok(scheduleService.getClientDetail(clientId));
+    }
 }

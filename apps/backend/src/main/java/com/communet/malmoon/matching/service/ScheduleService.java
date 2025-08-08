@@ -10,6 +10,7 @@ import com.communet.malmoon.member.domain.Member;
 import com.communet.malmoon.member.domain.MemberType;
 import com.communet.malmoon.member.domain.Therapist;
 import com.communet.malmoon.member.dto.response.CareerRes;
+import com.communet.malmoon.member.dto.response.MemberMeRes;
 import com.communet.malmoon.member.repository.MemberRepository;
 import com.communet.malmoon.member.repository.TherapistRepository;
 import jakarta.persistence.*;
@@ -315,5 +316,23 @@ public class ScheduleService {
                                         .build())
                                 .collect(Collectors.toList())
                 ));
+    }
+
+    public MemberMeRes getClientDetail(Long clientId) {
+        Member member = memberRepository.findById(clientId).orElseThrow(EntityNotFoundException::new);
+
+        return MemberMeRes.builder()
+                .email(member.getEmail())
+                .name(member.getName())
+                .nickname(member.getNickname())
+                .birthDate(member.getBirthDate())
+                .tel1(member.getTel1())
+                .tel2(member.getTel2())
+                .city(member.getAddress().getCity())
+                .district(member.getAddress().getDistrict())
+                .dong(member.getAddress().getDong())
+                .detail(member.getAddress().getDetail())
+                .profile(member.getProfile())
+                .build();
     }
 }
