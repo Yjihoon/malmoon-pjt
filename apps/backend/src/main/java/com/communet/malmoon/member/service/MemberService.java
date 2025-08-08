@@ -195,7 +195,7 @@ public class MemberService {
 		Optional<Therapist> therapist = therapistRepository.findById(member.getMemberId());
 		String fileUrl = "";
 		if (therapist.isPresent()) {
-			fileUrl = fileService.getFileUrl(therapist.get().getFileId());
+			fileUrl = fileService.getPresignedFileUrl(therapist.get().getFileId());
 		}
 
 		return MemberMeRes.builder()
