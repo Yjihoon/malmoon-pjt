@@ -38,10 +38,10 @@ function LoginPage() {
         password,
       });
 
-      const { accessToken, memberId } = res.data; // 여기 수정함
+      const { accessToken, memberId, birthDate } = res.data; // 여기 수정함
 
       // 로그인 상태 저장
-      await login({ userEmail: email, accessToken, memberId }); // 여기 수정함
+      await login({ userEmail: email, accessToken, memberId, birthDate }); // 여기 수정함
 
       // 홈 또는 마이페이지 등으로 이동
       navigate('/');

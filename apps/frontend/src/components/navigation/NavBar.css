@@ -38,7 +38,8 @@
 .menu {
   display: flex;
   align-items: center;
-  gap: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .menu a {
@@ -55,53 +56,10 @@
   color: #2a2218;
 }
 
-.dropdown {
-  position: relative;
-}
-
-.dropdown-toggle {
-  background: none;
-  border: none;
-  font-weight: 600;
-  color: #3a2e1f;
-  cursor: pointer;
-  padding: 6px 14px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-}
-
-.dropdown-toggle:hover {
-  background-color: #ffe0b2;
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background-color: #fff7e9;
-  border: 1px solid #e0c9a6;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  margin-top: 6px;
-  animation: dropdownFade 0.3s ease-out;
-}
-
-.dropdown-menu a {
-  padding: 8px 12px;
-  font-weight: 500;
-  text-decoration: none;
-  color: #3a2e1f;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
-}
-
-.dropdown-menu a:hover {
-  background-color: #ffe0b2;
-}
+/* 제거된 드롭다운 관련 요소들
+.dropdown, .dropdown-toggle, .dropdown-menu {
+  ... 삭제 ...
+} */
 
 .menu-icon {
   font-size: 28px;
@@ -138,17 +96,6 @@
 
 .dropdown-menu-mobile a:last-child {
   border-bottom: none;
-}
-
-@keyframes dropdownFade {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 @media (max-width: 768px) {

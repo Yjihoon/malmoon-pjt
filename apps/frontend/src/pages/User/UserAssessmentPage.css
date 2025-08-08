@@ -1,0 +1,249 @@
+/* === 공통 스타일 === */
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(to bottom, #f9f9f9, #e8f0ff);
+  font-family: sans-serif;
+  color: #333;
+}
+
+.assessment-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100vh;
+  padding: 1rem 1rem 1.5rem;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* === 카드 박스 === */
+.assessment-intro, .assessment-test {
+  background-color: #ffffffee;
+  width: 100%;
+  max-width: 480px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+  border-radius: 20px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+  text-align: center;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* === 인트로 영역 텍스트 === */
+.intro-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.intro-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #444;
+}
+
+.intro-subtext {
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  font-style: italic;
+  color: #555;
+}
+
+/* === 질문 영역 === */
+.question-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.assessment-image-container {
+  width: 100%;
+  max-width: 260px;
+  height: 260px;
+  background: #f0f4ff;
+  border: 2px dashed #b3cfff;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.assessment-image {
+  max-width: 80%;
+  max-height: 80%;
+  object-fit: contain;
+}
+
+.question-section p {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #444;
+  margin: 0;
+}
+
+/* === 버튼 영역 === */
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  width: 100%;
+  max-width: 280px;
+}
+
+.btn-assessment {
+  padding: 0.8rem 1.3rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: sans-serif;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* ✅ 동글동글한 시작 버튼 */
+.btn-start {
+  background-color: #4caf50;
+  color: white;
+  font-size: 1.1rem;
+  padding: 0.9rem 2rem;
+  border-radius: 999px;
+  transition: all 0.25s ease;
+}
+
+.btn-start:hover {
+  background-color: #43a047;
+  transform: scale(1.05);
+}
+
+.btn-primary {
+  background-color: #4a90e2;
+  color: white;
+}
+.btn-primary:hover {
+  background-color: #357ac3;
+  transform: scale(1.05);
+}
+
+.btn-recording {
+  background-color: #e03a3e;
+  color: white;
+}
+.btn-recording:hover {
+  background-color: #c0262a;
+  transform: scale(1.05);
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+.btn-secondary:hover {
+  background-color: #5a6268;
+  transform: scale(1.05);
+}
+
+.btn-assessment:disabled {
+  background-color: #ccc;
+  color: #888;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* === 완료 메시지 === */
+.assessment-test p {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  animation: fadeIn 0.5s ease-in-out;
+  margin: 1rem 0 0;
+}
+
+/* 공통 버튼 스타일 */
+.assessment-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 30px; /* 동글동글 */
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+/* 녹음 시작 - 초록색 */
+.start-recording-btn {
+  background-color: #4CAF50;
+}
+.start-recording-btn:hover {
+  background-color: #45a049;
+}
+
+/* 녹음 중지 - 빨간색 */
+.stop-recording-btn {
+  background-color: #e53935;
+}
+.stop-recording-btn:hover {
+  background-color: #d32f2f;
+}
+
+/* 다음 문제 - 파란색 */
+.next-button {
+  background-color: #2196F3;
+}
+.next-button:hover {
+  background-color: #1976D2;
+}
+
+/* 비활성화 상태일 때 회색 처리 */
+.assessment-button:disabled,
+.next-button:disabled {
+  background-color: #b0b0b0;
+  cursor: not-allowed;
+}
+
+.image-with-audio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.assessment-image {
+  width: 200px;
+  height: auto;
+  margin-bottom: 10px;
+}
+
+.speaker-button {
+  font-size: 18px;
+  background-color: #ffb74d;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 30px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.speaker-button:hover {
+  background-color: #ffa726;
+}

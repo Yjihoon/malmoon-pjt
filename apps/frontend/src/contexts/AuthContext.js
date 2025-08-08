@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
     setIsAuthReady(true); // ✅ 초기화 완료 표시
   }, []);
 
-  const login = async ({ userEmail, accessToken, memberId }) => { // 여기 수정함
+  const login = async ({ userEmail, accessToken, memberId, birthDate }) => {
     const decoded = parseJwt(accessToken);
     const rawType = decoded?.userType || decoded?.role || null;
 
@@ -53,7 +53,8 @@ export const AuthProvider = ({ children }) => {
       userEmail,
       accessToken,
       userType,
-      memberId, // 여기 추가함
+      memberId,
+      birthDate,
     };
 
     setUser(userData);
