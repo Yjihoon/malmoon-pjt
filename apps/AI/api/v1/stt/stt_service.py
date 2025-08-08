@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-GMS_URL = "https://gms.ssafy.io/gmsapi/api.openai.com/v1/audio/transcriptions"
+GMS_URL = os.getenv("GMS_STT_URL")
 GMS_API_KEY = os.getenv("GMS_API_KEY")
 
 async def transcribe_to_text(file: UploadFile, language: str) -> TranscribeOut:
