@@ -396,7 +396,7 @@ function TherapistSessionRoom() {
         activeToolTab={activeToolTab}
         toggleToolPanel={toggleToolPanel}
         fairyTaleInfo={fairyTaleInfo}
-        endSession={endSession}
+        endSession={() => endSession(fairyTaleInfo?.title, currentFairyTalePage)}
         showToolPanel={showToolPanel}
         setShowToolPanel={setShowToolPanel}
         chatMessages={chatMessages}

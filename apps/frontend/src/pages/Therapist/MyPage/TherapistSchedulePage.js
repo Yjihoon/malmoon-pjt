@@ -169,11 +169,12 @@ function TherapistSchedulePage() {
 
         const fetchPageRange = async () => {
             try {
-                const response = await api.get(`/storybooks/pages?title=${encodeURIComponent(selectedTitle)}`, {
+                                const response = await api.get(`/storybooks/pages?title=${encodeURIComponent(selectedTitle)}`, {
                     headers: { Authorization: `Bearer ${user.accessToken}` },
                 });
-                const { minPage, maxPage } = response.data;
-                setSelectedFairyTaleInfo({ title: selectedTitle, minPage, maxPage });
+                console.log("DEBUG: /storybooks/pages API response data:", response.data);
+                const { minPage, maxPage, storybookId } = response.data;
+                setSelectedFairyTaleInfo({ title: selectedTitle, minPage, maxPage, storybookId });
                 setFairyTaleStartPage(minPage);
                 setFairyTaleEndPage(maxPage);
             } catch (err) {
@@ -233,6 +234,8 @@ function TherapistSchedulePage() {
         // --- 이 부분을 추가해주세요 ---
         console.log("DEBUG: currentSessionSchedule:", currentSessionSchedule);
         console.log("DEBUG: currentSessionSchedule.memberId:", currentSessionSchedule.memberId);
+        console.log("DEBUG: selectedFairyTaleInfo:", selectedFairyTaleInfo);
+        console.log("DEBUG: selectedFairyTaleInfo.storybookId:", selectedFairyTaleInfo?.storybookId);
         // --- 여기까지 추가 ---
 
         const roomId = uuidv4();
@@ -246,7 +249,7 @@ function TherapistSchedulePage() {
 
         let navPath = `/session/${roomId}?clientId=${currentSessionSchedule.memberId}&tools=${selectedToolsForSession.join(',')}`;
         if (selectedFairyTaleInfo) {
-            navPath += `&fairyTaleTitle=${encodeURIComponent(selectedFairyTaleInfo.title)}&fairyTaleClassification=${selectedClassification}&startPage=${fairyTaleStartPage}&endPage=${fairyTaleEndPage}`;
+            navPath += `&fairyTaleTitle=${encodeURIComponent(selectedFairyTaleInfo.title)}&fairyTaleClassification=${selectedClassification}&startPage=${fairyTaleStartPage}&endPage=${fairyTaleEndPage}&storybookId=${selectedFairyTaleInfo.storybookId}`;
         }
         navigate(navPath);
     };

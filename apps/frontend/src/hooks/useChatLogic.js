@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 
 export function useChatLogic(roomRef, user, chatRoomId, setChatMessages) {
   const [chatInput, setChatInput] = useState('');
@@ -20,7 +20,7 @@ export function useChatLogic(roomRef, user, chatRoomId, setChatMessages) {
       }
 
       try {
-        await axios.post('/api/v1/chat/session/message', {
+        await api.post('/chat/session/message', {
           sessionId: roomRef.current.name,
           roomId: chatRoomId,
           senderId: user.memberId,

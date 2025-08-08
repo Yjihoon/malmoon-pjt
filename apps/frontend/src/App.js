@@ -19,7 +19,7 @@ import TherapistSchedulePage from './pages/Therapist/MyPage/TherapistSchedulePag
 import TherapistRegisterSchedulePage from './pages/Therapist/MyPage/TherapistRegisterSchedulePage';
 import TherapistMatchingPage from './pages/Therapist/MyPage/TherapistMatchingPage';
 import TherapistToolsPage from './pages/Therapist/MyPage/TherapistToolsPage';
-import TherapistUserManage from './pages/Therapist/MyPage/TherapistUserManage';
+
 import TherapistSessionRoom from './pages/Therapist/TherapistSessionRoom';
 import TherapistFeedbackPage from './pages/Therapist/MyPage/TherapistFeedbackPage';
 
@@ -102,7 +102,7 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={['therapist']} />}>
             <Route path="/therapist/mypage/info" element={<TherapistMyInfoPage />} />
             <Route path="/therapist/mypage/matching" element={<TherapistMatchingPage />} />
-            <Route path="/therapist/mypage/manage" element={<TherapistUserManage />} />
+            <Route path="/therapist/mypage/manage" element={<TherapistFeedbackPage />} />
             <Route path="/therapist/mypage/tools" element={<TherapistToolsPage />} />
             <Route path="/therapist/mypage/schedule" element={<TherapistSchedulePage />} />
             <Route path="/therapist/mypage/schedule/:clientId" element={<TherapistSchedulePage />} />

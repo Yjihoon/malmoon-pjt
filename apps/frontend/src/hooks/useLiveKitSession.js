@@ -146,7 +146,7 @@ export function useLiveKitSession(user, navigate, clientId, onChatMessageReceive
     setIsVideoOff(prev => !prev);
   }, []);
 
-  const endSession = useCallback(async () => {
+  const endSession = useCallback(async (storybookTitle, lastPage) => {
     if (window.confirm('정말로 수업을 종료하시겠습니까?')) {
       try {
         // 세션 종료 요청에도 토큰 헤더 포함
@@ -156,6 +156,35 @@ export function useLiveKitSession(user, navigate, clientId, onChatMessageReceive
           }
         });
 
+        // 피드백 API 호출
+        console.log('피드백 전송 시도 - storybookTitle:', storybookTitle, 'lastPage:', lastPage);
+        if (storybookTitle && lastPage) {
+          try {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const formattedDate = `${year}-${month}-${day}`;
+
+            await api.post('/session-feedback/end', {
+              childId: clientId,
+              storybookTitle: storybookTitle,
+              date: formattedDate,
+              lastPage: lastPage
+            }, {
+              headers: {
+                Authorization: `Bearer ${user.accessToken}`,
+              }
+            });
+            console.log('피드백이 성공적으로 전송되었습니다.');
+            alert('수업 피드백이 성공적으로 전송되었습니다.');
+          } catch (feedbackError) {
+            console.error('피드백 전송 실패:', feedbackError);
+            alert('피드백 전송에 실패했습니다.');
+          }
+        }
+
+        // 피드백 전송 완료 후 LiveKit 연결 해제 및 페이지 이동
         roomRef.current?.disconnect();
         navigate('/therapist/mypage/schedule');
       } catch (error) {
@@ -165,7 +194,7 @@ export function useLiveKitSession(user, navigate, clientId, onChatMessageReceive
         navigate('/therapist/mypage/schedule');
       }
     }
-  }, [user, navigate]);
+  }, [user, navigate, clientId]);
 
   return {
     isMuted, setIsMuted, isVideoOff, setIsVideoOff, isRemoteVideoOff, setIsRemoteVideoOff,
