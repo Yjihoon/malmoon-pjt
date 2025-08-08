@@ -19,6 +19,7 @@ public enum AacErrorCode {
 	GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AAC 이미지 생성에 실패했습니다."),
 	FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일 정보를 찾을 수 없습니다."),
 	UNEXPECTED_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "예상치 못한 서버 오류가 발생했습니다."),
+	REQUEST_AAC_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "요청 바디에서 AAC를 찾을 수 없습니다."),
 
 	// === 삭제 권한 및 상태 관련 ===
 	INVALID_STATUS(HttpStatus.BAD_REQUEST, "삭제 가능한 상태가 아닙니다."),
