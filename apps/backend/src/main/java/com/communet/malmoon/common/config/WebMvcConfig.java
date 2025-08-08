@@ -18,11 +18,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     private final MemberRepository memberRepository;
 
-    @Override
-    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
-        resolvers.add(new CurrentMemberArgumentResolver(memberRepository));
-    }
-    @Override
+	@Override
+	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+		resolvers.add(new CurrentMemberArgumentResolver(memberRepository));
+	}
+	@Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
             .allowedOrigins("http://localhost:3000") // React 개발 서버 주소

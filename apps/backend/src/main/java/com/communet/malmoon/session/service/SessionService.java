@@ -217,6 +217,10 @@ public class SessionService {
 	}
 
 	private String getClientEmail(Long clientId) {
+		// 윤지훈: clientId가 null인 경우 예외 처리 추가
+		if (clientId == null) {
+			throw new IllegalArgumentException("Client ID cannot be null when fetching client email.");
+		}
 		Optional<Member> client = memberRepository.findById(clientId);
 		if (client.isEmpty()) {
 			throw new EntityNotFoundException("해당 멤버를 찾을 수 없습니다.");

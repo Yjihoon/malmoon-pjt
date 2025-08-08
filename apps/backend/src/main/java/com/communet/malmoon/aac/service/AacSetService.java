@@ -45,7 +45,7 @@ public class AacSetService {
 	@Transactional
 	public AacSetCreateRes createAacSet(AacSetCreateReq request, Long therapistId) {
 		if (request.getAacItemIds() == null || request.getAacItemIds().isEmpty()) {
-			throw new AacException(AacErrorCode.AAC_ITEM_NOT_FOUND);
+			throw new AacException(AacErrorCode.REQUEST_AAC_ITEM_NOT_FOUND);
 		}
 
 		Set<Long> uniqueIds = new HashSet<>(request.getAacItemIds());

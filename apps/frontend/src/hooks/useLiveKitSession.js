@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Room, RoomEvent, createLocalTracks, Track } from 'livekit-client';
-import axios from 'axios';
+import api from '../api/axios'; // axios 인스턴스, 기본 baseURL 세팅
 
 const LIVEKIT_URL = 'wss://i13c107.p.ssafy.io:8443';
 
-export function useLiveKitSession(user, navigate, onChatMessageReceived, onSentenceReceived) {
+export function useLiveKitSession(user, navigate, clientId, onChatMessageReceived, onSentenceReceived) {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isRemoteVideoOff, setIsRemoteVideoOff] = useState(true);
@@ -42,11 +42,13 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
     const room = new Room({ adaptiveStream: true, dynacast: true });
     roomRef.current = room;
 
-    room.on(RoomEvent.Connected, () => { /* rtcStatus는 connect 성공 후 바로 설정 */ });
+    room.on(RoomEvent.Connected, () => {
+      // 연결 성공 시 필요시 상태 변경 가능
+    });
     room.on(RoomEvent.Disconnected, (reason) => {
-        console.log('LiveKit Room Disconnected:', reason);
-        setRtcStatus('disconnected');
-        setIsLiveKitReady(false);
+      console.log('LiveKit Room Disconnected:', reason);
+      setRtcStatus('disconnected');
+      setIsLiveKitReady(false);
     });
 
     room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
@@ -64,37 +66,35 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
       const decoder = new TextDecoder();
       const data = JSON.parse(decoder.decode(payload));
       if (data.type === 'chat') {
-        if (onChatMessageReceived) {
-          onChatMessageReceived(participant.identity, data.payload);
-        }
+        onChatMessageReceived?.(participant.identity, data.payload);
       } else if (data.type === 'sentence') {
-        if (onSentenceReceived) {
-          onSentenceReceived({ sentence: data.payload, sentenceId: null });
-        }
+        onSentenceReceived?.({ sentence: data.payload, sentenceId: null });
       }
     });
 
     try {
       console.log("LiveKit 연결 요청 직전 user 객체:", user);
       console.log("LiveKit 연결 요청 직전 accessToken:", user?.accessToken);
-      const response = await axios.post('/api/v1/sessions/room', { clientId: 2 }, {
+
+      // 토큰이 상태에 있으니 헤더에 넣어 요청
+      const response = await api.post('/sessions/room', { clientId: clientId }, {
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user.accessToken}`
+          Authorization: `Bearer ${user.accessToken}`,
         }
       });
+
       const { token, chatRoomId: newChatRoomId } = response.data;
-      
+
       setChatRoomId(newChatRoomId);
-      setChildId(2);
-    
+      setChildId(clientId); // 전달받은 clientId 사용
+
       await room.connect(LIVEKIT_URL, token);
       setRtcStatus('connected');
 
       const localTracks = await createLocalTracks({ audio: true, video: true });
       for (const track of localTracks) {
         if (track.kind === 'video' && localVideoRef.current) {
-          localVideoRef.current.srcObject = track.mediaStream; // Explicitly set srcObject
+          localVideoRef.current.srcObject = track.mediaStream; // 명시적 srcObject 설정
           track.attach(localVideoRef.current);
           localVideoRef.current.onloadedmetadata = () => {
             setIsLiveKitReady(true);
@@ -109,7 +109,7 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
       setRtcStatus('error');
       alert('LiveKit 연결에 실패했습니다. 콘솔을 확인해주세요.');
     }
-  }, [user, handleRemoteTrackMuted, handleRemoteTrackUnmuted, onChatMessageReceived, onSentenceReceived]);
+  }, [user, clientId, handleRemoteTrackMuted, handleRemoteTrackUnmuted, onChatMessageReceived, onSentenceReceived]);
 
   useEffect(() => {
     return () => roomRef.current?.disconnect();
@@ -137,7 +137,11 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
     };
   }, [remoteAudioTrack]);
 
-  const toggleMute = useCallback(() => roomRef.current?.localParticipant.setMicrophoneEnabled(!isMuted, { stopMicTrack: false }).then(() => setIsMuted(!isMuted)), [isMuted]);
+  const toggleMute = useCallback(() => {
+    roomRef.current?.localParticipant.setMicrophoneEnabled(!isMuted, { stopMicTrack: false })
+      .then(() => setIsMuted(!isMuted));
+  }, [isMuted]);
+
   const toggleVideo = useCallback(() => {
     setIsVideoOff(prev => !prev);
   }, []);
@@ -145,22 +149,19 @@ export function useLiveKitSession(user, navigate, onChatMessageReceived, onSente
   const endSession = useCallback(async () => {
     if (window.confirm('정말로 수업을 종료하시겠습니까?')) {
       try {
-        await axios.delete('/api/v1/sessions/room', {
-          headers: { "Authorization": `Bearer ${user.accessToken}` }
+        // 세션 종료 요청에도 토큰 헤더 포함
+        await api.delete('/sessions/room', {
+          headers: {
+            Authorization: `Bearer ${user.accessToken}`,
+          }
         });
 
-        if (roomRef.current) {
-          roomRef.current.disconnect();
-        }
-
+        roomRef.current?.disconnect();
         navigate('/therapist/mypage/schedule');
-
       } catch (error) {
         console.error('Failed to end session:', error);
         alert('세션 종료에 실패했습니다. 콘솔을 확인해주세요.');
-        if (roomRef.current) {
-          roomRef.current.disconnect();
-        }
+        roomRef.current?.disconnect();
         navigate('/therapist/mypage/schedule');
       }
     }

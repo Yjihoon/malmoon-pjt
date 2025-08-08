@@ -19,7 +19,9 @@ import TherapistSchedulePage from './pages/Therapist/MyPage/TherapistSchedulePag
 import TherapistRegisterSchedulePage from './pages/Therapist/MyPage/TherapistRegisterSchedulePage';
 import TherapistMatchingPage from './pages/Therapist/MyPage/TherapistMatchingPage';
 import TherapistToolsPage from './pages/Therapist/MyPage/TherapistToolsPage';
+import TherapistUserManage from './pages/Therapist/MyPage/TherapistUserManage';
 import TherapistSessionRoom from './pages/Therapist/TherapistSessionRoom';
+import TherapistFeedbackPage from './pages/Therapist/MyPage/TherapistFeedbackPage';
 
 import TherapistBookingPage from './pages/User/Booking/TherapistBookingPage';
 import UserMyInfoPage from './pages/User/MyPage/UserMyInfoPage';
@@ -100,11 +102,14 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={['therapist']} />}>
             <Route path="/therapist/mypage/info" element={<TherapistMyInfoPage />} />
             <Route path="/therapist/mypage/matching" element={<TherapistMatchingPage />} />
+            <Route path="/therapist/mypage/manage" element={<TherapistUserManage />} />
             <Route path="/therapist/mypage/tools" element={<TherapistToolsPage />} />
             <Route path="/therapist/mypage/schedule" element={<TherapistSchedulePage />} />
+            <Route path="/therapist/mypage/schedule/:clientId" element={<TherapistSchedulePage />} />
             <Route path="/therapist/register-schedule" element={<TherapistRegisterSchedulePage />} />
             <Route path="/therapist/profile-settings" element={<h1>치료사 프로필 설정 페이지 (구현 예정)</h1>} />
             <Route path="/session/:roomId" element={<TherapistSessionRoom />} />
+            <Route path="/therapist/feedback" element={<TherapistFeedbackPage />} />
           </Route>
 
           {/* 사용자 전용 보호 라우트 */}

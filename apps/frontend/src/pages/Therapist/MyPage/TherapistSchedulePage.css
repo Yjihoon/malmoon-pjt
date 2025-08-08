@@ -151,6 +151,10 @@
     background-color: #28a745; /* 치료 기록/과제 마커 (초록) */
 }
 
+.feedback-marker {
+    background-color: #007bff; /* 피드백 마커 (파랑) */
+}
+
 /* .session-marker {
     background-color: #007bff;
 } */
