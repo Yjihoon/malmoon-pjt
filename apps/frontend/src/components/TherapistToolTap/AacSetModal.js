@@ -66,17 +66,21 @@ const AacSetModal = ({ show, onHide, onSave, initialData, allAacItems, getAuthHe
             alert('하나 이상의 AAC 아이템을 선택해야 합니다.');
             return;
         }
-        // aac_item_ids를 필터링하여 null 또는 undefined 값을 제거
-        const filteredAacItemIds = (form.aac_item_ids || []).filter(id => id !== null && id !== undefined);
+        // 유효한 AAC 아이템 ID만 필터링 (null, undefined, 빈 문자열 제외)
+        const validAacItemIds = (form.aac_item_ids || []).filter(id => id !== null && id !== undefined && id !== '');
 
-        // 추가된 콘솔 로그: 백엔드로 전송될 AAC 아이템 ID 리스트 확인
-        console.log("AacSetModal - Sending filteredAacItemIds:", filteredAacItemIds);
+        if (validAacItemIds.length === 0) {
+            alert('하나 이상의 유효한 AAC 아이템을 선택해야 합니다.');
+            return;
+        }
+
+        console.log("[Debug] AacSetModal handleSaveClick - validAacItemIds:", validAacItemIds);
 
         onSave({
             id: form.id, // 수정 모드일 경우 ID 포함
             name: form.name,
             description: form.description,
-            aacItemIds: filteredAacItemIds // 필터링된 ID 리스트 사용
+            aacItemIds: validAacItemIds // 필터링된 ID 리스트 사용
         });
     };
 
