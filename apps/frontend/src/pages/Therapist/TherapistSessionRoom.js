@@ -12,13 +12,17 @@ import { useLiveKitSession } from '../../hooks/useLiveKitSession';
 import { useFairyTaleLogic } from '../../hooks/useFairyTaleLogic';
 import { useChatLogic } from '../../hooks/useChatLogic';
 
-const CAMERA_KIT_API_TOKEN = "eyJhbGciOiJIUzI1NiIsImtpZCI6IkNhbnZhc1MyU0hNQUNQcm9kIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjYW52YXMtY2FudmFzYXBpIiwiaXNzIjoiY2FudmFzLXMyc3Rva2VuIiwibmJmIjoxNzU0MDQ4MTI2LCJzdWIiOiJlODY4YTg3Ny1jYjVkLTQyMWEtOGE5Zi02MzlkZjExMDAyNTJ-U1RBR0lOR35hZGM0OWFjMy02NTU5LTRmNTctOWQ4Ny0yNTRjYzkwZjNhYzAifQ.EqNFYVSRYv7iEBCTBM-bxGvDEYOYernbf3ozbEhzB6g";
+const CAMERA_KIT_API_TOKEN = "eyJhbGciOiJIUzI1NiIsImtpZCI6IkNhbnZhc2MyU2hNQUNQcm9kIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjYW52YXMtY2FudmFzYXBpIiwiaXNzIjoiY2FudmFzLXMyc3Rva2VuIiwibmJmIjoxNzU0MDQ4MTI2LCJzdWIiOiJlODY4YTg3Ny1jYjVkLTQyMWEtOGE5Zi02MzlkZjExMDAyNTJ-U1RBR0lOR35hZGM0OWFjMy02NTU5LTRmNTctOWQ4Ny0yNTRjYzkwZjNhYzAifQ.EqNFYVSRYv7iEBCTBM-bxGvDEYOYernbf3ozbEhzB6g";
 
 function TherapistSessionRoom() {
   const { roomId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // URL 쿼리 파라미터에서 clientId 추출 및 숫자로 변환
+  const queryParams = new URLSearchParams(location.search);
+  const clientId = parseInt(queryParams.get('clientId'), 10); 
 
   const [showToolPanel, setShowToolPanel] = useState(false);
   const [activeToolTab, setActiveToolTab] = useState(null);
@@ -51,10 +55,11 @@ function TherapistSessionRoom() {
     isMuted, setIsMuted, isVideoOff, setIsVideoOff, isRemoteVideoOff, setIsRemoteVideoOff,
     rtcStatus, setRtcStatus, remoteVideoTrack, remoteAudioTrack,
     localVideoRef, remoteVideoRef, remoteAudioRef, roomRef,
-    chatRoomId, childId, isLiveKitReady,
+    chatRoomId, 
+    isLiveKitReady,
     connectToLiveKit, toggleMute, endSession, 
     toggleVideo: liveKitToggleVideo // useLiveKitSession의 toggleVideo를 다른 이름으로 가져옵니다.
-  } = useLiveKitSession(user, navigate, 
+  } = useLiveKitSession(user, navigate, clientId, // clientId 전달
     (sender, message) => setChatMessages(prevMessages => [...prevMessages, { sender, message }]),
     (sentence) => setSelectedSentence(sentence)
   );
@@ -133,19 +138,19 @@ function TherapistSessionRoom() {
   }, [initializeCameraKit]);
 
   const applyBackgroundFilter = useCallback((imageUrl) => {
-    console.log("applyBackgroundFilter 호출됨. imageUrl:", imageUrl);
+    
     if (cameraKitSessionRef.current) {
         cameraKitSessionRef.current.pause();
     }
     if (!imageUrl) {
       removeBackgroundFilter();
-      console.log("applyBackgroundFilter: imageUrl이 없어 필터 제거.");
+      
       return;
     }
     setUseCameraKit(false);
     setIsFilterActive(true);
     setSelectedBackgroundImage(imageUrl);
-    console.log("applyBackgroundFilter: isFilterActive를 true, selectedBackgroundImage를", imageUrl, "로 설정.");
+    
   }, [removeBackgroundFilter]);
 
   // toggleVideo 함수를 여기서 정의하여 useFilterLogic의 stopCameraKit을 호출합니다.
@@ -161,35 +166,35 @@ function TherapistSessionRoom() {
     fairyTaleInfo, fairyTaleContent, currentFairyTalePage,
     isRecording, setIsRecording,
     handlePageChange, sendSentence, startRecording, stopRecording
-  } = useFairyTaleLogic(location, user, childId, selectedSentence, roomRef);
+  } = useFairyTaleLogic(location, user, clientId, selectedSentence, roomRef); // clientId 전달
 
   const { 
     chatInput, setChatInput, sendChatMessage
   } = useChatLogic(roomRef, user, chatRoomId, setChatMessages);
 
   useEffect(() => {
-    console.log("useEffect (manageTracks) 트리거됨. isFilterActive:", isFilterActive, "selectedBackgroundImage:", selectedBackgroundImage);
+    
     let isCleaningUp = false;
 
     const manageTracks = async () => {
-      console.log("manageTracks 호출됨. isCleaningUp:", isCleaningUp, "isLiveKitReady:", isLiveKitReady, "isVideoOff:", isVideoOff);
-      console.log("manageTracks: 실행 시작.");
+      
+      
 
       try {
         if (isCleaningUp) {
-          console.log("manageTracks: isCleaningUp이 true. 정리 중이므로 중단.");
+          
           return;
         }
 
         if (!isLiveKitReady) {
-          console.log("manageTracks: LiveKit이 아직 준비되지 않음. stopCameraKit 호출 후 중단.");
+          
           await stopCameraKit();
           return;
         }
 
         const room = roomRef.current;
         if (!room || !room.localParticipant) {
-          console.log("manageTracks: LiveKit Room 또는 localParticipant가 없음. 중단.");
+          
           return;
         }
 
@@ -198,7 +203,7 @@ function TherapistSessionRoom() {
         
 
         if (useCameraKit) {
-          console.log("manageTracks: CameraKit 사용 중. MediaPipe 필터링 건너뜀.");
+          
           if (room.localParticipant) {
             const unpublishPromises = [];
             room.localParticipant.videoTrackPublications.forEach((publication) => {
@@ -213,7 +218,7 @@ function TherapistSessionRoom() {
           if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'visible';
           return;
         } else if (isFilterActive && selectedBackgroundImage) {
-            console.log("manageTracks: MediaPipe 필터 초기화 및 적용 시작.");
+            
             if (room.localParticipant) {
               const unpublishPromises = [];
               room.localParticipant.videoTrackPublications.forEach((publication) => {
@@ -223,27 +228,18 @@ function TherapistSessionRoom() {
               });
               await Promise.all(unpublishPromises);
             }
-            if (selfieSegmentationRef.current) {
-                console.log("manageTracks: 기존 selfieSegmentation 인스턴스 정리.");
-                selfieSegmentationRef.current.close();
-                selfieSegmentationRef.current = null;
-            }
-            if(animationFrameRef.current) {
-                console.log("manageTracks: 기존 애니메이션 프레임 취소.");
-                cancelAnimationFrame(animationFrameRef.current);
-                animationFrameRef.current = null;
-            }
+            
+            
 
             const videoElement = localVideoRef.current;
             const canvasElement = outputCanvasRef.current;
-            console.log("manageTracks: videoElement:", videoElement, "canvasElement:", canvasElement);
+            
             if (!videoElement || !canvasElement) {
-              console.log("manageTracks: videoElement 또는 canvasElement가 없음. 100ms 후 재시도.");
               setTimeout(manageTracks, 100); // 100ms 후 재시도
               return;
             }
-            console.log("manageTracks: videoElement.readyState:", videoElement.readyState);
-            console.log("manageTracks: isFilterActive:", isFilterActive, "selectedBackgroundImage:", selectedBackgroundImage);
+            
+            
 
             const canvasCtx = canvasElement.getContext('2d');
             const backgroundImage = new Image();
@@ -293,7 +289,7 @@ function TherapistSessionRoom() {
             const canvasVideoTrack = new LocalVideoTrack(canvasStream.getVideoTracks()[0], { name: 'canvas' });
             try {
               await room.localParticipant.publishTrack(canvasVideoTrack);
-              console.log("manageTracks: Canvas 비디오 트랙 게시 성공.");
+              
             } catch (error) {
               console.error("manageTracks: Canvas 비디오 트랙 게시 실패:", error);
             }
@@ -301,7 +297,7 @@ function TherapistSessionRoom() {
             if (outputCanvasRef.current) outputCanvasRef.current.style.visibility = 'visible';
             if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'hidden';
         } else { // No filter active, ensure original video is visible and filter tracks are unpublished
-          console.log("manageTracks: 필터 비활성. 원본 비디오 표시 및 필터 트랙 언퍼블리시 확인.");
+          
           if (localVideoRef.current) localVideoRef.current.style.visibility = 'visible';
           if (outputCanvasRef.current) outputCanvasRef.current.style.visibility = 'hidden';
           if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'hidden';
@@ -310,15 +306,15 @@ function TherapistSessionRoom() {
           const unpublishPromises = [];
           room.localParticipant.videoTrackPublications.forEach((publication) => {
             if (publication.track && (publication.track.name === 'canvas' || publication.track.name === 'camera-kit')) {
-              console.log(`manageTracks: 기존 필터 트랙 언퍼블리시 시도: ${publication.track.name}`);
+              
               unpublishPromises.push(room.localParticipant.unpublishTrack(publication.track, true));
             }
           });
           await Promise.all(unpublishPromises);
-          console.log("manageTracks: 기존 필터 트랙 언퍼블리시 완료.");
+          
         }
       } finally {
-        console.log("manageTracks: 실행 종료.");
+        
       }
     };
 
@@ -326,19 +322,19 @@ function TherapistSessionRoom() {
 
     return () => {
       isCleaningUp = true;
-      console.log("useEffect 클린업: isCleaningUp을 true로 설정.");
+      
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
-        console.log("useEffect 클린업: 애니메이션 프레임 취소.");
+        
       }
       const room = roomRef.current;
       if (room && room.localParticipant) {
-        console.log("useEffect 클린업: LiveKit 트랙 언퍼블리시 시도.");
+        
         room.localParticipant.videoTrackPublications.forEach((publication) => {
           if (publication.track && (publication.track.name === 'canvas' || publication.track.name === 'camera-kit')) {
             try {
               room.localParticipant.unpublishTrack(publication.track, true);
-              console.log(`useEffect 클린업: ${publication.track.name} 트랙 언퍼블리시 성공.`);
+              
             } catch (error) {
               console.error(`useEffect 클린업: ${publication.track.name} 트랙 언퍼블리시 실패:`, error);
             }
@@ -346,16 +342,16 @@ function TherapistSessionRoom() {
         });
       }
       if (selfieSegmentationRef.current) {
-        console.log("useEffect 클린업: selfieSegmentation 정리.");
+        
         selfieSegmentationRef.current.close();
         selfieSegmentationRef.current = null;
       }
       if (cameraKitSessionRef.current) {
-        console.log("useEffect 클린업: cameraKitSession 정리.");
+        
         cameraKitSessionRef.current.destroy();
         cameraKitSessionRef.current = null;
       }
-      console.log("useEffect 클린업: 완료.");
+      
     };
   }, [rtcStatus, useCameraKit, isVideoOff, roomRef, stopCameraKit, isFilterActive, selectedBackgroundImage, isLiveKitReady]);
 
@@ -400,7 +396,7 @@ function TherapistSessionRoom() {
         activeToolTab={activeToolTab}
         toggleToolPanel={toggleToolPanel}
         fairyTaleInfo={fairyTaleInfo}
-        endSession={endSession}
+        endSession={() => endSession(fairyTaleInfo?.title, currentFairyTalePage)}
         showToolPanel={showToolPanel}
         setShowToolPanel={setShowToolPanel}
         chatMessages={chatMessages}

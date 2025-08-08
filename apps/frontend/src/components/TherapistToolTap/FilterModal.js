@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Image } from 'react-bootstrap';
 
 const FilterModal = ({ show, onHide, onSave, filterData }) => {
+    // filterLensId 상태 제거
     const [form, setForm] = useState({ name: '' });
     const [imagePreview, setImagePreview] = useState('');
     const [imageFile, setImageFile] = useState(null);
 
     useEffect(() => {
         if (filterData) {
-            setForm({ name: filterData.name });
-            if (filterData.file_id) setImagePreview(filterData.file_id);
+            setForm({ 
+                name: filterData.name, 
+            });
+            if (filterData.fileUrl) setImagePreview(filterData.fileUrl);
         } else {
             setForm({ name: '' });
         }
@@ -26,13 +29,19 @@ const FilterModal = ({ show, onHide, onSave, filterData }) => {
             setImageFile(file);
         }
     };
+
+    const handleFormChange = (e) => {
+        const { name, value } = e.target;
+        setForm(prev => ({ ...prev, [name]: value }));
+    };
     
     const handleSaveClick = () => {
         if (!form.name || (!imageFile && !filterData)) {
             alert('필터 이름과 이미지는 필수입니다.');
             return;
         }
-        onSave({ ...form, imageFile, id: filterData?.id });
+        // filterLensId를 전달하지 않도록 수정
+        onSave({ ...form, imageFile, id: filterData?.filterId });
     };
 
     return (
@@ -43,8 +52,9 @@ const FilterModal = ({ show, onHide, onSave, filterData }) => {
             <Modal.Body>
                 <Form.Group className="mb-3">
                     <Form.Label>필터 이름</Form.Label>
-                    <Form.Control type="text" value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                    <Form.Control type="text" name="name" value={form.name || ''} onChange={handleFormChange} />
                 </Form.Group>
+                {/* 필터 렌즈 ID 입력 필드 완전 제거 */}
                 <Form.Group className="mb-3">
                     <Form.Label>이미지</Form.Label>
                     <Form.Control type="file" accept="image/*" onChange={handleFileChange} />

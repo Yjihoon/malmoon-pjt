@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Card, Button, Alert, Tabs, Tab, Spinner } from 'react-bootstrap';
 
-// 컴포넌트 import 경로는 실제 프로젝트 구조에 맞게 확인해주세요.
+// 컴포넌트 import 경로
 import AacItemList from '../../../components/TherapistToolTap/AacItemList';
 import AacSetList from '../../../components/TherapistToolTap/AacSetList';
 import FilterList from '../../../components/TherapistToolTap/FilterList';
+import FilterSetList from '../../../components/TherapistToolTap/FilterSetList';
 import ToolBundleList from '../../../components/TherapistToolTap/ToolBundleList';
 import AacItemModal from '../../../components/TherapistToolTap/AacItemModal';
 import AacSetModal from '../../../components/TherapistToolTap/AacSetModal';
 import FilterModal from '../../../components/TherapistToolTap/FilterModal';
+import FilterSetModal from '../../../components/TherapistToolTap/FilterSetModal';
 import ToolBundleModal from '../../../components/TherapistToolTap/ToolBundleModal';
 import AacItemDetailModal from '../../../components/TherapistToolTap/AacItemDetailModal';
 
@@ -24,10 +26,10 @@ function TherapistToolsPage() {
     const [aacItems, setAacItems] = useState([]);
     const [aacSets, setAacSets] = useState([]);
     const [filters, setFilters] = useState([]);
+    const [filterSets, setFilterSets] = useState([]);
     const [toolBundles, setToolBundles] = useState([]);
     const [modalState, setModalState] = useState({ type: null, data: null });
     
-    // 데이터 저장/삭제 후 목록을 새로고침하기 위한 상태
     const [refreshKey, setRefreshKey] = useState(0);
 
     const getAuthHeader = useCallback(() => {
@@ -43,67 +45,67 @@ function TherapistToolsPage() {
         return { 'Authorization': `Bearer ${token}` };
     }, []);
     
-    // Presigned URL 호출 로직 복구
-    const loadAacItems = useCallback(async () => {
-        const headers = getAuthHeader();
-        if (!headers) return;
-        try {
-            const listResponse = await fetch('/api/v1/aacs?page=0&size=1000', { headers });
-            if (!listResponse.ok) throw new Error('AAC 아이템 목록을 불러오는데 실패했습니다.');
-            const listData = await listResponse.json();
-            const items = listData.content;
+    // 데이터 로드 함수들 (API 연동)
+    const loadAacItems = useCallback(async (headers) => {
+        const response = await fetch('/api/v1/aacs?page=0&size=1000', { headers });
+        if (!response.ok) throw new Error('AAC 아이템 목록 로딩 실패');
+        const data = await response.json();
+        setAacItems(data.content.map(item => ({ ...item, imageUrl: item.fileUrl })));
+    }, []);
 
-            const itemsWithImageUrls = items.map(item => ({
-                ...item,
-                imageUrl: item.fileUrl // fileId를 직접 imageUrl로 사용
-            }));
-            
-            setAacItems(itemsWithImageUrls);
+    const loadAacSets = useCallback(async (headers) => {
+        const response = await fetch('/api/v1/aacs/sets/my', { headers });
+        if (!response.ok) throw new Error('AAC 묶음 목록 로딩 실패');
+        setAacSets(await response.json());
+    }, []);
 
-        } catch (e) {
-            setError(e.message);
+    // [수정] 필터 로드 로직을 AAC 아이템과 유사하게 단순화
+    const loadFilters = useCallback(async (headers) => {
+        const response = await fetch('/api/v1/filters', { headers });
+        if (!response.ok) throw new Error('필터 목록 로딩 실패');
+        const data = await response.json();
+        // 백엔드에서 내려주는 fileUrl을 바로 사용
+        setFilters(data.filters || []);
+        console.log("서버로부터 받은 필터 목록:", data.filters);
+    }, []);
+
+
+    const loadFilterSets = useCallback(async (headers) => {
+        const response = await fetch('/api/v1/filters/sets/my', { headers });
+        if (response.status === 404) {
+            console.warn("필터 묶음 API(/api/v1/filters/sets/my)를 찾을 수 없습니다. 백엔드 서버를 확인해주세요.");
+            setFilterSets([]); // 404 오류 시 빈 배열로 설정하여 앱 중단 방지
+            return;
         }
-    }, [getAuthHeader]);
+        if (!response.ok) throw new Error('필터 묶음 목록 로딩 실패');
+        setFilterSets(await response.json());
+    }, []);
 
-    const loadAacSets = useCallback(async () => {
-        const headers = getAuthHeader();
-        if (!headers) return;
-        try {
-            const response = await fetch('/api/v1/aacs/sets/my', { headers });
-            if (!response.ok) throw new Error('AAC 묶음을 불러오는데 실패했습니다.');
-            const data = await response.json();
-            setAacSets(data);
-        } catch (e) {
-            setError(e.message);
-        }
-    }, [getAuthHeader]);
+    const loadToolBundles = useCallback(async (headers) => {
+        const response = await fetch('/api/v1/tool-bundles/my', { headers });
+        if (!response.ok) throw new Error('수업 세트 목록 로딩 실패');
+        setToolBundles(await response.json());
+    }, []);
 
-    // 필터 및 번들 더미 데이터 로드 함수 복구
-    const loadMockData = useCallback(() => {
-        try {
-            const dummyFilters = Array.from({ length: 8 }, (_, i) => ({ id: `filter${i + 1}`, therapist_id: 'therapist123', name: `꾸미기 필터 ${i + 1}`, created_at: new Date().toISOString(), file_id: `https://placehold.co/150x150?text=Filter${i + 1}` }));
-            setFilters(dummyFilters);
-            const dummyToolBundles = [ 
-                { id: 'bundle1', name: '즐거운 학교 세트', description: '학교 묶음과 기본 필터 사용', AAC_set_id: aacSets.map(s => s.id).slice(0,1), filter_id: ['filter1'] }, 
-                { id: 'bundle2', name: '편안한 우리집 세트', description: '집 묶음과 여러 필터 사용', AAC_set_id: aacSets.map(s => s.id).slice(1,2), filter_id: ['filter2', 'filter3'] }
-            ];
-            setToolBundles(dummyToolBundles);
-        } catch (e) { setError('더미 데이터 로딩 중 오류가 발생했습니다.'); } 
-    }, [aacSets]);
-
-    // 페이지 초기화
+    // 페이지 초기화 (모든 데이터 로드)
     useEffect(() => {
         const initializePage = async () => {
             setLoading(true);
+            setError('');
             const headers = getAuthHeader();
             if (headers) {
                 try {
                     const userResponse = await fetch('/api/v1/members/me', { headers });
-                    if (!userResponse.ok) throw new Error("사용자 정보를 불러오는데 실패했습니다.");
-                    const userData = await userResponse.json();
-                    setCurrentUser(userData);
+                    if (!userResponse.ok) throw new Error("사용자 정보 로딩 실패");
+                    setCurrentUser(await userResponse.json());
 
-                    await Promise.all([loadAacItems(), loadAacSets()]);
+                    await Promise.all([
+                        loadAacItems(headers),
+                        loadAacSets(headers),
+                        loadFilters(headers),
+                        loadFilterSets(headers),
+                        loadToolBundles(headers)
+                    ]);
                     
                 } catch (e) {
                     setError(e.message);
@@ -113,14 +115,7 @@ function TherapistToolsPage() {
             }
         };
         initializePage();
-    }, [getAuthHeader, loadAacItems, loadAacSets, refreshKey]);
-
-    // aacSets가 로드된 후에 목업 데이터를 설정하도록 useEffect 분리
-    useEffect(() => {
-        if(aacSets.length > 0) {
-            loadMockData();
-        }
-    }, [aacSets, loadMockData]);
+    }, [getAuthHeader, refreshKey, loadAacItems, loadAacSets, loadFilters, loadFilterSets, loadToolBundles]);
 
     const forceRefresh = () => setRefreshKey(prevKey => prevKey + 1);
     
@@ -128,137 +123,168 @@ function TherapistToolsPage() {
     const closeModal = () => setModalState({ type: null, data: null });
     const handleViewDetails = (item) => openModal('AAC_item_detail', item);
 
-    // 저장 및 삭제 핸들러 (안정적인 기존 로직 유지)
+    // 공통 API 요청 함수
+    const apiRequest = async (url, method, body, isFormData = false) => {
+        const headers = getAuthHeader();
+        if (!headers) return;
+        if (!isFormData) {
+            headers['Content-Type'] = 'application/json';
+        }
+
+        const options = { method, headers };
+        if (body) {
+            options.body = isFormData ? body : JSON.stringify(body);
+        }
+
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `${method} 요청 실패: ${url}`);
+        }
+        return response;
+    };
+
+    // 필터 핸들러 (API 연동)
+    const handleSaveFilter = async (filterToSave) => {
+        try {
+            const formData = new FormData();
+            formData.append('name', filterToSave.name);
+            
+            if (filterToSave.imageFile) {
+                formData.append('filter', filterToSave.imageFile);
+            }
+            
+            await apiRequest('/api/v1/filters', 'POST', formData, true);
+            closeModal();
+            forceRefresh();
+        } catch (e) { setError(e.message); }
+    };
+
+    const handleDeleteFilter = async (filterId) => {
+        if (window.confirm('정말로 이 필터를 삭제하시겠습니까?')) {
+            try {
+                await apiRequest(`/api/v1/filters?filterId=${filterId}`, 'DELETE');
+                forceRefresh();
+            } catch(e) { setError(e.message); }
+        }
+    };
+
+    // --- (이하 다른 핸들러 함수들은 이전과 동일) ---
+
+    // AAC 아이템 핸들러
+    const handleSaveAacItem = async (itemToSave) => {
+        try {
+            const formData = new FormData();
+            Object.keys(itemToSave).forEach(key => {
+                if (key === 'imageFile' && itemToSave[key]) {
+                    formData.append('file', itemToSave[key]);
+                } else if (key !== 'imageFile' && itemToSave[key] !== null) {
+                    formData.append(key, itemToSave[key]);
+                }
+            });
+            await apiRequest('/api/v1/aacs/custom', 'POST', formData, true);
+            closeModal();
+            forceRefresh();
+        } catch (e) { setError(e.message); }
+    };
+
+    const handleDeleteAacItem = async (itemId) => {
+        if (window.confirm('정말로 이 AAC 아이템을 삭제하시겠습니까?')) {
+            try {
+                await apiRequest(`/api/v1/aacs/custom/${itemId}`, 'PATCH');
+                forceRefresh();
+            } catch(e) { setError(e.message); }
+        }
+    };
+    
     const handleGenerateAacImage = async (promptData) => {
-        const headers = { ...getAuthHeader(), 'Content-Type': 'application/json' };
-        if (!headers['Authorization']) return;
-        
         const AI_SERVER_URL = 'http://localhost:8000';
         try {
-            const response = await fetch('/api/v1/aacs/generate', { 
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(promptData),
-            });
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'AI 이미지 생성 요청에 실패했습니다.' }));
-                throw new Error(errorData.message);
-            }
+            const response = await apiRequest('/api/v1/aacs/generate', 'POST', promptData);
             const result = await response.json();
-            return AI_SERVER_URL + result.previewUrl; 
+            return AI_SERVER_URL + result.previewUrl;
         } catch (error) {
             throw error;
         }
     };
 
-    const handleSaveAacItem = async (itemToSave) => {
-        console.log("handleSaveAacItem - itemToSave:", itemToSave);
-        const headers = getAuthHeader();
-        if (!headers) return;
-
-        try {
-            if (itemToSave.imageFile) {
-                const formData = new FormData();
-                formData.append('name', itemToSave.name);
-                formData.append('description', itemToSave.description);
-                formData.append('situation', itemToSave.situation);
-                formData.append('action', itemToSave.action);
-                formData.append('emotion', itemToSave.emotion);
-                formData.append('status', itemToSave.status.toUpperCase());
-                formData.append('file', itemToSave.imageFile);
-
-                const response = await fetch('/api/v1/aacs/custom', {
-                    method: 'POST',
-                    headers: headers,
-                    body: formData
-                });
-                if (!response.ok) throw new Error('AAC 아이템 저장에 실패했습니다.');
-            } else { // imageFile이 없는 경우 (예: 기존 아이템 수정 시 이미지가 없는 경우)
-                alert('저장할 이미지가 없습니다.');
-                return;
-            }
-            
-            closeModal();
-            forceRefresh();
-        } catch (e) {
-            setError(e.message);
-        }
-    };
-
-    const handleDeleteAacItem = async (itemId) => {
-        if (window.confirm('정말로 이 AAC 아이템을 삭제하시겠습니까?')) {
-            const headers = getAuthHeader();
-            if (!headers) return;
-            try {
-                const response = await fetch(`/api/v1/aacs/custom/${itemId}`, {
-                    method: 'PATCH',
-                    headers: headers
-                });
-                if (!response.ok) throw new Error('AAC 아이템 삭제에 실패했습니다.');
-                forceRefresh();
-            } catch(e) {
-                setError(e.message);
-            }
-        }
-    };
-
+    // AAC 묶음 핸들러
     const handleSaveAacSet = async (set) => {
-        const headers = { ...getAuthHeader(), 'Content-Type': 'application/json' };
-        if (!headers['Authorization']) return;
-
         const isEditing = !!set.id;
         const url = isEditing ? `/api/v1/aacs/sets/${set.id}` : '/api/v1/aacs/sets/create';
         const method = isEditing ? 'PATCH' : 'POST';
-        
-        const payload = {
-            name: set.name,
-            description: set.description,
-            aacItemIds: set.aac_item_ids 
-        };
-
+        const payload = { name: set.name, description: set.description, aacItemIds: set.aacItemIds };
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: headers,
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) throw new Error(`AAC 묶음 ${isEditing ? '수정' : '저장'}에 실패했습니다.`);
-            
+            await apiRequest(url, method, payload);
             closeModal();
             forceRefresh();
-        } catch (e) {
-            setError(e.message);
-        }
+        } catch (e) { setError(e.message); }
     };
     
     const handleDeleteAacSet = async (setId) => {
         if (window.confirm('정말로 이 AAC 묶음을 삭제하시겠습니까?')) {
-            const headers = getAuthHeader();
-            if (!headers) return;
             try {
-                const response = await fetch(`/api/v1/aacs/sets/${setId}`, {
-                    method: 'DELETE',
-                    headers: headers
-                });
-                if (!response.ok) throw new Error('AAC 묶음 삭제에 실패했습니다.');
+                await apiRequest(`/api/v1/aacs/sets/${setId}`, 'DELETE');
                 forceRefresh();
-            } catch(e) {
-                setError(e.message);
-            }
+            } catch(e) { setError(e.message); }
         }
     };
 
-    const handleSaveFilter = (filterToSave) => { closeModal(); };
-    const handleDeleteFilter = (filterId) => { if (window.confirm('정말로 이 필터를 삭제하시겠습니까?')) console.log("Deleting Filter:", filterId); };
-    const handleSaveToolBundle = (bundle) => { closeModal(); };
-    const handleDeleteToolBundle = (bundleId) => { if (window.confirm('정말로 이 수업 세트를 삭제하시겠습니까?')) console.log("Deleting Tool Bundle:", bundleId); };
+    // 필터 묶음 핸들러
+    const handleSaveFilterSet = async (set) => {
+        const isEditing = !!set.id;
+        const url = isEditing ? `/api/v1/filters/sets/${set.id}` : '/api/v1/filters/sets/create';
+        const method = isEditing ? 'PATCH' : 'POST';
+        const payload = { name: set.name, description: set.description, filterIds: set.filterIds };
+        try {
+            await apiRequest(url, method, payload);
+            closeModal();
+            forceRefresh();
+        } catch(e) { setError(e.message); }
+    };
 
-    if (loading) return <Container className="my-5 text-center"><Spinner animation="border" /> <p>로딩 중...</p></Container>;
-    if (error) return <Container className="my-5"><Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert></Container>;
+    const handleDeleteFilterSet = async (setId) => {
+        if (window.confirm('정말로 이 필터 묶음을 삭제하시겠습니까?')) {
+            try {
+                await apiRequest(`/api/v1/filters/sets/${setId}`, 'DELETE');
+                forceRefresh();
+            } catch(e) { setError(e.message); }
+        }
+    };
+
+    // 수업 세트 핸들러
+    const handleSaveToolBundle = async (bundle) => {
+        const isEditing = !!bundle.id;
+        const url = isEditing ? `/api/v1/tool-bundles/${bundle.id}` : '/api/v1/tool-bundles/create';
+        const method = isEditing ? 'PATCH' : 'POST';
+        const payload = { 
+            name: bundle.name, 
+            description: bundle.description, 
+            aacSetId: bundle.aacSetId, 
+            filterSetId: bundle.filterSetId 
+        };
+        try {
+            await apiRequest(url, method, payload);
+            closeModal();
+            forceRefresh();
+        } catch(e) { setError(e.message); }
+    };
+
+    const handleDeleteToolBundle = async (bundleId) => {
+        if (window.confirm('정말로 이 수업 세트를 삭제하시겠습니까?')) {
+            try {
+                await apiRequest(`/api/v1/tool-bundles/${bundleId}`, 'DELETE');
+                forceRefresh();
+            } catch(e) { setError(e.message); }
+        }
+    };
+
+    if (loading) return <Container className="my-5 text-center"><Spinner animation="border" /> <p>데이터 로딩 중...</p></Container>;
 
     return (
         <Container fluid className="my-5 px-4 tools-management-section">
             <h2 className="text-center mb-4">수업 도구 관리</h2>
+            {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
             <Tabs defaultActiveKey="AAC_item" id="therapist-tools-tabs" className="mb-3" justify>
                 <Tab eventKey="AAC_item" title="AAC 아이템 관리">
                     <Card className="p-3"><Card.Body>
@@ -266,13 +292,7 @@ function TherapistToolsPage() {
                             <Card.Title className="mb-0">AAC 아이템 목록</Card.Title>
                             <Button variant="primary" onClick={() => openModal('AAC_item')}>새 AAC 아이템 추가</Button>
                         </div> <hr />
-                        <AacItemList 
-                            aacItems={aacItems}
-                            currentUser={currentUser}
-                            onEdit={(item) => openModal('AAC_item', item)} 
-                            onDelete={handleDeleteAacItem}
-                            onViewDetails={handleViewDetails}
-                        />
+                        <AacItemList aacItems={aacItems} currentUser={currentUser} onEdit={(item) => openModal('AAC_item', item)} onDelete={handleDeleteAacItem} onViewDetails={handleViewDetails} />
                     </Card.Body></Card>
                 </Tab>
                 <Tab eventKey="AAC_set" title="AAC 묶음 관리">
@@ -281,37 +301,45 @@ function TherapistToolsPage() {
                             <Card.Title className="mb-0">AAC 묶음 목록</Card.Title>
                             <Button variant="primary" onClick={() => openModal('AAC_set')}>새 AAC 묶음 추가</Button>
                         </div>
-                        <AacSetList
-                            aacSets={aacSets}
-                            onEdit={(set) => openModal('AAC_set', set)} 
-                            onDelete={handleDeleteAacSet} 
-                        />
+                        <AacSetList aacSets={aacSets} onEdit={(set) => openModal('AAC_set', set)} onDelete={handleDeleteAacSet} />
                     </Card.Body></Card>
                 </Tab>
                 <Tab eventKey="Filter" title="필터 관리">
                     <Card className="p-3"><Card.Body>
                         <div className="d-flex justify-content-between align-items-center mb-3">
                             <Card.Title className="mb-0">필터 목록</Card.Title>
-                            <Button variant="primary" onClick={() => openModal('Filter')}>새 필터 추가</Button>
+                            <Button variant="primary" onClick={() => openModal('filter')}>새 필터 추가</Button>
                         </div>
-                        <FilterList filters={filters} onEdit={(filter) => openModal('Filter', filter)} onDelete={handleDeleteFilter} />
-                    </Card.Body></Card></Tab>
+                        <FilterList filters={filters} onEdit={(filter) => openModal('filter', filter)} onDelete={handleDeleteFilter} />
+                    </Card.Body></Card>
+                </Tab>
+                <Tab eventKey="Filter_set" title="필터 묶음 관리">
+                    <Card className="p-3"><Card.Body>
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <Card.Title className="mb-0">필터 묶음 목록</Card.Title>
+                            <Button variant="primary" onClick={() => openModal('Filter_set')}>새 필터 묶음 추가</Button>
+                        </div>
+                        <FilterSetList filterSets={filterSets} onEdit={(set) => openModal('Filter_set', set)} onDelete={handleDeleteFilterSet} />
+                    </Card.Body></Card>
+                </Tab>
                 <Tab eventKey="tool_bundle" title="수업 세트 관리">
                      <Card className="p-3"><Card.Body>
                         <div className="d-flex justify-content-between align-items-center mb-3">
                             <Card.Title className="mb-0">수업 세트 목록</Card.Title>
                             <Button variant="primary" onClick={() => openModal('tool_bundle')}>새 수업 세트 추가</Button>
                         </div>
-                        <ToolBundleList toolBundles={toolBundles} aacSets={aacSets} filters={filters} onEdit={(bundle) => openModal('tool_bundle', bundle)} onDelete={handleDeleteToolBundle} />
+                        <ToolBundleList toolBundles={toolBundles} allAacSets={aacSets} allFilterSets={filterSets} onEdit={(bundle) => openModal('tool_bundle', bundle)} onDelete={handleDeleteToolBundle} />
                     </Card.Body></Card>
                 </Tab>
             </Tabs>
             
+            {/* 모달 렌더링 */}
             <AacItemDetailModal show={modalState.type === 'AAC_item_detail'} onHide={closeModal} item={modalState.data} />
             <AacItemModal show={modalState.type === 'AAC_item'} onHide={closeModal} onSave={handleSaveAacItem} itemData={modalState.data} onGenerate={handleGenerateAacImage} />
             <AacSetModal show={modalState.type === 'AAC_set'} onHide={closeModal} onSave={handleSaveAacSet} initialData={modalState.data} allAacItems={aacItems} getAuthHeader={getAuthHeader} />
-            <FilterModal show={modalState.type === 'Filter'} onHide={closeModal} onSave={handleSaveFilter} filterData={modalState.data} />
-            <ToolBundleModal show={modalState.type === 'tool_bundle'} onHide={closeModal} onSave={handleSaveToolBundle} bundleData={modalState.data} allAacSets={aacSets} allFilters={filters} />
+            <FilterModal show={modalState.type === 'filter'} onHide={closeModal} onSave={handleSaveFilter} filterData={modalState.data} />
+            <FilterSetModal show={modalState.type === 'Filter_set'} onHide={closeModal} onSave={handleSaveFilterSet} initialData={modalState.data} allFilters={filters} getAuthHeader={getAuthHeader} />
+            <ToolBundleModal show={modalState.type === 'tool_bundle'} onHide={closeModal} onSave={handleSaveToolBundle} bundleData={modalState.data} allAacSets={aacSets} allFilterSets={filterSets} />
         </Container>
     );
 }

@@ -1,0 +1,191 @@
+/* TherapistFeedbackPage.css */
+
+/* TherapistMatchingPage.css에서 가져온 스타일 */
+.matching-client-list {
+    list-style: none;
+    padding: 0;
+}
+
+.matching-client-item {
+    /* Most styles inherited from .card-base */
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-sm); /* global.css에 정의된 변수 사용 */
+}
+
+.matching-client-info {
+    flex: 1 1 60%; /* Take up more space on larger screens */
+    margin-bottom: 10px;
+}
+
+.matching-client-info h5 {
+    font-size: 1.2rem;
+    color: var(--primary-color); /* global.css에 정의된 변수 사용 */
+    margin-bottom: 8px;
+}
+
+.matching-client-info p {
+    font-size: 0.95rem;
+    color: var(--secondary-color); /* global.css에 정의된 변수 사용 */
+    margin-bottom: 5px;
+}
+
+.matching-client-info small {
+    font-size: 0.85rem;
+    color: var(--secondary-color); /* global.css에 정의된 변수 사용 */
+}
+
+.matching-client-actions {
+    flex: 1 1 35%; /* Take up less space */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+/* global.css에 정의된 .card-base 스타일을 사용 */
+.card-base {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+/* global.css에 정의된 .btn-soft-* 스타일을 사용 */
+.btn-soft-primary {
+    background-color: #e6f2ff;
+    color: #007bff;
+    border-color: #cce5ff;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-soft-primary:hover:enabled {
+    background-color: #cce5ff;
+    color: #0056b3;
+    border-color: #99cdff;
+}
+
+/* TherapistSchedulePage.css에서 가져온 캘린더 관련 스타일 */
+.react-calendar-custom {
+    width: 100%; /* 부모 컨테이너에 맞춤 */
+    border: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.react-calendar-custom .react-calendar__navigation button {
+    font-size: 1.2em;
+    color: #007bff; /* 네비게이션 버튼 색상 */
+}
+
+.react-calendar-custom .react-calendar__navigation button:enabled:hover {
+    background-color: #e6f2ff; /* 호버 색상 */
+}
+
+.react-calendar-custom .react-calendar__month-view__weekdays {
+    text-align: center;
+    text-transform: none !important; /* 요일 텍스트 대문자 변환 방지 */
+    font-weight: bold;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.react-calendar-custom .react-calendar__month-view__days__day {
+    color: #333;
+}
+
+.react-calendar-custom .react-calendar__tile {
+    padding: 30px 6px;
+    border-radius: 8px;
+    font-size: 1em;
+    position: relative; /* 마커 위치 지정을 위해 추가 */
+    border: 1px solid #D3D3D3; /* 날짜 셀 테두리 */
+}
+
+.react-calendar-custom .react-calendar__tile--now {
+    background: #e0f7fa; /* 오늘 날짜 배경색 */
+    color: #007bff;
+}
+
+.react-calendar-custom .react-calendar__tile--active {
+    background: #007bff !important; /* 선택된 날짜 배경색 */
+    color: white !important;
+    border-radius: 8px;
+}
+
+/* 날짜 마커 스타일 */
+.dot-marker-container {
+    position: absolute;
+    bottom: 5px; /* 날짜 셀 하단에 위치 */
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 3px; /* 마커 간 간격 */
+}
+
+.dot-marker {
+    height: 6px;
+    width: 6px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* 피드백 마커 색상 */
+.feedback-marker {
+    background-color: #ffc107; /* 노란색 계열 */
+}
+
+/* 피드백이 있는 날짜 활성화 스타일 */
+.react-calendar-custom .react-calendar__tile.has-feedback {
+    background-color: #fff3cd; /* 연한 노란색 배경 */
+    border-color: #ffeeba;
+}
+
+.react-calendar-custom .react-calendar__tile.has-feedback:hover {
+    background-color: #ffeeba;
+}
+
+.react-calendar-custom .react-calendar__tile.has-feedback.react-calendar__tile--active {
+    background: #ffc107 !important; /* 선택 시 진한 노란색 */
+    color: white !important;
+}
+
+/* 캘린더 하단 범례 */
+.calendar-legend {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.calendar-legend .dot-marker {
+    margin-right: 5px;
+}
+
+/* 피드백 내용 영역 */
+.feedback-content-area {
+    min-height: 150px; /* 내용이 없어도 일정 높이 유지 */
+    background-color: #f8f9fa;
+}
+
+/* 반응형 조정 */
+@media (max-width: 768px) {
+    .matching-client-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .matching-client-info {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+
+    .matching-client-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}

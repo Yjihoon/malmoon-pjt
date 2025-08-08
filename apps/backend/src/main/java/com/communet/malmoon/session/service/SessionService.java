@@ -67,7 +67,7 @@ public class SessionService {
 
 	/**
 	 * 치료사가 세션 방을 생성하고, Redis에 관련 정보 저장 후 토큰 반환
-	 * - 기존 세션이 있으면 삭제
+	 * - 기존 세션이 있으면 재접속
 	 * - 랜덤 UUID로 room 생성
 	 * - Redis에 therapist, client, 생성 시간 저장
 	 * - 채팅방 자동 생성 및 세션 Id < - > ChatRoomId 매핑 저장
@@ -79,9 +79,18 @@ public class SessionService {
 	@Transactional
 	public SessionTokenRes storeRoomInfo(Member therapist, Long clientId) { // 여기 수정함
 
-		// 이미 생성한 세션이 있으면 삭제
+		// 이미 생성한 세션이 있으면 재입장
 		if (redisTemplate.hasKey(REDIS_THERAPIST_PREFIX + therapist.getEmail())) {
-			deleteRoomInfo(therapist.getEmail());
+			String roomName = Objects.requireNonNull(
+					redisTemplate.opsForValue().get(REDIS_THERAPIST_PREFIX + therapist.getEmail()), "생성한 세션이 없습니다.").toString();
+
+			String chatRoomIdStr = (String) redisTemplate.opsForValue().get(REDIS_CHAT_ROOM_PREFIX + roomName);
+			Long chatRoomId = Long.valueOf(chatRoomIdStr);
+
+			return SessionTokenRes.builder()
+					.token(generateAccessToken(therapist, roomName))
+					.chatRoomId(chatRoomId)
+					.build();
 		}
 
 		// 랜덤한 room 이름 생성
@@ -193,6 +202,20 @@ public class SessionService {
 	 * @return JWT 기반 LiveKit 세션 접속 토큰
 	 */
 	public SessionTokenRes getJoinRoomName(Member client) { // 여기 수정함
+		String key = REDIS_CLIENT_PREFIX + client.getEmail();
+		if (redisTemplate.hasKey(key)) {
+			String roomName = Objects.requireNonNull(
+					redisTemplate.opsForValue().get(key), "참여할 수 있는 세션이 없습니다.").toString();
+
+			String chatRoomIdStr = (String) redisTemplate.opsForValue().get(REDIS_CHAT_ROOM_PREFIX + roomName);
+			Long chatRoomId = Long.valueOf(chatRoomIdStr);
+
+			return SessionTokenRes.builder()
+					.token(generateAccessToken(client, roomName))
+					.chatRoomId(chatRoomId)
+					.build();
+		}
+
 		String roomName = Objects.requireNonNull(
 			redisTemplate.opsForValue().get(REDIS_CLIENT_PREFIX + client.getEmail()), "참여할 수 있는 세션이 없습니다.").toString();
 
@@ -217,6 +240,10 @@ public class SessionService {
 	}
 
 	private String getClientEmail(Long clientId) {
+		// 윤지훈: clientId가 null인 경우 예외 처리 추가
+		if (clientId == null) {
+			throw new IllegalArgumentException("Client ID cannot be null when fetching client email.");
+		}
 		Optional<Member> client = memberRepository.findById(clientId);
 		if (client.isEmpty()) {
 			throw new EntityNotFoundException("해당 멤버를 찾을 수 없습니다.");

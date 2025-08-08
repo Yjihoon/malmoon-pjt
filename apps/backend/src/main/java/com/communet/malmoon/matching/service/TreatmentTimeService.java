@@ -38,7 +38,7 @@ public class TreatmentTimeService {
         return new TreatmentTimeRes(groupedByDay);
     }
 
-    @Transactional
+        @Transactional
     public void createTreatmentTime(Long memberId, TreatmentTimeReq req) {
         Therapist therapist = therapistRepository.findByTherapistId(memberId)
                 .orElseThrow(() -> new EntityNotFoundException("치료사를 찾을 수 없습니다."));

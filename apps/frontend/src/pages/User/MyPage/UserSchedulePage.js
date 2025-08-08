@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, ListGroup, Alert, Button } from 'react-bootstrap'; // Button 추가
 import { useNavigate } from 'react-router-dom'; // useNavigate 추가
 import { useAuth } from '../../../contexts/AuthContext';
-import axios from 'axios'; // axios 추가
+import api from '../../../api/axios'; // axios 인스턴스, 기본 baseURL 세팅
 
 function UserSchedulePage() {
   const { user, token } = useAuth();
@@ -17,33 +17,26 @@ function UserSchedulePage() {
       setError('');
       try {
         // Mock 데이터 (실제 API 호출로 대체 필요)
-        const dummySchedules = [
-          {
-            id: 'u1',
-            date: '2025-08-01', // 오늘 날짜 또는 가까운 미래
-            time: '10:00 AM',
-            therapist: '이재현 치료사',
-            status: '예정',
-            notes: '초기 상담 (김지아 자녀)',
-          },
-          {
-            id: 'u2',
-            date: '2025-08-02',
-            time: '02:00 PM',
-            therapist: '김민지 치료사',
-            status: '예정',
-            notes: '음운 치료 1차 세션 (박서준 자녀)',
-          },
-          {
-            id: 'u3',
-            date: '2025-07-30',
-            time: '11:00 AM',
-            therapist: '최수진 치료사',
-            status: '완료',
-            notes: '조음 치료 세션 (이지원 자녀)',
-          },
-        ];
-        setSchedules(dummySchedules.sort((a, b) => new Date(a.date) - new Date(b.date)));
+        try {
+          const response = await api.get('/schedule/me/today', {
+            headers: {
+              Authorization: `Bearer ${user.accessToken}`,
+            },
+          });
+          const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+          const fetchedSchedules = response.data.map(schedule => ({
+            id: schedule.therapistId, // 임시로 therapistId를 id로 사용
+            date: today,
+            time: `${String(schedule.time).padStart(2, '0')}:00 AM`, // 백엔드 time이 정수라고 가정
+            therapist: schedule.therapistName,
+            status: '예정', // 백엔드에서 상태 정보가 없으므로 '예정'으로 고정
+            notes: '', // 백엔드에서 notes 정보가 없으므로 빈 값
+          }));
+          setSchedules(fetchedSchedules.sort((a, b) => new Date(a.date) - new Date(b.date)));
+        } catch (err) {
+          setError('일정 정보를 불러오는 데 실패했습니다.');
+          console.error('Failed to fetch schedules:', err);
+        }
       } catch (err) {
         setError('일정 정보를 불러오는 데 실패했습니다.');
       } finally {

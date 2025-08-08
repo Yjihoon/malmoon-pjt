@@ -42,7 +42,7 @@ public class FilterService {
             filterDto.setFilterId(filter.getFilterId());
             filterDto.setName(filter.getName());
             filterDto.setFilterLensId(filter.getFilterLensId());
-            filterDto.setFileUrl(fileService.getFileUrl(filter.getFileId()));
+            filterDto.setFileUrl(fileService.getPresignedFileUrl(filter.getFileId()));
             filterDtoList.add(filterDto);
         });
         return filterDtoList;

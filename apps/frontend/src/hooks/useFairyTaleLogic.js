@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 
 export function useFairyTaleLogic(location, user, childId, selectedSentence, roomRef) {
   const [fairyTaleInfo, setFairyTaleInfo] = useState(null);
@@ -31,7 +31,7 @@ export function useFairyTaleLogic(location, user, childId, selectedSentence, roo
       if (fairyTaleContent[page]) return;
       setIsFetchingSentences(true);
       try {
-        const response = await axios.get('/api/v1/storybooks/sentences', {
+        const response = await api.get('/storybooks/sentences', {
           params: { ...fairyTaleInfo, page },
         });
         setFairyTaleContent(prev => ({ ...prev, [page]: Array.from(new Map(response.data.sentences.map(item => [item.sentenceId, item])).values()) }));
@@ -59,7 +59,7 @@ export function useFairyTaleLogic(location, user, childId, selectedSentence, roo
     formData.append('audioFile', audioBlob, 'recording.webm');
 
     try {
-      const response = await axios.post('/api/v1/speech', formData, {
+      const response = await api.post('/speech', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${user.accessToken}`
