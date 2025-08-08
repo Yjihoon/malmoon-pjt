@@ -5,6 +5,9 @@ import com.communet.malmoon.member.domain.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "Filter")
 @Getter
@@ -33,4 +36,8 @@ public class Filter extends BaseEntity {
 
     @Column(name = "file_id", nullable = false)
     private Long fileId;
+
+    @OneToMany(mappedBy = "filter", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<FilterSetInfo> filterSetInfos = new ArrayList<>();
 }
