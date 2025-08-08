@@ -203,18 +203,35 @@ function TherapistToolsPage() {
     };
 
     const handleSaveAacSet = async (set) => {
-        const headers = { ...getAuthHeader(), 'Content-Type': 'application/json' };
+        const headers = {
+            ...getAuthHeader(),
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        };
         if (!headers['Authorization']) return;
 
         const isEditing = !!set.id;
         const url = isEditing ? `/api/v1/aacs/sets/${set.id}` : '/api/v1/aacs/sets/create';
         const method = isEditing ? 'PATCH' : 'POST';
         
+        // Filter out null or undefined IDs and ensure all IDs are numbers
+        const filteredIds = (set.aacItemIds || [])
+            .filter(id => id !== null && id !== undefined)
+            .map(id => parseInt(id, 10));
+
+        // Check for NaN values after parsing
+        if (filteredIds.some(isNaN)) {
+            setError("유효하지 않은 AAC 아이템 ID가 포함되어 있습니다. 다시 시도해주세요.");
+            return;
+        }
+
         const payload = {
             name: set.name,
             description: set.description,
-            aacItemIds: set.aac_item_ids 
+            aacItemIds: filteredIds
         };
+
+        console.log("[Debug] TherapistToolsPage handleSaveAacSet - payload:", payload);
 
         try {
             const response = await fetch(url, {
