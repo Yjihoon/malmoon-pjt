@@ -21,6 +21,7 @@ import TherapistMatchingPage from './pages/Therapist/MyPage/TherapistMatchingPag
 import TherapistToolsPage from './pages/Therapist/MyPage/TherapistToolsPage';
 import TherapistUserManage from './pages/Therapist/MyPage/TherapistUserManage';
 import TherapistSessionRoom from './pages/Therapist/TherapistSessionRoom';
+import TherapistFeedbackPage from './pages/Therapist/MyPage/TherapistFeedbackPage';
 
 import TherapistBookingPage from './pages/User/Booking/TherapistBookingPage';
 import UserMyInfoPage from './pages/User/MyPage/UserMyInfoPage';
@@ -108,6 +109,7 @@ function App() {
             <Route path="/therapist/register-schedule" element={<TherapistRegisterSchedulePage />} />
             <Route path="/therapist/profile-settings" element={<h1>치료사 프로필 설정 페이지 (구현 예정)</h1>} />
             <Route path="/session/:roomId" element={<TherapistSessionRoom />} />
+            <Route path="/therapist/feedback" element={<TherapistFeedbackPage />} />
           </Route>
 
           {/* 사용자 전용 보호 라우트 */}
