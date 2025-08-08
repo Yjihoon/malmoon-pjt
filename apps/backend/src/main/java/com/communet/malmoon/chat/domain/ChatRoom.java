@@ -29,7 +29,7 @@ public class ChatRoom {
 	@Column(name = "room_id")
 	private Long roomId;
 
-	@Column(name = "room_name", nullable = false)
+	@Column(name = "room_name", nullable = true)
 	private String roomName;
 
 	@Column(name = "session_id", nullable = true)
