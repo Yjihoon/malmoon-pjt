@@ -1,14 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, ListGroup } from 'react-bootstrap';
 
-const ToolBundleModal = ({ show, onHide, onSave, bundleData, allAacSets, allFilters }) => {
-    const [form, setForm] = useState({ name: '', description: '', AAC_set_id: [], filter_id: [] });
+const ToolBundleModal = ({ show, onHide, onSave, bundleData, allAacSets, allFilterSets }) => {
+    // 백엔드 DTO에 맞춰 aacSetId, filterSetId를 단일 값으로 관리
+    const [form, setForm] = useState({ name: '', description: '', aacSetId: null, filterSetId: null });
 
     useEffect(() => {
-        if (bundleData) {
-            setForm(bundleData);
-        } else {
-            setForm({ name: '', description: '', AAC_set_id: [], filter_id: [] });
+        if (bundleData) { // 수정 모드
+            setForm({
+                id: bundleData.toolBundleId,
+                name: bundleData.name,
+                description: bundleData.description,
+                aacSetId: bundleData.aacSetId,
+                filterSetId: bundleData.filterSetId
+            });
+        } else { // 생성 모드
+            setForm({ name: '', description: '', aacSetId: null, filterSetId: null });
         }
     }, [bundleData, show]);
 
@@ -17,14 +24,12 @@ const ToolBundleModal = ({ show, onHide, onSave, bundleData, allAacSets, allFilt
         setForm(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleToggle = (type, id) => {
-        setForm(prev => {
-            const currentIds = prev[type] || [];
-            const newIds = currentIds.includes(id)
-                ? currentIds.filter(currentId => currentId !== id)
-                : [...currentIds, id];
-            return { ...prev, [type]: newIds };
-        });
+    // 단일 선택 로직으로 수정
+    const handleSelect = (type, id) => {
+        setForm(prev => ({
+            ...prev,
+            [type]: prev[type] === id ? null : id // 다시 클릭하면 선택 해제
+        }));
     };
     
     const handleSaveClick = () => {
@@ -32,8 +37,8 @@ const ToolBundleModal = ({ show, onHide, onSave, bundleData, allAacSets, allFilt
             alert('세트 이름과 설명은 필수입니다.');
             return;
         }
-        if ((form.AAC_set_id || []).length === 0 && (form.filter_id || []).length === 0) {
-            alert('하나 이상의 AAC 묶음 또는 필터를 포함해야 합니다.');
+        if (!form.aacSetId && !form.filterSetId) {
+            alert('하나 이상의 AAC 묶음 또는 필터 묶음을 포함해야 합니다.');
             return;
         }
         onSave(form);
@@ -56,10 +61,10 @@ const ToolBundleModal = ({ show, onHide, onSave, bundleData, allAacSets, allFilt
                 <Row>
                     <Col md={6}>
                         <Form.Group>
-                            <Form.Label>포함할 AAC 묶음</Form.Label>
+                            <Form.Label>포함할 AAC 묶음 (1개 선택)</Form.Label>
                             <ListGroup style={{maxHeight: '200px', overflowY: 'auto'}}>
                                 {allAacSets.map(set => (
-                                    <ListGroup.Item key={set.id} action active={(form.AAC_set_id || []).includes(set.id)} onClick={() => handleToggle('AAC_set_id', set.id)}>
+                                    <ListGroup.Item key={set.id} action active={form.aacSetId === set.id} onClick={() => handleSelect('aacSetId', set.id)}>
                                         {set.name}
                                     </ListGroup.Item>
                                 ))}
@@ -68,11 +73,11 @@ const ToolBundleModal = ({ show, onHide, onSave, bundleData, allAacSets, allFilt
                     </Col>
                     <Col md={6}>
                         <Form.Group>
-                            <Form.Label>포함할 필터</Form.Label>
+                            <Form.Label>포함할 필터 묶음 (1개 선택)</Form.Label>
                             <ListGroup style={{maxHeight: '200px', overflowY: 'auto'}}>
-                                {allFilters.map(filter => (
-                                    <ListGroup.Item key={filter.id} action active={(form.filter_id || []).includes(filter.id)} onClick={() => handleToggle('filter_id', filter.id)}>
-                                        {filter.name}
+                                {allFilterSets.map(set => (
+                                    <ListGroup.Item key={set.filterSetId} action active={form.filterSetId === set.filterSetId} onClick={() => handleSelect('filterSetId', set.filterSetId)}>
+                                        {set.name}
                                     </ListGroup.Item>
                                 ))}
                             </ListGroup>
