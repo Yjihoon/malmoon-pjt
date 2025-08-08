@@ -23,7 +23,7 @@ public class RedisConfig {
     }
 
     private RedisTemplate<String, Object> createRedisTemplate(int dbIndex) {
-        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration("localhost", 6380);
+        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration("localhost", 6379);
         config.setDatabase(dbIndex);
         LettuceConnectionFactory factory = new LettuceConnectionFactory(config);
         factory.afterPropertiesSet();
