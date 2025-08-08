@@ -59,44 +59,14 @@ function TherapistToolsPage() {
         setAacSets(await response.json());
     }, []);
 
-    // [수정] 필터 이미지 URL을 별도로 조회하도록 로직 변경
+    // [수정] 필터 로드 로직을 AAC 아이템과 유사하게 단순화
     const loadFilters = useCallback(async (headers) => {
-        // 1. 필터 기본 정보 목록 조회
-        const listResponse = await fetch('/api/v1/filters', { headers });
-        if (!listResponse.ok) throw new Error('필터 목록 로딩 실패');
-        const listData = await listResponse.json();
-        const initialFilters = listData.filters || [];
-
-        if (initialFilters.length === 0) {
-            setFilters([]);
-            return;
-        }
-        
-        // 2. 각 필터의 fileId를 사용하여 presigned URL을 비동기적으로 조회
-        const filtersWithUrls = await Promise.all(initialFilters.map(async (filter) => {
-            console.log(filter)
-            if (filter.fileId) {
-                try {
-                    console.log(filter)
-                    // 요청하신 /api/v1/files/{file_id}/presigned-url 경로로 이미지 URL 요청
-                    const urlResponse = await fetch(`/api/v1/files/${filter.fileId}/presigned-url`, { headers });
-                    if (!urlResponse.ok) {
-                        console.error(`Presigned URL 요청 실패: fileId ${filter.fileId}`);
-                        return { ...filter, fileUrl: '' }; // 실패 시 빈 URL
-                    }
-                    // 백엔드가 JSON 객체 ({ "url": "..." })를 반환한다고 가정
-                    const urlData = await urlResponse.json(); 
-                    return { ...filter, fileUrl: urlData.url };
-                } catch (e) {
-                    console.error(`Presigned URL 파싱 오류: fileId ${filter.fileId}`, e);
-                    return { ...filter, fileUrl: '' }; // 오류 발생 시 빈 URL
-                }
-            }
-            // fileId가 없는 경우
-            return { ...filter, fileUrl: '' };
-        }));
-
-        setFilters(filtersWithUrls);
+        const response = await fetch('/api/v1/filters', { headers });
+        if (!response.ok) throw new Error('필터 목록 로딩 실패');
+        const data = await response.json();
+        // 백엔드에서 내려주는 fileUrl을 바로 사용
+        setFilters(data.filters || []);
+        console.log("서버로부터 받은 필터 목록:", data.filters);
     }, []);
 
 
