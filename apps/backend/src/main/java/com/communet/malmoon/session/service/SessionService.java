@@ -171,14 +171,14 @@ public class SessionService {
 					log.info("{} room 세션 삭제 성공", roomName);
 				} else {
 					log.warn("삭제 실패: {}, 재시도 큐에 등록", response.code());
-					failedRoomDeletionQueue.add(roomName);
+					failedRoomDeletionQueue.add(roomName, 1);
 				}
 			}
 
 			@Override
 			public void onFailure(Call<Void> call, Throwable t) {
 				log.warn("삭제 요청 실패: {}, 재시도 큐에 등록", t.getMessage());
-				failedRoomDeletionQueue.add(roomName);
+				failedRoomDeletionQueue.add(roomName, 1);
 			}
 		});
 	}
