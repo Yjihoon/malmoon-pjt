@@ -11,19 +11,23 @@ MODEL = "gpt-4o-mini"
 
 def generate_feedback_response(sentences: List[SentencePair]) -> Tuple[float, str]:
     prompt = (
-        "다음은 아동이 동화책을 읽은 결과입니다.\n"
+        "다음은 아동이 동화책 문장을 읽은 결과입니다.\n"
         "원문과 음성 인식 결과(STT)를 비교하여 발화 정확도를 0~100 사이의 숫자로 정량화하고, "
-        "피드백을 2~3문장으로 작성해주세요.\n\n"
+        "피드백을 다음과 같은 형식으로 아이의 발화와 원문을 근거로 들어 작성해주세요.\n\n"
+        "오류 자음:\n"
+        "오류패턴:\n"
+        "종합 언어능력 평가:\n"
+        
         "출력 형식은 다음과 같아야 합니다:\n"
         "정확도: 87.5\n"
         "피드백: ~~~\n\n"
     )
 
     for s in sentences:
-        prompt += f"- 원문: {s.original}\n  STT : {s.stt}\n"
+        prompt += f"- 원문: {s.original}\n  아동이 읽은 글(STT) : {s.stt}\n"
 
     messages = [
-        {"role": "system", "content": "너는 아동 언어평가 전문가야. 발음과 문장의 정확성을 평가해줘."},
+        {"role": "system", "content": "너는 아동 언어평가 전문가, 언어재활사야. 발음과 문장의 정확성을 평가하고 피드백을 작성해줘."},
         {"role": "user", "content": prompt}
     ]
 
