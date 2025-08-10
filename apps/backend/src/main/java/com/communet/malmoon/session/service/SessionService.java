@@ -14,6 +14,7 @@ import com.communet.malmoon.member.domain.Member;
 import com.communet.malmoon.member.repository.MemberRepository;
 import com.communet.malmoon.session.config.LiveKitConfig;
 import com.communet.malmoon.session.dto.response.SessionTokenRes;
+import com.communet.malmoon.session.service.retry.FailedRoomDeletionQueue;
 import io.livekit.server.*;
 import jakarta.persistence.EntityNotFoundException;
 import livekit.LivekitWebhook;
@@ -23,9 +24,10 @@ import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import retrofit2.Call;
+import retrofit2.Callback;
 import retrofit2.Response;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -49,6 +51,8 @@ public class SessionService {
 	private final ChatRedisService chatRedisService;
 	private final ChatMessageRepository chatMessageRepository;
 
+	private final FailedRoomDeletionQueue failedRoomDeletionQueue;
+
 	public SessionService(
 		@Qualifier("redisTemplate0") RedisTemplate<String, Object> redisTemplate,
 		MemberRepository memberRepository,
@@ -56,7 +60,8 @@ public class SessionService {
 		RoomServiceClient roomServiceClient,
 		ChatRoomService chatRoomService,
 		ChatRedisService chatRedisService,
-		ChatMessageRepository chatMessageRepository) {
+		ChatMessageRepository chatMessageRepository,
+		FailedRoomDeletionQueue failedRoomDeletionQueue) {
 		this.liveKitConfig = liveKitConfig;
 		this.redisTemplate = redisTemplate;
 		this.hashOps = redisTemplate.opsForHash();
@@ -65,6 +70,7 @@ public class SessionService {
 		this.chatRoomService = chatRoomService;
 		this.chatRedisService = chatRedisService;
 		this.chatMessageRepository = chatMessageRepository;
+		this.failedRoomDeletionQueue = failedRoomDeletionQueue;
 	}
 
 	/**
@@ -149,7 +155,7 @@ public class SessionService {
 	@Transactional
 	public void deleteRoomInfo(String therapistEmail) {
 		String roomName = Objects.requireNonNull(
-			redisTemplate.opsForValue().get(REDIS_THERAPIST_PREFIX + therapistEmail), "생성한 세션이 없습니다.").toString();
+				redisTemplate.opsForValue().get(REDIS_THERAPIST_PREFIX + therapistEmail), "생성한 세션이 없습니다.").toString();
 		String clientEmail = Objects.requireNonNull(hashOps.get(REDIS_ROOM_PREFIX + roomName, "client")).toString();
 
 		redisTemplate.delete(REDIS_ROOM_PREFIX + roomName);
@@ -158,14 +164,23 @@ public class SessionService {
 
 		handleChatRoomOnSessionEnd(therapistEmail, roomName);
 
-		try {
-			Response<Void> response = roomServiceClient.deleteRoom(roomName).execute();
-			if (!response.isSuccessful()) {
-				throw new RuntimeException("Failed to delete room: " + response.code());
+		roomServiceClient.deleteRoom(roomName).enqueue(new Callback<Void>() {
+			@Override
+			public void onResponse(Call<Void> call, Response<Void> response) {
+				if (response.isSuccessful()) {
+					log.info("{} room 세션 삭제 성공", roomName);
+				} else {
+					log.warn("삭제 실패: {}, 재시도 큐에 등록", response.code());
+					failedRoomDeletionQueue.add(roomName);
+				}
 			}
-		} catch (IOException e) {
-			throw new RuntimeException("LiveKit API call failed", e);
-		}
+
+			@Override
+			public void onFailure(Call<Void> call, Throwable t) {
+				log.warn("삭제 요청 실패: {}, 재시도 큐에 등록", t.getMessage());
+				failedRoomDeletionQueue.add(roomName);
+			}
+		});
 	}
 
 	/**
