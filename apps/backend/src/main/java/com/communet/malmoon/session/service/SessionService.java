@@ -23,10 +23,9 @@ import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import retrofit2.Call;
-import retrofit2.Callback;
 import retrofit2.Response;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -159,17 +158,14 @@ public class SessionService {
 
 		handleChatRoomOnSessionEnd(therapistEmail, roomName);
 
-		roomServiceClient.deleteRoom(roomName).enqueue(new Callback<Void>() {
-			@Override
-			public void onResponse(Call<Void> call, Response<Void> response) {
-				if (response.isSuccessful()) log.info("{} room 세션 삭제 성공", roomName);
-				else log.info("삭제 실패: " + response.code());
+		try {
+			Response<Void> response = roomServiceClient.deleteRoom(roomName).execute();
+			if (!response.isSuccessful()) {
+				throw new RuntimeException("Failed to delete room: " + response.code());
 			}
-			@Override
-			public void onFailure(Call<Void> call, Throwable t) {
-				t.printStackTrace();
-			}
-		});
+		} catch (IOException e) {
+			throw new RuntimeException("LiveKit API call failed", e);
+		}
 	}
 
 	/**
