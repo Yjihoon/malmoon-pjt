@@ -69,8 +69,8 @@ public class DiagnosticService {
         if (items.size() < 10) throw new IllegalStateException("10문항이 모두 제출되지 않았습니다.");
 
         FeedbackEvalRequestDto req = FeedbackEvalRequestDto.builder()
-                .sentences(items.stream().map(it ->
-                        FeedbackEvalRequestDto.SentencePair.builder()
+                .words(items.stream().map(it ->
+                        FeedbackEvalRequestDto.WordsPair.builder()
                                 .itemIndex(it.getItemIndex())
                                 .targetText(it.getTargetText())
                                 .sttText(it.getSttText())

@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class FastApiClient {
 
-    @Value("${fastapi.base-url}") private String baseUrl;
+    @Value("${http://localhost:8000}") private String baseUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -45,7 +45,7 @@ public class FastApiClient {
 
     /** LLM 평가 호출 (JSON) + 지수 백오프 재시도 */
     public FeedbackEvalResponseDto evaluateFeedback(FeedbackEvalRequestDto dto, int maxRetry) {
-        final String url = baseUrl + "/api/v1/feedback/eval";
+        final String url = baseUrl + "/api/v1/feedback/initialeval";
         return executeWithRetry(() -> {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

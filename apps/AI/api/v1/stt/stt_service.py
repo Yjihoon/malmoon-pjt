@@ -23,7 +23,7 @@ async def transcribe_to_text(file: UploadFile, language: str) -> TranscribeOut:
     headers = {"Authorization": f"Bearer {GMS_API_KEY}"}
 
     try:
-        r = requests.post(GMS_URL, headers=headers, data=data, files=files, timeout=60)
+            r = requests.post(GMS_URL, headers=headers, data=data, files=files, timeout=60)
         print("🔵 [FastAPI → Whisper] 응답 코드:", r.status_code)
         print("🔵 [FastAPI → Whisper] 응답 내용:", r.text)
     except requests.RequestException as e:
