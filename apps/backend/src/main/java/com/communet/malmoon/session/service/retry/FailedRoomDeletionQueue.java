@@ -3,11 +3,13 @@ package com.communet.malmoon.session.service.retry;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class FailedRoomDeletionQueue {
 
     private final String RETRY_QUEUE_KEY = "failedRoomDeletionQueue";
@@ -30,7 +32,8 @@ public class FailedRoomDeletionQueue {
         try {
             return objectMapper.readValue(json, RetryItem.class);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to deserialize retry item", e);
+            log.error("Redis 큐에서 역직렬화 실패: {}, 데이터: {}", e.getMessage(), json);
+            return null;
         }
     }
 
