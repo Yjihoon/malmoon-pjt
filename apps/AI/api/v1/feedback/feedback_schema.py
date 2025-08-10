@@ -18,4 +18,4 @@ class FeedbackEvalRequest(BaseModel):
 # FastAPI에서 Spring boot로 응답해줄 때 줄 데이터
 class FeedbackEvalResponse(BaseModel):
     accuracy: float
-    feedback_text: str
+    feedbackText: str
