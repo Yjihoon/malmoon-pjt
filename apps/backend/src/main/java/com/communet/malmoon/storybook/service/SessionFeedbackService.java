@@ -12,6 +12,10 @@ import com.communet.malmoon.member.domain.Member;
 import com.communet.malmoon.storybook.domain.Storybook;
 import com.communet.malmoon.member.repository.MemberRepository;
 import com.communet.malmoon.storybook.repository.StorybookRepository;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.Data;
 
@@ -71,6 +75,27 @@ public class SessionFeedbackService {
             FeedbackEvalRequestDto.SentencePair pair = new FeedbackEvalRequestDto.SentencePair();
             pair.setSentenceId(result.getSentence().getId());
             pair.setOriginal(result.getSentence().getSentence());
+            String sttValue = result.getSttText();
+            System.out.println("🎤 STT 원본 값: " + sttValue);
+
+            // sttText 로그 찍어보기
+            if (sttValue != null && sttValue.trim().startsWith("{") && sttValue.trim().endsWith("}")) {
+                System.out.println("⚠ stt_text가 JSON 문자열처럼 보입니다. 변환 필요!");
+                // 예: {"text":"..."} 형태면 파싱해서 텍스트만 꺼내기
+                try {
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode node = mapper.readTree(sttValue);
+                    if (node.has("text")) {
+                        sttValue = node.get("text").asText();
+                        System.out.println("➡ 변환 후 STT 값: " + sttValue);
+                    }
+                } catch (Exception e) {
+                    System.out.println("❌ stt_text JSON 파싱 실패: " + e.getMessage());
+                }
+            } else {
+                System.out.println("✅ 순수 텍스트 형식");
+            }
+
             pair.setStt(result.getSttText());
             sentencePairs.add(pair);
         }
@@ -98,9 +123,11 @@ public class SessionFeedbackService {
         Member child = memberRepository.findById(childId)
                 .orElseThrow(() -> new IllegalArgumentException("아동이 존재하지 않습니다."));
 
-        Storybook storybook = storybookRepository.findById(requestDto.getStorybookId())
-                .orElseThrow(() -> new RuntimeException("동화책 정보를 찾을 수 없습니다."));
+        String title = java.text.Normalizer.normalize(requestDto.getStorybookTitle().trim(),
+                java.text.Normalizer.Form.NFC);
 
+        Storybook storybook = storybookRepository.findByTitleIgnoreCase(title)
+                .orElseThrow(() -> new RuntimeException("제목으로 동화책을 찾을 수 없습니다: " + title));
 
         SessionFeedback feedback = SessionFeedback.builder()
                 .child(child)

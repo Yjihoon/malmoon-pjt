@@ -298,6 +298,20 @@ public class ScheduleService {
                 .toList();
     }
 
+    public ClientTherapistRes getClientTherapist(Member member) {
+        List<Schedule> schedules = scheduleRepository.findByMemberAndStatus(member, StatusType.ACCEPTED);
+
+        Member therapist = schedules.get(0).getTherapist();
+
+        return ClientTherapistRes.builder()
+                .therapistId(therapist.getMemberId())
+                .name(therapist.getName())
+                .email(therapist.getEmail())
+                .age(Period.between(therapist.getBirthDate(), LocalDate.now()).getYears())
+                .telephone(therapist.getTel1())
+                .build();
+    }
+
     public List<TherapistClientRes> getTherapistClients(Member member) {
         List<Schedule> schedules = scheduleRepository.findByTherapistAndStatus(member, StatusType.ACCEPTED);
 

@@ -81,9 +81,9 @@ function UserMatchingPage() {
                       <Row className="align-items-center">
                         <Col md={6}>
                           <h5>{therapist.name}</h5>
-                          <p className="mb-1">주요 치료 분야: {therapist.major}</p>
+                          <p className="mb-1">경력: {therapist.careerYears}년</p>
                           <p className="mb-1">이메일: {therapist.email}</p>
-                          <p className="mb-1">연락처: {therapist.phone}</p>
+                          <p className="mb-1">연락처: {therapist.tel1}</p>
                         </Col>
                         <Col md={6} className="text-md-end">
                           <Button 
