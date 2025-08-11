@@ -2,9 +2,9 @@ from typing import Union
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from apps.AI.api.v1.aac_create import aac_router
-from apps.AI.api.v1.stt.stt_router import router as stt_router
-from apps.AI.api.v1.feedback.feedback_router import router as feedback_router
+from api.v1.aac import aac_router
+from api.v1.stt.stt_router import router as stt_router
+from api.v1.feedback.feedback_router import router as feedback_router
 from dotenv import load_dotenv
 from pathlib import Path
 

@@ -15,12 +15,18 @@ services:
       - ai
 
   frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
     image: inttype/malmoon:frontend
     container_name: frontend
     expose:
       - "80"
 
   backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
     image: inttype/malmoon:backend
     env_file:
       - ./apps/backend/.env
@@ -29,6 +35,9 @@ services:
       - "8080"
 
   ai:
+    build:
+      context: ./apps/AI
+      dockerfile: Dockerfile
     image: inttype/malmoon:ai
     env_file:
       - ./apps/AI/.env
