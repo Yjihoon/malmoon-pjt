@@ -172,6 +172,67 @@
     background-color: #f8f9fa;
 }
 
+/* 피드백 상세 디자인 */
+.feedback-detail-container {
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+}
+
+.feedback-block {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.feedback-block h6 {
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.feedback-block p {
+    margin-bottom: 0;
+    font-size: 1rem;
+    color: #343a40;
+}
+
+.feedback-sub-block {
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px; /* Increased padding */
+    margin-top: 15px;
+    text-align: center; /* Centered text */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.feedback-sub-block:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.feedback-sub-block strong {
+    display: block;
+    margin-bottom: 12px; /* Increased margin */
+    color: #0056b3; /* Darker blue for sub-heading */
+    font-size: 1rem; /* Slightly larger font */
+    border-bottom: none; /* Remove border */
+    padding-bottom: 0;
+}
+
+.feedback-sub-block p {
+    font-size: 1rem; /* Larger font for content */
+    color: #495057; /* Darker text for readability */
+    margin-bottom: 0;
+    line-height: 1.6; /* Improved line height */
+}
+
+
 /* 반응형 조정 */
 @media (max-width: 768px) {
     .matching-client-item {
