@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Alert, Button, Modal } from 'react-bootstrap';
+import React, { useState, useEffect, useRef } from 'react';
+import { Container, Row, Col, Card, Alert, Button, Modal, Form, InputGroup } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import axios from '../../../api/axios';
@@ -13,15 +13,33 @@ function TherapistFeedbackPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // 모달 관련 상태
+    // Feedback Modal states
     const [showFeedbackModal, setShowFeedbackModal] = useState(false);
     const [selectedClient, setSelectedClient] = useState(null);
     const [clientDetail, setClientDetail] = useState(null);
     const [feedbackDates, setFeedbackDates] = useState([]);
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const [feedbackContent, setFeedbackContent] = useState(null); // 피드백 내용
+    const [feedbackContent, setFeedbackContent] = useState(null);
+    const [modalView, setModalView] = useState('calendar');
 
-    const [modalView, setModalView] = useState('calendar'); // 'calendar' or 'feedbackDetail'
+    // Chat Modal states
+    const [showChatModal, setShowChatModal] = useState(false);
+    const [chatClient, setChatClient] = useState(null);
+    const [roomId, setRoomId] = useState(null);
+    const [messages, setMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [chatLoading, setChatLoading] = useState(false);
+    const [chatError, setChatError] = useState('');
+    const messagesEndRef = useRef(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
 
     useEffect(() => {
         const fetchClients = async () => {
@@ -31,7 +49,7 @@ function TherapistFeedbackPage() {
                 const response = await axios.get('/schedule/therapist/client', {
                     headers : {"Authorization": `Bearer ${user.accessToken}`}
                 });
-                setClients(response.data); // API 응답이 바로 클라이언트 리스트라고 가정
+                setClients(response.data);
             } catch (err) {
                 setError('아동 리스트를 불러오는 데 실패했습니다.');
                 console.error('아동 리스트 불러오기 오류:', err);
@@ -48,28 +66,26 @@ function TherapistFeedbackPage() {
         }
     }, [user]);
 
-    // 피드백 버튼 클릭 시 모달 열기 및 데이터 로드
+    // Feedback Modal handlers
     const handleShowFeedbackModal = async (client) => {
         setSelectedClient(client);
         setShowFeedbackModal(true);
-        setModalView('calendar'); // 항상 달력 뷰부터 시작
-        setClientDetail(null); // 모달 열 때마다 초기화
+        setModalView('calendar');
+        setClientDetail(null);
         setFeedbackDates([]);
-        setFeedbackContent(null); // 피드백 내용 초기화
-        setSelectedDate(new Date()); // 달력 날짜 초기화
+        setFeedbackContent(null);
+        setSelectedDate(new Date());
 
         try {
-            // 클라이언트 상세 정보 불러오기
             const detailResponse = await axios.get(`/schedule/therapist/client/detail?clientId=${client.clientId}`, {
                 headers : {"Authorization": `Bearer ${user.accessToken}`}
             });
             setClientDetail(detailResponse.data);
 
-            // 피드백 날짜 불러오기
             const datesResponse = await axios.get(`/session-feedback/dates?childId=${client.clientId}`, {
                 headers : {"Authorization": `Bearer ${user.accessToken}`}
             });
-            setFeedbackDates(datesResponse.data.dates.map(dateStr => new Date(dateStr))); // 문자열 날짜를 Date 객체로 변환
+            setFeedbackDates(datesResponse.data.dates.map(dateStr => new Date(dateStr)));
         } catch (err) {
             console.error('클라이언트 상세 정보 또는 피드백 날짜 불러오기 오류:', err);
             setError('클라이언트 상세 정보 또는 피드백 날짜를 불러오는 데 실패했습니다.');
@@ -82,13 +98,12 @@ function TherapistFeedbackPage() {
         setClientDetail(null);
         setFeedbackDates([]);
         setFeedbackContent(null);
-        setModalView('calendar'); // 모달 닫을 때 뷰 초기화
+        setModalView('calendar');
     };
 
-    // 달력 날짜 선택 핸들러
     const handleDateChange = async (date) => {
         setSelectedDate(date);
-        setFeedbackContent(null); // 날짜 변경 시 피드백 내용 초기화
+        setFeedbackContent(null);
 
         const year = date.getFullYear();
         const month = (`0${date.getMonth() + 1}`).slice(-2);
@@ -105,7 +120,7 @@ function TherapistFeedbackPage() {
                     headers : {"Authorization": `Bearer ${user.accessToken}`}
                 });
                 setFeedbackContent(feedbackResponse.data);
-                setModalView('feedbackDetail'); // 피드백 상세 뷰로 전환
+                setModalView('feedbackDetail');
             } catch (err) {
                 console.error('피드백 내용 불러오기 오류:', err);
                 setError('피드백 내용을 불러오는 데 실패했습니다.');
@@ -118,7 +133,91 @@ function TherapistFeedbackPage() {
         setFeedbackContent(null);
     };
 
-    // 캘린더 날짜에 마커 표시 로직 (피드백이 있는 날짜 활성화)
+    // Chat Modal handlers and logic
+    const handleShowChatModal = async (client) => {
+        setChatClient(client);
+        setShowChatModal(true);
+        setChatLoading(true);
+        setChatError('');
+        setMessages([]);
+        setRoomId(null);
+
+        try {
+            const response = await axios.post('/chat/room', {
+                roomName: `${user.name} and ${client.name}'s Chat`,
+                roomType: 'ONE_TO_ONE',
+                participantIds: [user.memberId, client.clientId]
+            }, {
+                headers: { "Authorization": `Bearer ${user.accessToken}` }
+            });
+            const newRoomId = response.data.roomId;
+            setRoomId(newRoomId);
+        } catch (err) {
+            setChatError('채팅방을 만들거나 가져오는 데 실패했습니다.');
+            console.error('Error creating/getting chat room:', err);
+            setChatLoading(false);
+        }
+    };
+
+    const handleCloseChatModal = () => {
+        setShowChatModal(false);
+        setChatClient(null);
+        setRoomId(null);
+        setMessages([]);
+        setNewMessage('');
+        setChatError('');
+    };
+
+    const handleSendMessage = async (e) => {
+        e.preventDefault();
+        if (!newMessage.trim() || !roomId) return;
+
+        try {
+            await axios.post('/chat/room/message', {
+                roomId: roomId,
+                senderId: user.memberId,
+                content: newMessage,
+                messageType: 'TALK',
+                sendAt: new Date().toISOString()
+            }, {
+                headers: { "Authorization": `Bearer ${user.accessToken}` }
+            });
+            setNewMessage('');
+            // Immediately fetch messages after sending
+            const response = await axios.get(`/chat/room/${roomId}/messages`, {
+                headers: { "Authorization": `Bearer ${user.accessToken}` }
+            });
+            setMessages(response.data);
+        } catch (err) {
+            setChatError('메시지 전송에 실패했습니다.');
+            console.error('Error sending message:', err);
+        }
+    };
+
+    useEffect(() => {
+        const fetchMessages = async () => {
+            if (!roomId) return;
+            try {
+                const response = await axios.get(`/chat/room/${roomId}/messages`, {
+                    headers: { "Authorization": `Bearer ${user.accessToken}` }
+                });
+                setMessages(response.data);
+            } catch (err) {
+                // Don't show error for polling failures
+                console.error('Error fetching messages:', err);
+            } finally {
+                setChatLoading(false);
+            }
+        };
+
+        if (showChatModal && roomId) {
+            fetchMessages();
+            const interval = setInterval(fetchMessages, 3000);
+            return () => clearInterval(interval);
+        }
+    }, [showChatModal, roomId, user]);
+
+
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
             const hasFeedback = feedbackDates.some(feedbackDate =>
@@ -203,6 +302,12 @@ function TherapistFeedbackPage() {
                                                     >
                                                         피드백 보기
                                                     </Button>
+                                                    <Button
+                                                        className="btn-soft-primary ms-2"
+                                                        onClick={() => handleShowChatModal(client)}
+                                                    >
+                                                        채팅
+                                                    </Button>
                                                 </Col>
                                             </Row>
                                         </div>
@@ -214,7 +319,7 @@ function TherapistFeedbackPage() {
                 </Col>
             </Row>
 
-            {/* 피드백 모달 */}
+            {/* Feedback Modal */}
             <Modal show={showFeedbackModal} onHide={handleCloseFeedbackModal} centered size="lg">
                 <Modal.Header closeButton>
                     <Modal.Title>
@@ -285,6 +390,51 @@ function TherapistFeedbackPage() {
                     <Button variant="secondary" onClick={handleCloseFeedbackModal}>
                         닫기
                     </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Chat Modal */}
+            <Modal show={showChatModal} onHide={handleCloseChatModal} centered size="md">
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        {chatClient ? `${chatClient.name}님과의 채팅` : '채팅'}
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="chat-modal-body">
+                    {chatLoading ? (
+                        <div className="text-center">채팅방을 불러오는 중입니다...</div>
+                    ) : chatError ? (
+                        <Alert variant="danger">{chatError}</Alert>
+                    ) : (
+                        <div className="messages-area">
+                            {messages.map((msg, index) => (
+                                <div
+                                    key={index}
+                                    className={`message-bubble ${msg.senderId === user.memberId ? 'sent' : 'received'}`}
+                                >
+                                    <div className="message-content">{msg.content}</div>
+                                    <div className="message-time">{new Date(msg.sendAt).toLocaleTimeString()}</div>
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Form onSubmit={handleSendMessage} className="w-100">
+                        <InputGroup>
+                            <Form.Control
+                                type="text"
+                                placeholder="메시지를 입력하세요..."
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                disabled={chatLoading || !!chatError}
+                            />
+                            <Button variant="primary" type="submit" disabled={chatLoading || !!chatError}>
+                                전송
+                            </Button>
+                        </InputGroup>
+                    </Form>
                 </Modal.Footer>
             </Modal>
         </Container>
