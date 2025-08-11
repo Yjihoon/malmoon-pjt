@@ -11,6 +11,6 @@ def evaluate_feedback(request: FeedbackEvalRequest):
 
 @router.post("/initialeval", response_model=FeedbackEvalResponse)
 def evaluate_feedback(request: InitialEvalRequest):
-    accuracy, feedback_text = feedback_service.generate_feedback_response(request.words)
+    accuracy, feedback_text = feedback_service.generate_initial_feedback_response(request.words)
     return FeedbackEvalResponse(accuracy=accuracy, feedbackText=feedback_text)
 
