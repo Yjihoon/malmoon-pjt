@@ -19,7 +19,7 @@ import java.util.function.Supplier;
  */
 @Component
 @RequiredArgsConstructor
-public class FastApiClient {
+public class DiagnosticFastApiClient {
 
     @Value("${http://localhost:8000}") private String baseUrl;
 
