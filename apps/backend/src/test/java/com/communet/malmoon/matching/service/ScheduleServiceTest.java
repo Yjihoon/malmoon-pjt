@@ -62,7 +62,7 @@ class ScheduleServiceTest {
         req.setEndDate(LocalDate.now());
 
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
-                () -> scheduleService.getSchedules(req));
+                () -> scheduleService.getSchedules(req.getTherapistId(), req.getStartDate(), req.getEndDate()));
         assertEquals("해당 치료사가 존재하지 않습니다.", ex.getMessage());
     }
 
@@ -89,7 +89,7 @@ class ScheduleServiceTest {
                 therapistId, req.getEndDate(), req.getStartDate()))
                 .thenReturn(List.of(schedule));
 
-        ScheduleGetRes res = scheduleService.getSchedules(req);
+        ScheduleGetRes res = scheduleService.getSchedules(req.getTherapistId(), req.getStartDate(), req.getEndDate());
         List<DayTimeReq> times = res.getDayTimes();
         assertEquals(2, times.size());
         assertTrue(times.stream().anyMatch(t -> t.getDay().equals(DayType.MONDAY) && t.getTime().equals(10)));
@@ -130,7 +130,7 @@ class ScheduleServiceTest {
 
         Schedule saved = captor.getValue();
         assertEquals(therapist, saved.getTherapist());
-        assertEquals(requester.getMemberId(), saved.getMemberId());
+        assertEquals(requester.getMemberId(), saved.getMember().getMemberId());
         assertEquals(StatusType.PENDING, saved.getStatus());
         assertEquals(1, saved.getDayTimes().size());
         assertEquals(DayType.WEDNESDAY, saved.getDayTimes().get(0).getDay());

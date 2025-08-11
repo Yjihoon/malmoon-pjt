@@ -223,8 +223,11 @@ public class ScheduleService {
                             )
                             .toList();
 
+                    Long actualTherapistId = therapist.getTherapistId();
+                    System.out.println("DEBUG: therapist.getTherapistId() = " + actualTherapistId + " for member ID " + therapistMember.getMemberId()); // Add logging
+
                     TherapistRes therapistRes = new TherapistRes(
-                            therapistMember.getMemberId(),
+                            actualTherapistId, // Use therapist.getTherapistId() directly
                             therapistMember.getName(),
                             therapistMember.getEmail(),
                             therapistMember.getTel1(),

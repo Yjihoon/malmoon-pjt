@@ -5,6 +5,7 @@ import { useAuth } from './contexts/AuthContext'; // ✅ 추가
 import './App.css';
 
 import NavBar from './components/navigation/NavBar';
+import ChatModal from './components/modals/ChatModal'; // Added this import
 import Footer from "./components/navigation/Footer";
 import ProtectedRoute from './components/common/ProtectedRoute';
 
@@ -62,11 +63,15 @@ const getRandomCharacter = (current) => {
 function App() {
   const { isAuthReady } = useAuth(); // ✅ 로그인 상태 복원 완료 여부
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false); // Chat modal state // Added this state
   const [currentCharacter, setCurrentCharacter] = useState(() => getRandomCharacter());
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+  const handleShowChatModal = () => setShowChatModal(true); // Added this handler
+  const handleCloseChatModal = () => setShowChatModal(false); // Added this handler
 
   const handleLinkClick = useCallback(() => {
     setCurrentCharacter(getRandomCharacter);
@@ -85,7 +90,7 @@ function App() {
         "--bg-character": `url(${currentCharacter.src})`,
       }}
     >
-      <NavBar setCurrentCharacter={setCurrentCharacter} getRandomCharacter={getRandomCharacter} />
+      <NavBar setCurrentCharacter={setCurrentCharacter} getRandomCharacter={getRandomCharacter} onShowChat={handleShowChatModal} /> {/* Passed onShowChat prop */}
       <main className="content">
         <Routes>
           {/* 공개 라우트 */}
@@ -129,6 +134,7 @@ function App() {
         </Routes>
       </main>
       <Footer />
+      <ChatModal show={showChatModal} handleClose={handleCloseChatModal} /> {/* Added ChatModal */}
     </div>
   );
 }

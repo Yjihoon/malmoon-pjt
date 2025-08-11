@@ -1,149 +1,177 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Button, Form, InputGroup } from 'react-bootstrap';
-import { SendFill } from 'react-bootstrap-icons'; // 아이콘 추가
+import { Modal, Button, Form, InputGroup, Alert } from 'react-bootstrap';
+import { useAuth } from '../../contexts/AuthContext';
+import axios from '../../api/axios'; // Assuming axios is configured for API calls
+import './ChatModal.css'; // Will create this CSS file later if needed
 
-function ChatModal({ show, handleClose, clientDetails, user }) {
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const messagesEndRef = useRef(null);
+function ChatModal({ show, handleClose }) {
+    const { user } = useAuth();
+    const [matchedTherapist, setMatchedTherapist] = useState(null);
+    const [roomId, setRoomId] = useState(null);
+    const [messages, setMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [chatLoading, setChatLoading] = useState(true);
+    const [chatError, setChatError] = useState('');
+    const messagesEndRef = useRef(null);
 
-  const roomId = clientDetails?.roomId; // clientDetails에서 roomId 가져오기
-
-  // 메시지 폴링
-  useEffect(() => {
-    let intervalId;
-    if (show && roomId) {
-      const fetchMessages = async () => {
-        try {
-          const response = await fetch(`/api/v1/chat/room/${roomId}/messages`, {
-            headers: {
-              'Authorization': `Bearer ${user.accessToken}`,
-            },
-          });
-          if (!response.ok) {
-            throw new Error(`메시지 불러오기 실패: ${response.statusText}`);
-          }
-          const data = await response.json();
-          setMessages(data);
-        } catch (error) {
-          console.error('메시지 불러오기 오류:', error);
-        }
-      };
-
-      fetchMessages(); // 모달 열릴 때 즉시 메시지 불러오기
-      intervalId = setInterval(fetchMessages, 3000); // 3초마다 폴링
-    }
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
-  }, [show, roomId, user]);
 
-  useEffect(() => {
-    // 모달이 열릴 때마다 메시지 초기화 (새로운 클라이언트와의 채팅을 위해)
-    if (show) {
-      setMessages([]);
-      setNewMessage('');
-    }
-  }, [show, clientDetails]);
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
-  useEffect(() => {
-    // 메시지가 업데이트될 때마다 스크롤을 맨 아래로 이동
-    scrollToBottom();
-  }, [messages]);
+    useEffect(() => {
+        const fetchMatchedTherapistAndRoom = async () => {
+            if (!user || !user.accessToken) {
+                setChatError('로그인이 필요합니다.');
+                setChatLoading(false);
+                return;
+            }
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+            setChatLoading(true);
+            setChatError('');
+            setMatchedTherapist(null);
+            setRoomId(null);
+            setMessages([]);
 
-  const handleSendMessage = async () => {
-    if (newMessage.trim() === '') return;
-    if (!roomId || !user || !user.memberId) {
-      alert("채팅방 정보 또는 사용자 정보가 없습니다.");
-      return;
-    }
+            try {
+                // 1. Fetch matched therapist
+                const therapistResponse = await axios.get('/schedule/me/therapist/accepted', {
+                    headers: { "Authorization": `Bearer ${user.accessToken}` }
+                });
 
-    try {
-      const messageToSend = {
-        roomId: roomId,
-        senderId: user.memberId,
-        content: newMessage,
-        messageType: 'TALK', // 메시지 타입은 TALK으로 고정
-        sendAt: new Date().toISOString(), // 현재 시간을 ISO 형식으로 전송
-      };
+                if (therapistResponse.data && therapistResponse.data.length > 0) {
+                    const myTherapistSchedule = therapistResponse.data[0]; // This is MyTherapistScheduleRes
+                    const therapist = myTherapistSchedule.therapist; // Get the nested therapist object
+                    setMatchedTherapist(therapist);
 
-      const response = await fetch(`/api/v1/chat/room/message`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.accessToken}`,
-        },
-        body: JSON.stringify(messageToSend),
-      });
+                    // Check if therapistId is null before proceeding
+                    if (therapist.therapistId === null || therapist.therapistId === undefined) {
+                        setChatError('매칭된 치료사 정보가 불완전합니다 (치료사 ID 없음).');
+                        setChatLoading(false);
+                        return;
+                    }
 
-      if (!response.ok) {
-        throw new Error(`메시지 전송 실패: ${response.statusText}`);
-      }
+                    // 2. Create or get chat room
+                    const roomResponse = await axios.post('/chat/room', {
+                        roomName: `${user.name} and ${therapist.name}'s Chat`,
+                        roomType: 'ONE_TO_ONE',
+                        participantIds: [user.memberId, therapist.therapistId] // Use therapistId here
+                    }, {
+                        headers: { "Authorization": `Bearer ${user.accessToken}` }
+                    });
+                    setRoomId(roomResponse.data.roomId);
+                } else {
+                    setChatError('매칭된 치료사가 없습니다.');
+                }
+            } catch (err) {
+                setChatError('채팅 정보를 불러오는 데 실패했습니다.');
+                console.error('Error fetching chat info:', err);
+            } finally {
+                setChatLoading(false);
+            }
+        };
 
-      const sentMessage = await response.json();
-      setMessages((prevMessages) => [...prevMessages, sentMessage]);
-      setNewMessage('');
-    } catch (error) {
-      console.error('메시지 전송 오류:', error);
-      alert('메시지 전송에 실패했습니다.');
-    }
-  };
+        if (show) {
+            fetchMatchedTherapistAndRoom();
+        }
+    }, [show, user]); // Re-run when modal is shown or user changes
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSendMessage();
-    }
-  };
+    useEffect(() => {
+        const fetchMessages = async () => {
+            if (!roomId) return;
+            try {
+                const response = await axios.get(`/chat/room/${roomId}/messages`, {
+                    headers: { "Authorization": `Bearer ${user.accessToken}` }
+                });
+                setMessages(response.data);
+            } catch (err) {
+                console.error('Error fetching messages:', err);
+            }
+        };
 
-  return (
-    <Modal show={show} onHide={handleClose} centered size="lg">
-      <Modal.Header closeButton>
-        <Modal.Title>{clientDetails ? `${clientDetails.name}님과의 채팅` : '채팅'}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-        <div className="chat-messages">
-          {messages.map((msg) => (
-            <div
-              key={msg.messageId || msg.id} // messageId 또는 id 사용
-              className={`d-flex mb-2 ${msg.senderId === user?.memberId ? 'justify-content-end' : 'justify-content-start'}`}
-            >
-              <div
-                className={`p-2 rounded ${msg.senderId === user.user.memberId ? 'bg-primary text-white' : 'bg-light'}`}
-                style={{ maxWidth: '70%' }}
-              >
-                {msg.content}
-                <div className="text-end" style={{ fontSize: '0.75em', opacity: 0.7 }}>
-                  {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-      </Modal.Body>
-      <Modal.Footer>
-        <InputGroup>
-          <Form.Control
-            type="text"
-            placeholder="메시지를 입력하세요..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-          />
-          <Button variant="primary" onClick={handleSendMessage}>
-            <SendFill />
-          </Button>
-        </InputGroup>
-      </Modal.Footer>
-    </Modal>
-  );
+        if (show && roomId) {
+            fetchMessages();
+            const interval = setInterval(fetchMessages, 3000);
+            return () => clearInterval(interval);
+        }
+    }, [show, roomId, user]);
+
+    const handleSendMessage = async (e) => {
+        e.preventDefault();
+        if (!newMessage.trim() || !roomId) return;
+
+        try {
+            await axios.post('/chat/room/message', {
+                roomId: roomId,
+                senderId: user.memberId,
+                content: newMessage,
+                messageType: 'TALK',
+                sendAt: new Date().toISOString()
+            }, {
+                headers: { "Authorization": `Bearer ${user.accessToken}` }
+            });
+            setNewMessage('');
+            // Immediately fetch messages after sending
+            const response = await axios.get(`/chat/room/${roomId}/messages`, {
+                headers: { "Authorization": `Bearer ${user.accessToken}` }
+            });
+            setMessages(response.data);
+        } catch (err) {
+            setChatError('메시지 전송에 실패했습니다.');
+            console.error('Error sending message:', err);
+        }
+    };
+
+    return (
+        <Modal show={show} onHide={handleClose} centered size="md">
+            <Modal.Header closeButton>
+                <Modal.Title>
+                    {matchedTherapist ? `${matchedTherapist.name} 치료사님과의 채팅` : '채팅'}
+                </Modal.Title>
+            </Modal.Header>
+            <Modal.Body className="chat-modal-body">
+                {chatLoading ? (
+                    <div className="text-center">채팅 정보를 불러오는 중입니다...</div>
+                ) : chatError ? (
+                    <Alert variant="danger">{chatError}</Alert>
+                ) : (
+                    <div className="messages-area">
+                        {messages.map((msg, index) => (
+                            <div
+                                key={index}
+                                className={`message-bubble ${msg.senderId === user.memberId ? 'sent' : 'received'}`}
+                            >
+                                <div className="message-content">{msg.content}</div>
+                                <div className="message-time">{new Date(msg.sendAt).toLocaleTimeString()}</div>
+                            </div>
+                        ))}
+                        <div ref={messagesEndRef} />
+                    </div>
+                )}
+            </Modal.Body>
+            <Modal.Footer>
+                <Form onSubmit={handleSendMessage} className="w-100">
+                    <InputGroup>
+                        <Form.Control
+                            type="text"
+                            id="chatMessageInput" // Added id
+                            name="message"       // Added name
+                            placeholder="메시지를 입력하세요..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            disabled={chatLoading || !!chatError || !matchedTherapist}
+                        />
+                        <Button variant="primary" type="submit" disabled={chatLoading || !!chatError || !matchedTherapist}>
+                            전송
+                        </Button>
+                    </InputGroup>
+                </Form>
+            </Modal.Footer>
+        </Modal>
+    );
 }
 
 export default ChatModal;

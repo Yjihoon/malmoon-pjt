@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import logoImage from '../../logoimage/logo.png';
 import './NavBar.css';
 
-function NavBar({ setCurrentCharacter, getRandomCharacter }) {
+function NavBar({ setCurrentCharacter, getRandomCharacter, onShowChat }) {
   const { isLoggedIn, userType, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -39,7 +39,10 @@ function NavBar({ setCurrentCharacter, getRandomCharacter }) {
                 <Link to="/therapist/mypage/tools" onClick={handleLinkClick}>수업 도구 관리</Link>
               )}
               {userType === 'user' && (
-                <Link to="/assessment" onClick={handleLinkClick}>간이 언어 평가</Link>
+                <>
+                  <Link to="/assessment" onClick={handleLinkClick}>간이 언어 평가</Link>
+                  <Link to="#" onClick={() => { onShowChat(); handleLinkClick(); }}>채팅</Link>
+                </>
               )}
               <Link to="#" onClick={() => { logout(); handleLinkClick(); }}>로그아웃</Link>
             </>
@@ -68,7 +71,10 @@ function NavBar({ setCurrentCharacter, getRandomCharacter }) {
                 <Link to="/therapist/mypage/tools" onClick={handleLinkClick}>수업 도구 관리</Link>
               )}
               {userType === 'user' && (
-                <Link to="/assessment" onClick={handleLinkClick}>간이 언어 평가</Link>
+                <>
+                  <Link to="/assessment" onClick={handleLinkClick}>간이 언어 평가</Link>
+                  <Link to="#" onClick={() => { onShowChat(); handleLinkClick(); }}>채팅</Link>
+                </>
               )}
               <Link to="#" onClick={() => { logout(); handleLinkClick(); }}>로그아웃</Link>
             </>
