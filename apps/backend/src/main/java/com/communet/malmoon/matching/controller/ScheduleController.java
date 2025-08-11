@@ -98,6 +98,11 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleService.getTherapistSchedules(member.getMemberId(), date));
     }
 
+    @GetMapping("/client/therapist")
+    public ResponseEntity<?> getClientTherapist(@CurrentMember Member member) {
+        return ResponseEntity.ok(scheduleService.getClientTherapist(member));
+    }
+
     // 치료사에 해당되는 치료 아동
     @GetMapping("/therapist/client")
     @PreAuthorize("hasRole('ROLE_THERAPIST')")

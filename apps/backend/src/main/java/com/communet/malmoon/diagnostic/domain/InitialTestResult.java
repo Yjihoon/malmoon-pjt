@@ -26,7 +26,7 @@ public class InitialTestResult {
     private InitialTestAttempt attempt;
 
     @Column(precision = 5, scale = 2)
-    private BigDecimal overallAccuracy;        // 0~100, 소수점 두 자리까지
+    private BigDecimal accuracy;        // 0~100, 소수점 두 자리까지
 
     @Lob
     private String feedbackText;               // GPT 생성 피드백

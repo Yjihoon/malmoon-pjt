@@ -9,7 +9,7 @@ import java.util.UUID;
 @Getter @Setter @AllArgsConstructor @NoArgsConstructor @Builder
 public class FinishResponse {
     private UUID attemptId;
-    private BigDecimal overallAccuracy;
+    private BigDecimal accuracy;
     private String feedbackText;
     private List<ItemResult> items;
 

@@ -13,7 +13,7 @@ public class AttemptDetailResponse {
     private Long childId;
     private String ageGroup;
     private LocalDateTime createdAt;
-    private BigDecimal overallAccuracy;
+    private BigDecimal accuracy;
     private String feedbackText;
     private List<FinishResponse.ItemResult> items;
 }
