@@ -1,6 +1,6 @@
 package com.communet.malmoon.diagnostic.service;
 
-import com.communet.malmoon.diagnostic.client.FastApiClient;
+import com.communet.malmoon.diagnostic.client.DiagnosticFastApiClient;
 import com.communet.malmoon.diagnostic.domain.InitialTestAttempt;
 import com.communet.malmoon.diagnostic.domain.InitialTestItem;
 import com.communet.malmoon.diagnostic.domain.InitialTestResult;
@@ -27,7 +27,7 @@ public class DiagnosticService {
     private final InitialTestItemRepository itemRepo;
     private final InitialTestResultRepository resultRepo;
     private final FileStorageService fileStorage;
-    private final FastApiClient fastApiClient;
+    private final DiagnosticFastApiClient fastApiClient;
 
     /** 시작 */
     @Transactional
