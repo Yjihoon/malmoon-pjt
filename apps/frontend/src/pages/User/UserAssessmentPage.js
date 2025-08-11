@@ -230,22 +230,11 @@ function UserAssessmentPage() {
         <div className="assessment-result">
           <h1 className="intro-title">진단 결과</h1>
           <p className="intro-description">
-            총 정확도: <b>{finishedData.overallAccuracy}%</b>
+            총 정확도: <b>{finishedData.accuracy}%</b>
           </p>
           <div className="result-feedback">
             <h3>피드백</h3>
             <p>{finishedData.feedbackText}</p>
-          </div>
-
-          <div className="result-items">
-            <h3>문항별 결과</h3>
-            <ul>
-              {finishedData.items?.map((it) => (
-                <li key={it.itemIndex}>
-                  <b>{it.itemIndex}.</b> 목표: {it.targetText} / STT: {it.sttText ?? '-'} / 점수: {it.score ?? '-'}
-                </li>
-              ))}
-            </ul>
           </div>
 
           <button className="btn-assessment" onClick={() => navigate('/')}>
