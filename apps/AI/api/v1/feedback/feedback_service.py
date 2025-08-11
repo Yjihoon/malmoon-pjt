@@ -1,13 +1,15 @@
 import os
-import requests
-from dotenv import load_dotenv
 from typing import List, Tuple
-from apps.AI.api.v1.feedback.feedback_schema import SentencePair
+
+import requests
+from api.v1.feedback.feedback_schema import SentencePair
+from dotenv import load_dotenv
 
 load_dotenv()
 GMS_API_KEY = os.getenv("GMS_API_KEY")
 GMS_ENDPOINT = os.getenv("GMS_FEEDBACK_URL")
 MODEL = "gpt-4o-mini"
+
 
 def generate_feedback_response(sentences: List[SentencePair]) -> Tuple[float, str]:
     prompt = (
