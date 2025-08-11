@@ -28,7 +28,7 @@ public class InitialTestResult {
     @Column(precision = 5, scale = 2)
     private BigDecimal accuracy;        // 0~100, 소수점 두 자리까지
 
-    @Lob
+    @Column(columnDefinition = "text")
     private String feedbackText;               // GPT 생성 피드백
 
     @Column(nullable = false, updatable = false)
