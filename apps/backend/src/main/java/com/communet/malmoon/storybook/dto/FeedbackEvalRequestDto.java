@@ -12,7 +12,6 @@ import java.util.List;
 
 @Data
 public class FeedbackEvalRequestDto {
-    @JsonProperty("child_id")
     private Long childId;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
@@ -22,8 +21,6 @@ public class FeedbackEvalRequestDto {
 
     @Data
     public static class SentencePair {
-
-        @JsonProperty("sentence_id")
         private Long sentenceId;
 
         private String original;
