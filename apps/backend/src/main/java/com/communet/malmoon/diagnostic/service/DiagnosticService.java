@@ -82,7 +82,7 @@ public class DiagnosticService {
 
         InitialTestResult result = InitialTestResult.builder()
                 .attempt(attempt)
-                .overallAccuracy(BigDecimal.valueOf(rsp.getOverallAccuracy()))
+                .accuracy(BigDecimal.valueOf(rsp.getAccuracy()))
                 .feedbackText(rsp.getFeedbackText())
                 .build();
         resultRepo.save(result);
@@ -98,7 +98,7 @@ public class DiagnosticService {
 
         return FinishResponse.builder()
                 .attemptId(attemptId)
-                .overallAccuracy(result.getOverallAccuracy())
+                .accuracy(result.getAccuracy())
                 .feedbackText(result.getFeedbackText())
                 .items(itemDtos)
                 .build();
@@ -126,7 +126,7 @@ public class DiagnosticService {
                 .childId(attempt.getChildId())
                 .ageGroup(attempt.getAgeGroup())
                 .createdAt(attempt.getCreatedAt())
-                .overallAccuracy(result != null ? result.getOverallAccuracy() : null)
+                .accuracy(result != null ? result.getAccuracy() : null)
                 .feedbackText(result != null ? result.getFeedbackText() : null)
                 .items(itemDtos)
                 .build();
