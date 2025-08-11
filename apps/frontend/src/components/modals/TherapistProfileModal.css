@@ -1,0 +1,86 @@
+/* TherapistProfileModal.css */
+.therapist-profile-modal .modal-content {
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.therapist-profile-modal .modal-header {
+  background-color: #f8f9fa;
+  border-bottom: none;
+  padding: 1.5rem;
+}
+
+.therapist-profile-modal .modal-title {
+  font-weight: bold;
+  color: #343a40;
+}
+
+.therapist-profile-modal .modal-body {
+  padding: 2rem;
+}
+
+.therapist-profile-modal .profile-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.therapist-profile-modal .profile-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 2rem;
+  border: 4px solid #dee2e6;
+}
+
+.therapist-profile-modal .profile-info h4 {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.therapist-profile-modal .profile-info p {
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+.therapist-profile-modal .card {
+  border: none;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  border-radius: 10px;
+}
+
+.therapist-profile-modal .card-header {
+  background-color: #e9ecef;
+  font-weight: bold;
+  border-bottom: none;
+  padding: 1rem 1.5rem;
+}
+
+.therapist-profile-modal .list-group-item {
+  border: none;
+  padding: 1rem 1.5rem;
+}
+
+.therapist-profile-modal .career-item {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.therapist-profile-modal .career-item:last-child {
+  border-bottom: none;
+}
+
+.therapist-profile-modal .career-item h6 {
+  font-weight: bold;
+  color: #495057;
+}
+
+.therapist-profile-modal .career-item p {
+  color: #6c757d;
+}
+
+.therapist-profile-modal .modal-footer {
+  border-top: none;
+  padding: 1.5rem;
+}

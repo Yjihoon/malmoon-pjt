@@ -83,7 +83,7 @@ function UserMatchingPage() {
                           <h5>{therapist.name}</h5>
                           <p className="mb-1">경력: {therapist.careerYears}년</p>
                           <p className="mb-1">이메일: {therapist.email}</p>
-                          <p className="mb-1">연락처: {therapist.tel1}</p>
+                          <p className="mb-1">연락처: {therapist.telephone}</p>
                         </Col>
                         <Col md={6} className="text-md-end">
                           <Button 
