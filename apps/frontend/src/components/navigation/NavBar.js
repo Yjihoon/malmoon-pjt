@@ -33,7 +33,7 @@ function NavBar({ setCurrentCharacter, getRandomCharacter }) {
             <>
               {/* 로그인 시 모든 메뉴를 항상 펼쳐서 보여줌 */}
               <Link to={userType === 'therapist' ? "/therapist/mypage/info" : "/user/mypage/info"} onClick={handleLinkClick}>내 정보</Link>
-              <Link to={userType === 'therapist' ? "/therapist/mypage/matching" : "/user/mypage/matching"} onClick={handleLinkClick}>매칭</Link>
+              <Link to={userType === 'therapist' ? "/therapist/feedback" : "/user/mypage/matching"} onClick={handleLinkClick}>매칭</Link>
               <Link to={userType === 'therapist' ? "/therapist/mypage/schedule" : "/user/mypage/schedule"} onClick={handleLinkClick}>치료 일정</Link>
               {userType === 'therapist' && (
                 <Link to="/therapist/mypage/tools" onClick={handleLinkClick}>수업 도구 관리</Link>
@@ -62,7 +62,7 @@ function NavBar({ setCurrentCharacter, getRandomCharacter }) {
           {isLoggedIn ? (
             <>
               <Link to={userType === 'therapist' ? "/therapist/mypage/info" : "/user/mypage/info"} onClick={handleLinkClick}>내 정보</Link>
-              <Link to={userType === 'therapist' ? "/therapist/mypage/manage" : "/user/mypage/matching"} onClick={handleLinkClick}>매칭</Link>
+              <Link to={userType === 'therapist' ? "/therapist/feedback" : "/user/mypage/matching"} onClick={handleLinkClick}>매칭</Link>
               <Link to={userType === 'therapist' ? "/therapist/mypage/schedule" : "/user/mypage/schedule"} onClick={handleLinkClick}>치료 일정</Link>
               {userType === 'therapist' && (
                 <Link to="/therapist/mypage/tools" onClick={handleLinkClick}>수업 도구 관리</Link>
