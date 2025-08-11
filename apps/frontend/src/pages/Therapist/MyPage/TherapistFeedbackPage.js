@@ -248,6 +248,43 @@ function TherapistFeedbackPage() {
         return `${date.getFullYear()}년, ${date.getMonth() + 1}월`;
     };
 
+    const renderParsedFeedback = (text) => {
+        if (!text) return <p>피드백 내용이 없습니다.</p>;
+
+        // 마커를 기준으로 문자열을 분할합니다. 괄호 안의 정규식은 구분자(마커)도 결과 배열에 포함시킵니다.
+        const parts = text.split(/(오류자음\s*:|오류패턴\s*:|종합 언어능력 평가\s*:)/).filter(p => p && p.trim());
+
+        if (parts.length <= 1) {
+            return <p>{text}</p>; // 마커가 없는 경우, 원본 텍스트를 표시합니다.
+        }
+
+        const result = {};
+        // 분할된 배열을 짝지어 마커와 내용으로 구성된 객체를 생성합니다.
+        for (let i = 0; i < parts.length; i += 2) {
+            const marker = parts[i].replace(':', '').trim();
+            const content = parts[i + 1];
+            if (marker && content) {
+                result[marker] = content.trim();
+            }
+        }
+
+        const markersOrder = ['오류자음', '오류패턴', '종합 언어능력 평가'];
+        const elements = markersOrder.map(marker => {
+            if (result[marker]) {
+                return (
+                    <div className="feedback-sub-block" key={marker}>
+                        <strong>{marker}</strong>
+                        <p>{result[marker]}</p>
+                    </div>
+                );
+            }
+            return null;
+        }).filter(Boolean);
+
+        // 파싱된 요소가 있으면 표시하고, 없으면 원본 텍스트를 표시합니다.
+        return elements.length > 0 ? elements : <p>{text}</p>;
+    };
+
     if (loading) {
         return (
             <Container className="my-5 text-center">
@@ -364,20 +401,34 @@ function TherapistFeedbackPage() {
                                 </Col>
                             </Row>
                         ) : (
-                            <div className="feedback-content-area mt-4 p-3 border rounded">
+                            <div className="feedback-detail-container">
                                 {feedbackContent ? (
                                     <>
-                                        <h5>{selectedDate.toLocaleDateString('ko-KR')} 피드백</h5>
-                                        <p><strong>동화책 제목:</strong> {feedbackContent.storybookTitle}</p>
-                                        <p><strong>정확도:</strong> {feedbackContent.accuracy}%</p>
-                                        <p><strong>피드백 내용:</strong> {feedbackContent.feedbackText}</p>
-                                        <Button variant="primary" onClick={handleBackToCalendar} className="mt-3">
-                                            뒤로가기
-                                        </Button>
+                                        <div className="d-flex justify-content-center align-items-center mb-4 position-relative">
+                                            <Button onClick={handleBackToCalendar} variant="light" className="position-absolute start-0 border-0 bg-transparent p-0">
+                                                <i className="bi bi-arrow-left-circle" style={{ fontSize: '1.5rem', color: '#6c757d' }}></i>
+                                            </Button>
+                                            <h5 className="mb-0">{selectedDate.toLocaleDateString('ko-KR')} 피드백</h5>
+                                        </div>
+
+                                        <div className="feedback-block">
+                                            <h6>동화책 제목</h6>
+                                            <p>{feedbackContent.storybookTitle}</p>
+                                        </div>
+
+                                        <div className="feedback-block">
+                                            <h6>정확도</h6>
+                                            <p>{feedbackContent.accuracy}%</p>
+                                        </div>
+
+                                        <div className="feedback-block">
+                                            <h6>피드백 내용</h6>
+                                            {renderParsedFeedback(feedbackContent.feedbackText)}
+                                        </div>
                                     </>
                                 ) : (
                                     <Alert variant="info" className="text-center">
-                                        피드백이 없습니다.
+                                        해당 날짜에 피드백이 없습니다.
                                     </Alert>
                                 )}
                             </div>
