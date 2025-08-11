@@ -9,5 +9,5 @@ public class SessionFeedbackRequestDto {
     private Long childId;
     private LocalDate date;
     private int lastPage;
-    private Long storybookId;
+    private String storybookTitle;
 }
