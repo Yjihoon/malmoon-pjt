@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// src/pages/User/MyPage/UserMyInfoPage.js
+import React, { useState, useEffect, useRef } from 'react';
 import { Form, Button, Modal, Row, Col, Alert } from 'react-bootstrap';
 import ProfileImageSelect from '../../../components/signup/ProfileImageSelect';
 import AddressSelector from '../../../components/signup/AddressSelector';
@@ -7,7 +8,8 @@ import axios from 'axios';
 import './UserMyInfoPage.css';
 
 function UserMyInfoPage() {
-  const { user, updateUser, refreshMe, providerId } = useAuth();
+  const { user, updateUser, refreshMe } = useAuth();
+
   const [formData, setFormData] = useState({
     profile: 1,
     name: '',
@@ -33,6 +35,13 @@ function UserMyInfoPage() {
   const [tempAddress, setTempAddress] = useState({ city: '', district: '', dong: '', detail: '' });
   const [fadeOut, setFadeOut] = useState(false);
 
+  const alertTimers = useRef([]);
+
+  const clearAlertTimers = () => {
+    alertTimers.current.forEach((t) => clearTimeout(t));
+    alertTimers.current = [];
+  };
+
   useEffect(() => {
     async function fetchUserInfo() {
       if (!user?.accessToken) return;
@@ -40,26 +49,52 @@ function UserMyInfoPage() {
         const res = await axios.get('/api/v1/members/me', {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         });
-        setFormData(res.data);
+        const d = res.data || {};
+        setFormData((prev) => ({
+          ...prev,
+          profile: Number(d.profile ?? d.profile_image_id ?? d.profileImageId ?? prev.profile ?? 1) || 1,
+          name: d.name ?? prev.name ?? '',
+          nickname: d.nickname ?? d.nickName ?? prev.nickname ?? '',
+          birthDate: d.birthDate ?? prev.birthDate ?? '',
+          email: d.email ?? prev.email ?? '',
+          tel1: d.tel1 ?? prev.tel1 ?? '',
+          tel2: d.tel2 ?? prev.tel2 ?? '',
+          city: d.city ?? prev.city ?? '',
+          district: d.district ?? prev.district ?? '',
+          dong: d.dong ?? prev.dong ?? '',
+          detail: d.detail ?? prev.detail ?? '',
+        }));
       } catch (err) {
         console.error('❌ 사용자 정보 조회 실패:', err);
       }
     }
     fetchUserInfo();
-  }, [user]);
+    return () => clearAlertTimers();
+  }, [user?.accessToken]);
+
+  // 전역 user.profile이 바뀌면 프리뷰(로컬 formData.profile)도 동기화
+  useEffect(() => {
+    if (typeof user?.profile === 'number') {
+      setFormData((prev) => ({ ...prev, profile: user.profile }));
+    }
+  }, [user?.profile]);
 
   const showAlert = (msg) => {
     setAlertMessage(msg);
     setFadeOut(false);
-    setTimeout(() => setFadeOut(true), 2500);
-    setTimeout(() => {
-      setAlertMessage('');
-      setFadeOut(false);
-    }, 3000);
+    clearAlertTimers();
+    alertTimers.current.push(setTimeout(() => setFadeOut(true), 2500));
+    alertTimers.current.push(
+      setTimeout(() => {
+        setAlertMessage('');
+        setFadeOut(false);
+      }, 3000)
+    );
   };
 
-  // ✅ 프로필 변경: 서버 성공 → 전역 user 즉시 갱신(버전 갱신) → 서버 /me 동기화
+  // ✅ 프로필 변경: 서버 성공 → 전역 user 즉시 갱신(배경/캐릭터 즉시 변경) → 필요 시 /me 동기화
   const handleProfileChange = async (newProfileId) => {
+    if (!user?.accessToken) return;
     try {
       await axios.patch(
         '/api/v1/members/me',
@@ -71,10 +106,10 @@ function UserMyInfoPage() {
       setShowProfileSelect(false);
       showAlert('프로필 이미지가 수정되었습니다.');
 
-      // 전역 AuthContext 상태 즉시 변경(캐시 무력화 포함)
+      // 전역 AuthContext 상태 즉시 변경 → App이 배경/캐릭터 동기화
       updateUser({ profile: newProfileId, profileImageUrl: null });
 
-      // 백엔드가 다른 필드를 갱신하는 경우 대비해서 서버값으로 동기화(선택)
+      // 백엔드가 다른 필드도 갱신했다면 서버값으로 보강
       await refreshMe();
     } catch (err) {
       console.error('❌ 프로필 수정 실패:', err);
@@ -87,6 +122,11 @@ function UserMyInfoPage() {
       alert('전화번호 1은 필수입니다.');
       return;
     }
+    if (formData.tel1.length > 15 || (formData.tel2 && formData.tel2.length > 15)) {
+      alert('전화번호는 최대 15자리까지 가능합니다.');
+      return;
+    }
+    if (!user?.accessToken) return;
     try {
       await axios.patch(
         '/api/v1/members/me',
@@ -107,6 +147,7 @@ function UserMyInfoPage() {
       alert('시/군/구, 동(읍/면/리)을 모두 선택해주세요.');
       return;
     }
+    if (!user?.accessToken) return;
     try {
       await axios.patch(
         '/api/v1/members/me',
@@ -139,6 +180,7 @@ function UserMyInfoPage() {
       alert('비밀번호를 다시 확인해주세요.');
       return;
     }
+    if (!user?.accessToken) return;
 
     try {
       await axios.patch(
@@ -164,12 +206,13 @@ function UserMyInfoPage() {
   };
 
   const handleAddressEditClick = () => {
+    // 요구사항대로 수정 시작 시 빈 입력값으로 시작
     setTempAddress({ city: '', district: '', dong: '', detail: '' });
     setEditAddress(true);
   };
 
   const handleAddressCancel = () => {
-    setEditAddress(false);
+    setEditAddress(false); // 표시 영역은 기존 formData 값이 그대로 보임
   };
 
   // 페이지 내 프리뷰용 프로필 이미지 src (전역 버전으로 캐시 무력화)
@@ -189,7 +232,7 @@ function UserMyInfoPage() {
       )}
 
       <div className="profile-image-wrapper">
-        {/* key로 강제 리마운트 */}
+        {/* key 로 강제 리마운트하여 캐시 즉시 무력화 */}
         <img key={avatarVer} src={profileImgSrc} alt="프로필" />
         <div>
           <Button size="sm" variant="outline-primary" onClick={() => setShowProfileSelect(true)}>
@@ -234,9 +277,14 @@ function UserMyInfoPage() {
           <Form.Control
             value={formData.tel1}
             onChange={(e) =>
-              setFormData({ ...formData, tel1: e.target.value.replace(/[^0-9]/g, '') })
+              setFormData({
+                ...formData,
+                tel1: e.target.value.replace(/[^0-9]/g, '').slice(0, 15),
+              })
             }
             readOnly={!editPhone}
+            inputMode="numeric"
+            placeholder="숫자만 입력 (최대 15자리)"
           />
         </Col>
         <Col>
@@ -244,9 +292,14 @@ function UserMyInfoPage() {
           <Form.Control
             value={formData.tel2}
             onChange={(e) =>
-              setFormData({ ...formData, tel2: e.target.value.replace(/[^0-9]/g, '') })
+              setFormData({
+                ...formData,
+                tel2: e.target.value.replace(/[^0-9]/g, '').slice(0, 15),
+              })
             }
             readOnly={!editPhone}
+            inputMode="numeric"
+            placeholder="숫자만 입력 (최대 15자리)"
           />
         </Col>
         <Col xs="auto">

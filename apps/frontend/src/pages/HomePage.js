@@ -27,8 +27,9 @@ const ImageSlider = () => {
   };
 
   useEffect(() => {
-    const slideInterval = setInterval(nextSlide, 5000);
+    const slideInterval = setInterval(nextSlide, 10000); // ✅ 10초로 느리게
     return () => clearInterval(slideInterval);
+    // eslint-disable-next-line
   }, []);
 
   return (
@@ -40,8 +41,12 @@ const ImageSlider = () => {
           ))}
         </div>
 
-        <button className="arrow left" onClick={prevSlide}>&lt;</button>
-        <button className="arrow right" onClick={nextSlide}>&gt;</button>
+        <button className="arrow left" onClick={prevSlide} aria-label="이전 슬라이드">
+          &lt;
+        </button>
+        <button className="arrow right" onClick={nextSlide} aria-label="다음 슬라이드">
+          &gt;
+        </button>
       </div>
 
       <div className="slider-indicators">
@@ -59,10 +64,14 @@ const ImageSlider = () => {
 
 const CharacterCard = ({ name, image, desc }) => {
   return (
-    <div className="character-card card-base">
-      <img src={image} alt={name} className="character-image" />
-      <h3>{name}</h3>
-      <p>{desc}</p>
+    <div className="character-item">
+      <div className="character-avatar">
+        <img src={image} alt={name} />
+      </div>
+      <div className="character-caption">
+        <h3 className="character-name">{name}</h3>
+        <p className="character-desc">{desc}</p>
+      </div>
     </div>
   );
 };
@@ -86,7 +95,7 @@ function HomePage() {
       <ImageSlider />
 
       <section className="about-section">
-        <h2>우리는 무엇을 하나요?</h2>
+        <h2 className="section-title">우리는 무엇을 하나요?</h2>
         <p>
           ‘말문’은 언어 발달이 필요한 아동과 전문 언어치료사를 연결해주는 서비스입니다.
           아이들이 재미있고 친근한 캐릭터들과 함께 즐겁게 소통하며,
@@ -95,7 +104,7 @@ function HomePage() {
       </section>
 
       <section className="character-info-section">
-        <h2>캐릭터 친구들을 소개할게요!</h2>
+        <h2 className="section-title">캐릭터 친구들을 소개할게요!</h2>
         <div className="character-info-grid">
           <CharacterCard name="말펭이" image={penguin} desc="수줍음 많지만 누구보다 말에 진심인 말펭이!" />
           <CharacterCard name="말곰이" image={bear} desc="든든하고 다정한 친구, 항상 곁에서 응원하는 말곰이!" />

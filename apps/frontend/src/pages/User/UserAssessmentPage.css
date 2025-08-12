@@ -16,6 +16,7 @@ body {
   padding: 1rem 1rem 1.5rem;
   box-sizing: border-box;
   overflow-x: hidden;
+  margin-top: 30px;
 }
 
 /* === 카드 박스 === */
@@ -246,4 +247,78 @@ body {
 
 .speaker-button:hover {
   background-color: #ffa726;
+}
+
+/* === 인트로 개선 === */
+.intro-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.hero-icon {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, #e8f1ff 0%, #f8fbff 100%);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+  font-size: 28px;
+  user-select: none;
+}
+
+.intro-kicker {
+  margin: 4px 0 0;
+  color: #556070;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+.intro-card {
+  text-align: left;
+  background: #fff7ed;                /* 파스텔 피치 */
+  border: 1px solid #ffe3c7;
+  border-radius: 16px;
+  padding: 16px;
+  margin: 8px 0 16px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+}
+
+.intro-card-title {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #333;
+}
+
+.intro-list {
+  list-style: none;
+  padding: 0; margin: 12px 0 0;
+  display: grid; gap: 8px;
+}
+.intro-list li {
+  position: relative;
+  padding-left: 24px;
+  color: #404b5a;
+  line-height: 1.6;
+}
+.intro-list li::before {
+  content: "✔";
+  position: absolute; left: 0; top: 0;
+  color: #16a34a; font-weight: 700;
+}
+
+.intro-pills {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-top: 14px;
+}
+.pill {
+  font-size: 12px; font-weight: 700;
+  padding: 6px 10px;
+  background: #eef6ff;        /* 라이트 블루 */
+  color: #1e429f;
+  border: 1px solid #d7e7ff;
+  border-radius: 999px;
+  white-space: nowrap;
 }

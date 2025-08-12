@@ -11,6 +11,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-right: 100px;
   padding: 16px 16px; /* 기존 32px 24px → 간격 축소 */
 }
 
@@ -20,6 +21,7 @@
   background-size: 600px;      /* 가로/세로 꽉 채우기 */
   background-position: center; /* 중앙 정렬 */
   background-repeat: no-repeat;
+  margin-left: 100px;
 }
 
 /* 로그인 카드 */
