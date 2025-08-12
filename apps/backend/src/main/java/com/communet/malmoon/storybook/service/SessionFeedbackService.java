@@ -110,7 +110,8 @@ public class SessionFeedbackService {
 				System.out.println("✅ 순수 텍스트 형식");
 			}
 
-			pair.setStt(result.getSttText());
+			//pair.setStt(result.getSttText());
+			pair.setStt(sttValue);
 			sentencePairs.add(pair);
 		}
 		requestBody.setSentences(sentencePairs);

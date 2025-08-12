@@ -48,6 +48,7 @@ public class SecurityConfig {
 			.addFilter(new JwtAuthenticationFilter(authManager, memberRepository))
 			.authorizeHttpRequests(auth -> auth
 				//.requestMatchers("/api/v1/users/me").authenticated()
+				//.requestMatchers("/actuator/health", "/actuator/info").permitAll()
 				.anyRequest().permitAll()
 			);
 

@@ -1,4 +1,4 @@
-import os, requests
+import os, requests, json
 from fastapi import UploadFile, HTTPException
 from .stt_schema import TranscribeOut
 from dotenv import load_dotenv
@@ -33,4 +33,19 @@ async def transcribe_to_text(file: UploadFile, language: str) -> TranscribeOut:
         raise HTTPException(status_code=r.status_code, detail=r.text)
 
     result = r.json()
-    return TranscribeOut(text=result.get("text", ""))
+    raw_text = result.get("text", "")
+
+    # 🎯 {"text":"..."} 형태라면 평문으로 변환
+    if isinstance(raw_text, str):
+        s = raw_text.strip()
+        if s.startswith("{") and s.endswith("}"):
+            try:
+                inner = json.loads(s)
+                if isinstance(inner, dict) and "text" in inner:
+                    raw_text = inner["text"]
+            except json.JSONDecodeError:
+                pass
+    elif isinstance(raw_text, dict) and "text" in raw_text:
+        raw_text = raw_text["text"]
+
+    return TranscribeOut(text=raw_text or "")
