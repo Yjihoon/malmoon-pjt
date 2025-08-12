@@ -99,13 +99,12 @@ public class ChatRedisServiceImpl implements ChatRedisService {
 		try {
 			chatMessageRepository.saveAll(chatMessages);
 			log.info("[flush] Redis → DB 저장 완료 ({}개) [sessionId={}]", chatMessages.size(), sessionId);
+
+			redisTemplate.delete(listKey);
+			redisTemplate.delete(enterKey);
 		} catch (Exception e) {
 			log.error("DB 저장 실패: {}", e.getMessage());
 			throw new ChatException(ChatErrorCode.DB_SAVE_FAILED);
-		} finally {
-			redisTemplate.delete(listKey);
-			redisTemplate.delete(enterKey);
 		}
-
 	}
 }
