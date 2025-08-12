@@ -3,6 +3,7 @@ import { Card, Button, Alert } from 'react-bootstrap';
 import ChatTool from './ChatTool';
 import FairyTaleTool from './FairyTaleTool';
 import FilterTool from './FilterTool';
+import AacTool from './AacTool'; // Add this import
 
 function ToolPanel({
   activeToolTab, setShowToolPanel,
@@ -11,7 +12,9 @@ function ToolPanel({
   selectedSentence, setSelectedSentence, handlePageChange,
   sendSentence, isRecording, startRecording, stopRecording,
   backgroundImages, selectedBackgroundImage, isFilterActive,
-  applyBackgroundFilter, removeBackgroundFilter, applyLensById
+  applyBackgroundFilter, removeBackgroundFilter, applyLensById,
+  initialSelectedAacIds, initialSelectedFilterIds,
+  allAacs, allFilters, onSendAac // Add onSendAac here
 }) {
   return (
     <Card className="h-100 shadow-sm">
@@ -24,7 +27,13 @@ function ToolPanel({
         <Button variant="light" size="sm" onClick={() => setShowToolPanel(false)}>&times;</Button>
       </Card.Header>
       <Card.Body className="p-2">
-        {activeToolTab === 'aac' && ( <Alert variant="info" className="text-center m-2">AAC 도구 기능 구현 예정</Alert> )}
+        {activeToolTab === 'aac' && (
+          <AacTool
+            initialSelectedAacIds={initialSelectedAacIds}
+            allAacs={allAacs}
+            onSendAac={onSendAac} // Pass the onSendAac function
+          />
+        )}
         {activeToolTab === 'chat' && (
           <ChatTool
             chatMessages={chatMessages}
@@ -55,6 +64,8 @@ function ToolPanel({
             applyBackgroundFilter={applyBackgroundFilter}
             removeBackgroundFilter={removeBackgroundFilter}
             applyLensById={applyLensById}
+            initialSelectedFilterIds={initialSelectedFilterIds}
+            allFilters={allFilters}
           />
         )}
       </Card.Body>

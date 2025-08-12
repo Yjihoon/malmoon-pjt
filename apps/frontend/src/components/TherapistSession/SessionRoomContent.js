@@ -14,7 +14,10 @@ function SessionRoomContent({
   fairyTaleContent, currentFairyTalePage, setSelectedSentence, handlePageChange, sendSentence, isRecording, startRecording, stopRecording,
   backgroundImages, selectedBackgroundImage, isFilterActive,
   applyBackgroundFilter, removeBackgroundFilter, applyLensById,
-  outputCanvasRef, outputCKCanvasRef, containerRef
+  outputCanvasRef, outputCKCanvasRef, containerRef,
+  initialSelectedAacIds, initialSelectedFilterIds,
+  allAacs, allFilters, onSendAac, // Add onSendAac here
+  finalChosenAacByClient // Add finalChosenAacByClient here
 }) {
   switch (rtcStatus) {
     case 'disconnected':
@@ -68,6 +71,14 @@ function SessionRoomContent({
                 </div>
               )}
 
+              {/* 중앙에 최종 선택된 AAC 표시 */}
+              {finalChosenAacByClient && (
+                <div className="final-chosen-aac-display">
+                  <img src={finalChosenAacByClient.imageUrl} alt={finalChosenAacByClient.name} className="final-aac-image" />
+                  <p className="final-aac-text">{finalChosenAacByClient.name}</p>
+                </div>
+              )}
+
               <SessionControlPanel
                 isMuted={isMuted}
                 toggleMute={toggleMute}
@@ -105,6 +116,11 @@ function SessionRoomContent({
                   applyBackgroundFilter={applyBackgroundFilter}
                   removeBackgroundFilter={removeBackgroundFilter}
                   applyLensById={applyLensById}
+                  initialSelectedAacIds={initialSelectedAacIds}
+                  initialSelectedFilterIds={initialSelectedFilterIds}
+                  allAacs={allAacs}
+                  allFilters={allFilters}
+                  onSendAac={onSendAac} // Pass the onSendAac function
                 />
               </Col>
             )}

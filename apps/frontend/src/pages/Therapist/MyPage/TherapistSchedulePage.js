@@ -49,6 +49,7 @@ function TherapistSchedulePage() {
     // 모든 개별 도구 데이터 (AAC, Filter) 및 도구 묶음 (세트) 데이터
     const [allIndividualTools, setAllIndividualTools] = useState([]);
     const [allToolSets, setAllToolSets] = useState([]);
+    const [displayedIndividualToolsForSelectedBundle, setDisplayedIndividualToolsForSelectedBundle] = useState([]);
 
     // 월별 일정 불러오기 (캘린더 점 표시용)
     useEffect(() => {
@@ -65,10 +66,8 @@ function TherapistSchedulePage() {
                     headers: { Authorization: `Bearer ${user.accessToken}` },
                 });
                 
-                // API 응답 구조에 따라 날짜 추출 로직 수정 필요
-                // 현재는 임시로 더미 로직을 유지합니다.
-                const dummyDates = new Set(['2024-08-12', '2024-08-15', '2024-08-21']);
-                setMonthlyScheduledDates(dummyDates);
+                const scheduledDates = new Set(response.data.map(schedule => formatDate(new Date(schedule.date))));
+                setMonthlyScheduledDates(scheduledDates);
 
             } catch (err) {
                 // console.error('월별 일정 로딩 실패:', err);
@@ -109,18 +108,49 @@ function TherapistSchedulePage() {
         const fetchToolsAndFairyTales = async () => {
             if (!user || !user.accessToken) return;
 
-            // 더미 도구 데이터
-            const dummyIndividualTools = [
-                { id: 'aac1', type: 'AAC', name: '그림카드 세트 A', description: '다양한 사물, 동물 그림 카드 (50장)', category: '어휘', lastModified: '2025-07-20', imageUrl: 'https://via.placeholder.com/100x100?text=AAC_Card1' },
-                { id: 'aac2', type: 'AAC', name: '문장 구성 보드', description: '주어-동사-목적어 연습 보드', category: '문법', lastModified: '2025-07-18', imageUrl: 'https://via.placeholder.com/100x100?text=AAC_Board' },
-                { id: 'filter1', type: 'Filter', name: '강아지 귀 필터', description: '화상 캠에 강아지 귀를 추가합니다.', category: '동물', lastModified: '2025-07-22', imageUrl: 'https://via.placeholder.com/100x100?text=Filter_Dog' },
-            ];
-            setAllIndividualTools(dummyIndividualTools);
+            try {
+                // AAC 묶음 (Tool Bundles) 불러오기
+                const toolBundlesResponse = await api.get('/tool-bundles/my', {
+                    headers: { Authorization: `Bearer ${user.accessToken}` },
+                });
+                setAllToolSets(toolBundlesResponse.data || []);
+            } catch (err) {
+                console.error('Tool Bundles 로딩 실패:', err);
+                setAllToolSets([]);
+            }
 
-            const dummyToolSets = [
-                { id: 'set1', name: '초기 언어 발달 세션용', description: '그림카드와 문장 보드를 활용한 기초 세션', lastModified: '2025-07-25', toolIds: ['aac1', 'aac2', 'filter1'] },
-            ];
-            setAllToolSets(dummyToolSets);
+            try {
+                // 개별 AAC 도구 불러오기
+                const aacResponse = await api.get('/aacs', {
+                    headers: { Authorization: `Bearer ${user.accessToken}` },
+                });
+                const aacTools = aacResponse.data.content.map(aac => ({
+                    id: aac.aacId,
+                    type: 'AAC',
+                    name: aac.name,
+                    description: aac.description,
+                    imageUrl: aac.imageUrl,
+                    // Add other relevant fields if necessary
+                }));
+                
+                // 개별 필터 도구 불러오기
+                const filterResponse = await api.get('/filters', {
+                    headers: { Authorization: `Bearer ${user.accessToken}` },
+                });
+                const filterTools = filterResponse.data.filters.map(filter => ({
+                    id: filter.filterId,
+                    type: 'Filter',
+                    name: filter.name,
+                    description: filter.description,
+                    imageUrl: filter.imageUrl,
+                    // Add other relevant fields if necessary
+                }));
+
+                setAllIndividualTools([...aacTools, ...filterTools]);
+            } catch (err) {
+                console.error('개별 도구 로딩 실패:', err);
+                setAllIndividualTools([]);
+            }
 
             // 동화책 장르 목록 불러오기
             try {
@@ -187,6 +217,58 @@ function TherapistSchedulePage() {
 
         fetchPageRange();
     }, [selectedTitle, user]);
+
+    // New useEffect to fetch and display individual tools from selected bundles
+    useEffect(() => {
+        const fetchDetailsOfSelectedBundles = async () => {
+            if (!user || !user.accessToken || selectedToolsForSession.length === 0) {
+                setDisplayedIndividualToolsForSelectedBundle([]);
+                return;
+            }
+
+            const allFetchedIndividualTools = [];
+            const fetchedAacIds = new Set(); // To prevent duplicates
+            const fetchedFilterIds = new Set(); // To prevent duplicates
+
+            for (const toolBundleId of selectedToolsForSession) {
+                const bundle = allToolSets.find(b => String(b.toolBundleId) === String(toolBundleId));
+                if (bundle) {
+                    try {
+                        // Fetch AACs in the set
+                        if (bundle.aacSetId) {
+                            const aacSetResponse = await api.get(`/aacs/sets/my/${bundle.aacSetId}`, {
+                                headers: { Authorization: `Bearer ${user.accessToken}` },
+                            });
+                            aacSetResponse.data.forEach(aac => {
+                                if (!fetchedAacIds.has(aac.aacId)) {
+                                    allFetchedIndividualTools.push({ id: aac.aacId, type: 'AAC', name: aac.name, imageUrl: aac.fileUrl }); // Assuming aac.fileUrl is the image
+                                    fetchedAacIds.add(aac.aacId);
+                                }
+                            });
+                        }
+
+                        // Fetch Filters in the set
+                        if (bundle.filterSetId) {
+                            const filterSetResponse = await api.get(`/filters/sets/my/${bundle.filterSetId}`, {
+                                headers: { Authorization: `Bearer ${user.accessToken}` },
+                            });
+                            filterSetResponse.data.forEach(filter => {
+                                if (!fetchedFilterIds.has(filter.filterId)) {
+                                    allFetchedIndividualTools.push({ id: filter.filterId, type: 'Filter', name: filter.name, imageUrl: filter.fileUrl }); // Assuming filter.fileUrl is the image
+                                    fetchedFilterIds.add(filter.filterId);
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching details for toolBundleId ${toolBundleId}:`, error);
+                    }
+                }
+            }
+            setDisplayedIndividualToolsForSelectedBundle(allFetchedIndividualTools);
+        };
+
+        fetchDetailsOfSelectedBundles();
+    }, [selectedToolsForSession, allToolSets, user]);
 
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
@@ -365,62 +447,20 @@ function TherapistSchedulePage() {
                         className="mb-3"
                         justify
                     >
-                        <Tab eventKey="aacSets" title="AAC 묶음">
+                        <Tab eventKey="aacSets" title="도구 세트">
                             <div className="p-3">
                                 {allToolSets.length === 0 ? (
-                                    <Alert variant="info">등록된 AAC 묶음이 없습니다.</Alert>
+                                    <Alert variant="info">등록된 도구 세트가 없습니다.</Alert>
                                 ) : (
                                     <ListGroup>
                                         {allToolSets.map(set => (
                                             <ListGroup.Item
-                                                key={set.id}
+                                                key={set.toolBundleId} // Use toolBundleId as key
                                                 action
-                                                onClick={() => handleToolSelectionInModal(set.id)}
-                                                active={selectedToolsForSession.includes(set.id)}
+                                                onClick={() => handleToolSelectionInModal(String(set.toolBundleId))} // Convert to string
+                                                active={selectedToolsForSession.includes(String(set.toolBundleId))}
                                             >
                                                 {set.name} - {set.description}
-                                            </ListGroup.Item>
-                                        ))}
-                                    </ListGroup>
-                                )}
-                            </div>
-                        </Tab>
-                        <Tab eventKey="filter" title="필터 도구">
-                            <div className="p-3">
-                                {filterTools.length === 0 ? (
-                                    <Alert variant="info">등록된 필터 도구가 없습니다.</Alert>
-                                ) : (
-                                    <ListGroup>
-                                        {filterTools.map(tool => (
-                                            <ListGroup.Item
-                                                key={tool.id}
-                                                action
-                                                onClick={() => handleToolSelectionInModal(tool.id)}
-                                                active={selectedToolsForSession.includes(tool.id)}
-                                            >
-                                                <Image src={tool.imageUrl} thumbnail className="me-2" style={{ width: '50px', height: '50px' }} />
-                                                {tool.name} - {tool.description}
-                                            </ListGroup.Item>
-                                        ))}
-                                    </ListGroup>
-                                )}
-                            </div>
-                        </Tab>
-                        <Tab eventKey="sessionSets" title="개별 AAC 도구">
-                            <div className="p-3">
-                                {aacTools.length === 0 ? (
-                                    <Alert variant="info">등록된 개별 AAC 도구가 없습니다.</Alert>
-                                ) : (
-                                    <ListGroup>
-                                        {aacTools.map(tool => (
-                                            <ListGroup.Item
-                                                key={tool.id}
-                                                action
-                                                onClick={() => handleToolSelectionInModal(tool.id)}
-                                                active={selectedToolsForSession.includes(tool.id)}
-                                            >
-                                                <Image src={tool.imageUrl} thumbnail className="me-2" style={{ width: '50px', height: '50px' }} />
-                                                {tool.name} - {tool.description}
                                             </ListGroup.Item>
                                         ))}
                                     </ListGroup>
@@ -526,19 +566,15 @@ function TherapistSchedulePage() {
                     <div className="mt-3 p-3 border-top">
                         <p>현재 수업에 선택된 도구 ({selectedToolsForSession.length}개) 및 동화:</p>
                         <div className="d-flex flex-wrap">
-                            {selectedToolsForSession.length === 0 && !selectedFairyTaleInfo ? (
+                            {displayedIndividualToolsForSelectedBundle.length === 0 && !selectedFairyTaleInfo ? (
                                 <Badge bg="secondary">선택된 항목이 없습니다.</Badge>
                             ) : (
                                 <>
-                                    {selectedToolsForSession.map(toolId => {
-                                        const tool = allIndividualTools.find(t => t.id === toolId);
-                                        return tool ? (
-                                            <Badge key={toolId} bg={tool.type === 'AAC' ? 'primary' : 'success'} className="me-2 mb-2">
-                                                {tool.name}
-                                                <Button variant="link" className="p-0 ms-2 text-decoration-none" style={{ color: 'white', fontSize: '0.8em' }} onClick={() => handleToolSelectionInModal(toolId)}>&times;</Button>
-                                            </Badge>
-                                        ) : null;
-                                    })}
+                                    {displayedIndividualToolsForSelectedBundle.map(tool => (
+                                        <Badge key={tool.id} bg={tool.type === 'AAC' ? 'primary' : 'success'} className="me-2 mb-2">
+                                            {tool.name}
+                                        </Badge>
+                                    ))}
                                     {selectedFairyTaleInfo && (
                                         <Badge bg="info" className="me-2 mb-2">
                                             {selectedFairyTaleInfo.title} ({fairyTaleStartPage}p ~ {fairyTaleEndPage}p)
