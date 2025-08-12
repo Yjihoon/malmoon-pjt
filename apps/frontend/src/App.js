@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { Route, Routes } from "react-router-dom";
-import { useAuth } from './contexts/AuthContext'; // ✅ 추가
+import { useAuth } from './contexts/AuthContext';
 
 import './App.css';
 
 import NavBar from './components/navigation/NavBar';
-import ChatModal from './components/modals/ChatModal'; // Added this import
+import ChatModal from './components/modals/ChatModal';
 import Footer from "./components/navigation/Footer";
 import ProtectedRoute from './components/common/ProtectedRoute';
 
@@ -34,79 +34,107 @@ import UserAssessmentPage from './pages/User/UserAssessmentPage';
 import UserSignUp from './pages/signup/UserSignUp';
 import TherapistSignUp from './pages/signup/TherapistSignUp';
 
-import logoImage from "./logoimage/logo.png";
 import char1 from "./logoimage/char1.png";
-import char2 from "./logoimage/char2.png";
-import char3 from "./logoimage/char3.png";
-import char4 from "./logoimage/char4.png";
-import char5 from "./logoimage/char5.png";
+import char5 from "./logoimage/char2.png";
+import char2 from "./logoimage/char3.png";
+import char3 from "./logoimage/char4.png";
+import char4 from "./logoimage/char5.png";
 import char6 from "./logoimage/char6.png";
 
+/** 캐릭터 메타(고정 id로 관리) */
 const characterData = [
-  { id: "bear", src: char1, bgColor: "#f3eade", buttonColors: { primaryBg: "#b38b6d", primaryText: "#ffffff", primaryHoverBg: "#8d6d53", secondaryBg: "#8d6d53", secondaryText: "#ffffff", secondaryHoverBg: "#5a463c", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#b38b6d" } },
-  { id: "duck", src: char2, bgColor: "#fff9c4", buttonColors: { primaryBg: "#ffd600", primaryText: "#000000", primaryHoverBg: "#f9a825", secondaryBg: "#f9a825", secondaryText: "#ffffff", secondaryHoverBg: "#212121", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#ffd600" } },
-  { id: "wolf", src: char3, bgColor: "#eceff1", buttonColors: { primaryBg: "#78909c", primaryText: "#ffffff", primaryHoverBg: "#455a64", secondaryBg: "#455a64", secondaryText: "#ffffff", secondaryHoverBg: "#263238", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#78909c" } },
-  { id: "dog", src: char4, bgColor: "#fffde7", buttonColors: { primaryBg: "#a1887f", primaryText: "#ffffff", primaryHoverBg: "#795548", secondaryBg: "#795548", secondaryText: "#ffffff", secondaryHoverBg: "#4e342e", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#a1887f" } },
-  { id: "parrot", src: char5, bgColor: "#f1f8e9", buttonColors: { primaryBg: "#aed581", primaryText: "#ffffff", primaryHoverBg: "#66bb6a", secondaryBg: "#66bb6a", secondaryText: "#ffffff", secondaryHoverBg: "#43a047", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#aed581" } },
+  { id: "bear",    src: char1, bgColor: "#f3eade", buttonColors: { primaryBg: "#b38b6d", primaryText: "#ffffff", primaryHoverBg: "#8d6d53", secondaryBg: "#8d6d53", secondaryText: "#ffffff", secondaryHoverBg: "#5a463c", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#b38b6d" } },
+  { id: "duck",    src: char5, bgColor: "#fff9c4", buttonColors: { primaryBg: "#ffd600", primaryText: "#000000", primaryHoverBg: "#f9a825", secondaryBg: "#f9a825", secondaryText: "#ffffff", secondaryHoverBg: "#212121", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#ffd600" } },
+  { id: "wolf",    src: char2, bgColor: "#eceff1", buttonColors: { primaryBg: "#78909c", primaryText: "#ffffff", primaryHoverBg: "#455a64", secondaryBg: "#455a64", secondaryText: "#ffffff", secondaryHoverBg: "#263238", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#78909c" } },
+  { id: "dog",     src: char3, bgColor: "#fffde7", buttonColors: { primaryBg: "#a1887f", primaryText: "#ffffff", primaryHoverBg: "#795548", secondaryBg: "#795548", secondaryText: "#ffffff", secondaryHoverBg: "#4e342e", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#a1887f" } },
+  { id: "parrot",  src: char4, bgColor: "#f1f8e9", buttonColors: { primaryBg: "#aed581", primaryText: "#ffffff", primaryHoverBg: "#66bb6a", secondaryBg: "#66bb6a", secondaryText: "#ffffff", secondaryHoverBg: "#43a047", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#aed581" } },
   { id: "penguin", src: char6, bgColor: "#e3f2fd", buttonColors: { primaryBg: "#64b5f6", primaryText: "#ffffff", primaryHoverBg: "#2196f3", secondaryBg: "#2196f3", secondaryText: "#ffffff", secondaryHoverBg: "#0d47a1", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#64b5f6" } },
 ];
 
+/** 백엔드의 프로필 숫자(id) ↔ 프론트 캐릭터 id 매핑 (순서와 무관) */
+const PROFILE_MAP = {
+  1: "bear",
+  5: "duck",
+  2: "wolf",
+  3: "dog",
+  4: "parrot",
+  6: "penguin",
+};
+
 const getRandomCharacter = (current) => {
-  let newChar;
+  let next;
   do {
-    const randomIndex = Math.floor(Math.random() * characterData.length);
-    newChar = characterData[randomIndex];
-  } while (current && newChar.id === current.id);
-  return newChar;
+    const idx = Math.floor(Math.random() * characterData.length);
+    next = characterData[idx];
+  } while (current && next.id === current.id);
+  return next;
+};
+
+const getCharacterByProfile = (profileNumber) => {
+  const key = PROFILE_MAP[profileNumber];
+  return characterData.find(c => c.id === key) || characterData[0];
 };
 
 function App() {
-  const { isAuthReady } = useAuth(); // ✅ 로그인 상태 복원 완료 여부
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showChatModal, setShowChatModal] = useState(false); // Chat modal state // Added this state
-  const [currentCharacter, setCurrentCharacter] = useState(() => getRandomCharacter());
+  const { isAuthReady, user } = useAuth();
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+  const [showChatModal, setShowChatModal] = useState(false);
+  // 비로그인(게스트) 전용 랜덤 캐릭터 상태
+  const [guestCharacter, setGuestCharacter] = useState(() => getRandomCharacter());
+
+  const isLoggedIn = !!(user && user.accessToken);
+
+  /** 게스트 전용 setter: 로그인 시에는 무시 (NavBar에서 호출해도 로그인 중엔 영향 없음) */
+  const setCharacterIfGuest = (updater) => {
+    if (isLoggedIn) return; // 로그인 시에는 배경 고정
+    setGuestCharacter(prev =>
+      typeof updater === 'function' ? updater(prev) : updater
+    );
   };
 
-  const handleShowChatModal = () => setShowChatModal(true); // Added this handler
-  const handleCloseChatModal = () => setShowChatModal(false); // Added this handler
+  const handleShowChatModal = () => setShowChatModal(true);
+  const handleCloseChatModal = () => setShowChatModal(false);
 
-  const handleLinkClick = useCallback(() => {
-    setCurrentCharacter(getRandomCharacter);
-    if (isMenuOpen) {
-      setIsMenuOpen(false);
-    }
-  }, [isMenuOpen]);
+  if (!isAuthReady) return null;
 
-  if (!isAuthReady) return null; // ✅ 인증 로딩 중엔 렌더링 안함
+  /** 최종 캐릭터 결정:
+   *  - 로그인: user.profile 기반으로 항상 고정
+   *  - 비로그인: guestCharacter(랜덤)
+   */
+  const effectiveCharacter = isLoggedIn
+    ? getCharacterByProfile(user.profile)
+    : guestCharacter;
 
   return (
     <div
       className="App"
       style={{
-        "--app-bg-color": currentCharacter.bgColor,
-        "--bg-character": `url(${currentCharacter.src})`,
-        "--btn-primary-bg": currentCharacter.buttonColors.primaryBg,
-        "--btn-primary-text": currentCharacter.buttonColors.primaryText,
-        "--btn-primary-hover-bg": currentCharacter.buttonColors.primaryHoverBg,
-        "--btn-secondary-bg": currentCharacter.buttonColors.secondaryBg,
-        "--btn-secondary-text": currentCharacter.buttonColors.secondaryText,
-        "--btn-secondary-hover-bg": currentCharacter.buttonColors.secondaryHoverBg,
-        "--btn-info-bg": currentCharacter.buttonColors.infoBg,
-        "--btn-info-text": currentCharacter.buttonColors.infoText,
-        "--btn-info-hover-bg": currentCharacter.buttonColors.infoHoverBg,
-        "--btn-success-bg": currentCharacter.buttonColors.successBg,
-        "--btn-success-text": currentCharacter.buttonColors.successText,
-        "--btn-success-hover-bg": currentCharacter.buttonColors.successHoverBg,
-        "--btn-danger-bg": currentCharacter.buttonColors.dangerBg,
-        "--btn-danger-text": currentCharacter.buttonColors.dangerText,
-        "--btn-danger-hover-bg": currentCharacter.buttonColors.dangerHoverBg,
-        "--calendar-selected-day-bg": currentCharacter.buttonColors.calendarSelectedDayBg,
+        "--app-bg-color": effectiveCharacter.bgColor,
+        "--bg-character": `url(${effectiveCharacter.src})`,
+        "--btn-primary-bg": effectiveCharacter.buttonColors.primaryBg,
+        "--btn-primary-text": effectiveCharacter.buttonColors.primaryText,
+        "--btn-primary-hover-bg": effectiveCharacter.buttonColors.primaryHoverBg,
+        "--btn-secondary-bg": effectiveCharacter.buttonColors.secondaryBg,
+        "--btn-secondary-text": effectiveCharacter.buttonColors.secondaryText,
+        "--btn-secondary-hover-bg": effectiveCharacter.buttonColors.secondaryHoverBg,
+        "--btn-info-bg": effectiveCharacter.buttonColors.infoBg,
+        "--btn-info-text": effectiveCharacter.buttonColors.infoText,
+        "--btn-info-hover-bg": effectiveCharacter.buttonColors.infoHoverBg,
+        "--btn-success-bg": effectiveCharacter.buttonColors.successBg,
+        "--btn-success-text": effectiveCharacter.buttonColors.successText,
+        "--btn-success-hover-bg": effectiveCharacter.buttonColors.successHoverBg,
+        "--btn-danger-bg": effectiveCharacter.buttonColors.dangerBg,
+        "--btn-danger-text": effectiveCharacter.buttonColors.dangerText,
+        "--btn-danger-hover-bg": effectiveCharacter.buttonColors.dangerHoverBg,
+        "--calendar-selected-day-bg": effectiveCharacter.buttonColors.calendarSelectedDayBg,
       }}
     >
-      <NavBar setCurrentCharacter={setCurrentCharacter} getRandomCharacter={getRandomCharacter} onShowChat={handleShowChatModal} /> {/* Passed onShowChat prop */}
+      <NavBar
+        setCurrentCharacter={setCharacterIfGuest}
+        getRandomCharacter={getRandomCharacter}
+        onShowChat={handleShowChatModal}
+      />
+
       <main className="content">
         <Routes>
           {/* 공개 라우트 */}
@@ -145,12 +173,16 @@ function App() {
             <Route path="/user/booking/:therapistId" element={<TherapistBookingPage />} />
           </Route>
 
-          {/* 404 처리 */}
+          {/* 404 */}
           <Route path="*" element={<h1>404: 페이지를 찾을 수 없습니다.</h1>} />
         </Routes>
       </main>
+
       <Footer />
-      <ChatModal show={showChatModal} handleClose={handleCloseChatModal} /> {/* Added ChatModal */}
+      <ChatModal show={showChatModal} handleClose={handleCloseChatModal} />
+
+      {/* ✅ 항상 맨 앞에 보이는 캐릭터 오버레이 (클릭 방해 없음) */}
+      <div className="character-overlay" aria-hidden="true" />
     </div>
   );
 }

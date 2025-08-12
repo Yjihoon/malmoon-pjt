@@ -1,3 +1,4 @@
+// src/contexts/AuthContext.js
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -30,6 +31,7 @@ const fetchMe = async (accessToken) => {
     if (!res.ok) throw new Error('Failed to fetch profile');
     const data = await res.json();
 
+    // 백엔드 응답 필드 변동 대비
     const profile =
       Number(data.profile ?? data.profile_image_id ?? data.profileImageId ?? 1) || 1;
 
@@ -57,8 +59,9 @@ export const AuthProvider = ({ children }) => {
   // 한 탭 식별용(선택)
   const providerIdRef = useRef(Math.random().toString(36).slice(2));
 
-  /** 전역 user 갱신 + localStorage 반영
-   *  아바타 캐시 무력화(_avatarVer)는 프로필 관련 변경시에만 증가
+  /**
+   * 전역 user 갱신 + localStorage 반영
+   * 아바타 캐시 무력화(_avatarVer)는 프로필 관련 변경시에만 증가
    */
   const updateUser = (patch) => {
     setUser((prev) => {
@@ -108,7 +111,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('currentUser');
       }
     }
-    setIsAuthReady(true);
+    setIsAuthReady(true); // 초기 로딩 완료 시점
   }, []);
 
   /**
@@ -153,12 +156,12 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
-        isLoggedIn: !!user,
+        isLoggedIn: !!(user && user.accessToken), // 토큰 기준으로 로그인 판단
         userType: user?.userType || null,
         login,
         logout,
         isAuthReady,
-        updateUser,
+        updateUser,   // 마이페이지에서 프로필 변경 후 updateUser({ profile: N }) 호출
         refreshMe,
         providerId: providerIdRef.current,
       }}
