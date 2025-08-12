@@ -7,7 +7,8 @@ import axios from 'axios';
 import '../../User/MyPage/UserMyInfoPage.css'; // 동일 스타일 공유
 
 function TherapistMyInfoPage() {
-  const { user } = useAuth();
+  // ✅ 전역 갱신을 위해 updateUser, (옵션) refreshMe도 받아옵니다.
+  const { user, updateUser, refreshMe } = useAuth();
 
   const [formData, setFormData] = useState({
     profile: 1,
@@ -48,38 +49,48 @@ function TherapistMyInfoPage() {
     async function fetchUserInfo() {
       try {
         const res = await axios.get('/api/v1/members/me', {
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-          },
-        });        
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        });
         setFormData(res.data);
         setCareerYears(res.data.careerYears ?? 0);
         setCareerList(res.data.careers || []);
+
+        // ✅ 컨텍스트에 있는 profile과 서버 값이 다르면 맞춰서 동기화 (무한 루프 방지 조건)
+        if (typeof res.data.profile !== 'undefined' && Number(res.data.profile) !== Number(user?.profile)) {
+          updateUser({ profile: Number(res.data.profile) });
+        }
       } catch (err) {
         console.error('❌ 사용자 정보 조회 실패:', err);
       }
     }
-    fetchUserInfo();
-  }, [user]);
+    if (user?.accessToken) fetchUserInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.accessToken]); // user 전체가 아니라 accessToken만 의존
 
   const showAlert = (msg) => {
     setAlertMessage(msg);
     setFadeOut(false);
     setTimeout(() => setFadeOut(true), 2500);
-    setTimeout(() => {
-      setAlertMessage('');
-      setFadeOut(false);
-    }, 3000);
+    setTimeout(() => { setAlertMessage(''); setFadeOut(false); }, 3000);
   };
 
+  // ✅ 프로필 변경 시: 전역 상태도 즉시 갱신(아바타 버전 증가) → NavBar 즉시 반영
   const handleProfileChange = async (newProfileId) => {
     try {
       await axios.patch('/api/v1/members/me', { profile: newProfileId }, {
         headers: { Authorization: `Bearer ${user.accessToken}` },
       });
+
+      // 페이지 로컬 상태
       setFormData((prev) => ({ ...prev, profile: newProfileId }));
       setShowProfileSelect(false);
       showAlert('프로필 이미지가 수정되었습니다.');
+
+      // 전역 상태 즉시 갱신 (캐시 버스트를 위해 _avatarVer 갱신됨)
+      updateUser({ profile: newProfileId, profileImageUrl: null });
+
+      // (옵션) 서버 반영 지연/캐시 문제 대비해서 살짝 늦게 최신값 재동기화
+      // setTimeout(() => refreshMe(), 300);
     } catch (err) {
       console.error('❌ 프로필 수정 실패:', err);
       alert('프로필 수정에 실패했습니다.');
@@ -180,11 +191,8 @@ function TherapistMyInfoPage() {
       await axios.patch('/api/v1/members/me', {
         careerYears: careerYears,
       }, {
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
+        headers: { Authorization: `Bearer ${user.accessToken}` },
       });
-
       showAlert('총 경력 연차가 수정되었습니다.');
       setEditCareerYears(false);
     } catch (err) {
@@ -194,7 +202,6 @@ function TherapistMyInfoPage() {
   };
 
   const handleCareerListUpdate = async () => {
-    // 1. 빈 문자열을 null로 변환
     const cleanedCareers = careerList.map((career) => ({
       ...career,
       startDate: career.startDate === '' ? null : career.startDate,
@@ -202,14 +209,11 @@ function TherapistMyInfoPage() {
     }));
 
     try {
-      // 2. cleanedCareers를 서버에 전송
       await axios.patch('/api/v1/members/me', {
-        careerYears: careerYears,
+        careerYears,
         careers: cleanedCareers,
       }, {
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
+        headers: { Authorization: `Bearer ${user.accessToken}` },
       });
 
       setEditCareers(false);
@@ -219,6 +223,12 @@ function TherapistMyInfoPage() {
       alert('경력 수정에 실패했습니다.');
     }
   };
+
+  // ✅ 페이지 내 프로필 프리뷰도 전역 버전으로 캐시 무력화
+  const avatarVer = user?._avatarVer || 0;
+  const profileImgSrc = user?.profileImageUrl
+    ? `${user.profileImageUrl}?v=${avatarVer}`
+    : `/images/profile${formData.profile}.png?v=${avatarVer}`;
 
   return (
     <div className="user-my-info-container">
@@ -232,7 +242,8 @@ function TherapistMyInfoPage() {
 
       {/* 프로필 이미지 */}
       <div className="profile-image-wrapper">
-        <img src={`/images/profile${formData.profile}.png`} alt="프로필" />
+        {/* key로 강제 리마운트 → 즉시 변경 보장 */}
+        <img key={avatarVer} src={profileImgSrc} alt="프로필" />
         <div>
           <Button size="sm" variant="outline-primary" onClick={() => setShowProfileSelect(true)}>
             캐릭터 변경하기
@@ -573,8 +584,6 @@ function TherapistMyInfoPage() {
           </div>
         )}
       </div>
-
-
 
       {/* 프로필 선택 모달 */}
       <Modal show={showProfileSelect} onHide={() => setShowProfileSelect(false)}>

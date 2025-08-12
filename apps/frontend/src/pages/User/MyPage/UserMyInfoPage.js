@@ -7,8 +7,7 @@ import axios from 'axios';
 import './UserMyInfoPage.css';
 
 function UserMyInfoPage() {
-  const { user } = useAuth();
-
+  const { user, updateUser, refreshMe, providerId } = useAuth();
   const [formData, setFormData] = useState({
     profile: 1,
     name: '',
@@ -31,16 +30,15 @@ function UserMyInfoPage() {
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
-  const [tempAddress, setTempAddress] = useState({city: '', district: '', dong: '', detail: '',});
+  const [tempAddress, setTempAddress] = useState({ city: '', district: '', dong: '', detail: '' });
   const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
     async function fetchUserInfo() {
+      if (!user?.accessToken) return;
       try {
         const res = await axios.get('/api/v1/members/me', {
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-          },
+          headers: { Authorization: `Bearer ${user.accessToken}` },
         });
         setFormData(res.data);
       } catch (err) {
@@ -52,33 +50,32 @@ function UserMyInfoPage() {
 
   const showAlert = (msg) => {
     setAlertMessage(msg);
-    setFadeOut(false); // 초기화
-
-    // 2.5초 후 페이드아웃 시작
-    setTimeout(() => {
-      setFadeOut(true);
-    }, 2500);
-
-    // 3초 후 메시지 제거
+    setFadeOut(false);
+    setTimeout(() => setFadeOut(true), 2500);
     setTimeout(() => {
       setAlertMessage('');
       setFadeOut(false);
     }, 3000);
   };
 
+  // ✅ 프로필 변경: 서버 성공 → 전역 user 즉시 갱신(버전 갱신) → 서버 /me 동기화
   const handleProfileChange = async (newProfileId) => {
     try {
-      await axios.patch('/api/v1/members/me', {
-        profile: newProfileId,
-      }, {
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
-      });
+      await axios.patch(
+        '/api/v1/members/me',
+        { profile: newProfileId },
+        { headers: { Authorization: `Bearer ${user.accessToken}` } }
+      );
 
       setFormData((prev) => ({ ...prev, profile: newProfileId }));
       setShowProfileSelect(false);
       showAlert('프로필 이미지가 수정되었습니다.');
+
+      // 전역 AuthContext 상태 즉시 변경(캐시 무력화 포함)
+      updateUser({ profile: newProfileId, profileImageUrl: null });
+
+      // 백엔드가 다른 필드를 갱신하는 경우 대비해서 서버값으로 동기화(선택)
+      await refreshMe();
     } catch (err) {
       console.error('❌ 프로필 수정 실패:', err);
       alert('프로필 수정에 실패했습니다.');
@@ -90,17 +87,12 @@ function UserMyInfoPage() {
       alert('전화번호 1은 필수입니다.');
       return;
     }
-
     try {
-      await axios.patch('/api/v1/members/me', {
-        tel1: formData.tel1,
-        tel2: formData.tel2 || '', // 선택 항목
-      }, {
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
-      });
-
+      await axios.patch(
+        '/api/v1/members/me',
+        { tel1: formData.tel1, tel2: formData.tel2 || '' },
+        { headers: { Authorization: `Bearer ${user.accessToken}` } }
+      );
       setEditPhone(false);
       showAlert('전화번호가 수정되었습니다.');
     } catch (err) {
@@ -109,36 +101,19 @@ function UserMyInfoPage() {
     }
   };
 
-
   const handleAddressUpdate = async () => {
     const { city, district, dong, detail } = tempAddress;
-
     if (!city || !district || !dong) {
       alert('시/군/구, 동(읍/면/리)을 모두 선택해주세요.');
       return;
     }
-
     try {
-      await axios.patch('/api/v1/members/me', {
-        city,
-        district,
-        dong,
-        detail: detail || '',
-      }, {
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
-      });
-
-      // 저장 성공 시 원래 주소에도 반영
-      setFormData((prev) => ({
-        ...prev,
-        city,
-        district,
-        dong,
-        detail,
-      }));
-
+      await axios.patch(
+        '/api/v1/members/me',
+        { city, district, dong, detail: detail || '' },
+        { headers: { Authorization: `Bearer ${user.accessToken}` } }
+      );
+      setFormData((prev) => ({ ...prev, city, district, dong, detail }));
       setEditAddress(false);
       showAlert('주소가 수정되었습니다.');
     } catch (err) {
@@ -147,37 +122,30 @@ function UserMyInfoPage() {
     }
   };
 
-
   const handlePasswordUpdate = async () => {
     if (!currentPassword || !newPassword || !newPasswordConfirm) {
       alert('모든 입력 칸을 채워주세요.');
       return;
     }
-
     if (newPassword.length < 6) {
       alert('비밀번호는 6자 이상이어야 합니다.');
       return;
     }
-
     if (currentPassword === newPassword) {
       alert('같은 비밀번호로 변경할 수 없습니다.');
       return;
     }
-
     if (newPassword !== newPasswordConfirm) {
       alert('비밀번호를 다시 확인해주세요.');
       return;
     }
 
     try {
-      await axios.patch('/api/v1/members/me/password', {
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-      }, {
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
-      });
+      await axios.patch(
+        '/api/v1/members/me/password',
+        { currentPassword, newPassword },
+        { headers: { Authorization: `Bearer ${user.accessToken}` } }
+      );
 
       setShowPasswordModal(false);
       setCurrentPassword('');
@@ -187,7 +155,6 @@ function UserMyInfoPage() {
       alert('비밀번호가 성공적으로 변경되었습니다.');
     } catch (err) {
       console.error('❌ 비밀번호 수정 실패:', err);
-
       if (err.response?.status === 400) {
         alert('기존 비밀번호가 틀렸습니다.');
       } else {
@@ -197,18 +164,19 @@ function UserMyInfoPage() {
   };
 
   const handleAddressEditClick = () => {
-    setTempAddress({
-      city: '',
-      district: '',
-      dong: '',
-      detail: '',
-    });
+    setTempAddress({ city: '', district: '', dong: '', detail: '' });
     setEditAddress(true);
   };
 
   const handleAddressCancel = () => {
     setEditAddress(false);
   };
+
+  // 페이지 내 프리뷰용 프로필 이미지 src (전역 버전으로 캐시 무력화)
+  const avatarVer = user?._avatarVer || 0;
+  const profileImgSrc = user?.profileImageUrl
+    ? `${user.profileImageUrl}?v=${avatarVer}`
+    : `/images/profile${formData.profile}.png?v=${avatarVer}`;
 
   return (
     <div className="user-my-info-container">
@@ -221,7 +189,8 @@ function UserMyInfoPage() {
       )}
 
       <div className="profile-image-wrapper">
-        <img src={`/images/profile${formData.profile}.png`} alt="프로필" />
+        {/* key로 강제 리마운트 */}
+        <img key={avatarVer} src={profileImgSrc} alt="프로필" />
         <div>
           <Button size="sm" variant="outline-primary" onClick={() => setShowProfileSelect(true)}>
             캐릭터 변경하기
@@ -264,7 +233,9 @@ function UserMyInfoPage() {
           <Form.Label>전화번호 1</Form.Label>
           <Form.Control
             value={formData.tel1}
-            onChange={(e) => setFormData({ ...formData, tel1: e.target.value.replace(/[^0-9]/g, '') })}
+            onChange={(e) =>
+              setFormData({ ...formData, tel1: e.target.value.replace(/[^0-9]/g, '') })
+            }
             readOnly={!editPhone}
           />
         </Col>
@@ -272,7 +243,9 @@ function UserMyInfoPage() {
           <Form.Label>전화번호 2 (선택)</Form.Label>
           <Form.Control
             value={formData.tel2}
-            onChange={(e) => setFormData({ ...formData, tel2: e.target.value.replace(/[^0-9]/g, '') })}
+            onChange={(e) =>
+              setFormData({ ...formData, tel2: e.target.value.replace(/[^0-9]/g, '') })
+            }
             readOnly={!editPhone}
           />
         </Col>
@@ -292,8 +265,12 @@ function UserMyInfoPage() {
               onChange={(addr) => setTempAddress({ ...tempAddress, ...addr })}
             />
             <div className="mt-2">
-              <Button variant="primary" onClick={handleAddressUpdate}>수정하기</Button>{' '}
-              <Button variant="secondary" onClick={handleAddressCancel}>취소</Button>
+              <Button variant="primary" onClick={handleAddressUpdate}>
+                수정하기
+              </Button>{' '}
+              <Button variant="secondary" onClick={handleAddressCancel}>
+                취소
+              </Button>
             </div>
           </>
         ) : (
@@ -302,24 +279,26 @@ function UserMyInfoPage() {
               {formData.city} {formData.district} {formData.dong}
               {formData.detail && ` ${formData.detail}`}
             </div>
-            <Button className="mt-2" onClick={handleAddressEditClick}>수정</Button>
+            <Button className="mt-2" onClick={handleAddressEditClick}>
+              수정
+            </Button>
           </div>
         )}
-
       </div>
 
       <Modal show={showProfileSelect} onHide={() => setShowProfileSelect(false)}>
-        <Modal.Header closeButton><Modal.Title>캐릭터 선택</Modal.Title></Modal.Header>
+        <Modal.Header closeButton>
+          <Modal.Title>캐릭터 선택</Modal.Title>
+        </Modal.Header>
         <Modal.Body>
-          <ProfileImageSelect
-            value={formData.profile}
-            onChange={handleProfileChange}
-          />
+          <ProfileImageSelect value={formData.profile} onChange={handleProfileChange} />
         </Modal.Body>
       </Modal>
 
       <Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)}>
-        <Modal.Header closeButton><Modal.Title>비밀번호 변경</Modal.Title></Modal.Header>
+        <Modal.Header closeButton>
+          <Modal.Title>비밀번호 변경</Modal.Title>
+        </Modal.Header>
         <Modal.Body>
           <Form.Group className="mb-2">
             <Form.Label>현재 비밀번호</Form.Label>
