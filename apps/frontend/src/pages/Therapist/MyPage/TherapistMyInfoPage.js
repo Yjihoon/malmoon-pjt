@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// src/pages/Therapist/MyPage/TherapistMyInfoPage.js
+import React, { useState, useEffect, useRef } from 'react';
 import { Form, Button, Modal, Row, Col, Alert } from 'react-bootstrap';
 import ProfileImageSelect from '../../../components/signup/ProfileImageSelect';
 import AddressSelector from '../../../components/signup/AddressSelector';
@@ -7,7 +8,6 @@ import axios from 'axios';
 import '../../User/MyPage/UserMyInfoPage.css'; // 동일 스타일 공유
 
 function TherapistMyInfoPage() {
-  // ✅ 전역 갱신을 위해 updateUser, (옵션) refreshMe도 받아옵니다.
   const { user, updateUser, refreshMe } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -33,9 +33,11 @@ function TherapistMyInfoPage() {
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [fadeOut, setFadeOut] = useState(false);
+
   const [tempAddress, setTempAddress] = useState({
     city: '', district: '', dong: '', detail: ''
   });
+
   const [careerYears, setCareerYears] = useState(0);
   const [editCareerYears, setEditCareerYears] = useState(false);
   const [careerList, setCareerList] = useState([]);
@@ -43,54 +45,89 @@ function TherapistMyInfoPage() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editedCareer, setEditedCareer] = useState(null);
   const [addingNew, setAddingNew] = useState(false);
-  const [newCareer, setNewCareer] = useState({company: '', position: '', startDate: '', endDate: '',});
+  const [newCareer, setNewCareer] = useState({ company: '', position: '', startDate: '', endDate: '' });
+
+  const alertTimers = useRef([]);
+
+  const clearAlertTimers = () => {
+    alertTimers.current.forEach((t) => clearTimeout(t));
+    alertTimers.current = [];
+  };
 
   useEffect(() => {
     async function fetchUserInfo() {
+      if (!user?.accessToken) return;
       try {
         const res = await axios.get('/api/v1/members/me', {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         });
-        setFormData(res.data);
-        setCareerYears(res.data.careerYears ?? 0);
-        setCareerList(res.data.careers || []);
+        const d = res.data || {};
+        setFormData((prev) => ({
+          ...prev,
+          profile: Number(d.profile ?? d.profile_image_id ?? d.profileImageId ?? prev.profile ?? 1) || 1,
+          name: d.name ?? prev.name ?? '',
+          nickname: d.nickname ?? d.nickName ?? prev.nickname ?? '',
+          birthDate: d.birthDate ?? prev.birthDate ?? '',
+          email: d.email ?? prev.email ?? '',
+          tel1: d.tel1 ?? prev.tel1 ?? '',
+          tel2: d.tel2 ?? prev.tel2 ?? '',
+          city: d.city ?? prev.city ?? '',
+          district: d.district ?? prev.district ?? '',
+          dong: d.dong ?? prev.dong ?? '',
+          detail: d.detail ?? prev.detail ?? '',
+        }));
+        setCareerYears(d.careerYears ?? 0);
+        setCareerList(Array.isArray(d.careers) ? d.careers : []);
 
-        // ✅ 컨텍스트에 있는 profile과 서버 값이 다르면 맞춰서 동기화 (무한 루프 방지 조건)
-        if (typeof res.data.profile !== 'undefined' && Number(res.data.profile) !== Number(user?.profile)) {
-          updateUser({ profile: Number(res.data.profile) });
+        // 서버 profile과 전역 profile 불일치 시 전역 동기화
+        if (typeof d.profile !== 'undefined' && Number(d.profile) !== Number(user?.profile)) {
+          updateUser({ profile: Number(d.profile) });
         }
       } catch (err) {
         console.error('❌ 사용자 정보 조회 실패:', err);
       }
     }
-    if (user?.accessToken) fetchUserInfo();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.accessToken]); // user 전체가 아니라 accessToken만 의존
+    fetchUserInfo();
+    return () => clearAlertTimers();
+  }, [user?.accessToken, updateUser]);
+
+  // 전역 user.profile 변경 시 로컬 프리뷰도 동기화
+  useEffect(() => {
+    if (typeof user?.profile === 'number') {
+      setFormData((prev) => ({ ...prev, profile: user.profile }));
+    }
+  }, [user?.profile]);
 
   const showAlert = (msg) => {
     setAlertMessage(msg);
     setFadeOut(false);
-    setTimeout(() => setFadeOut(true), 2500);
-    setTimeout(() => { setAlertMessage(''); setFadeOut(false); }, 3000);
+    clearAlertTimers();
+    alertTimers.current.push(setTimeout(() => setFadeOut(true), 2500));
+    alertTimers.current.push(
+      setTimeout(() => {
+        setAlertMessage('');
+        setFadeOut(false);
+      }, 3000)
+    );
   };
 
-  // ✅ 프로필 변경 시: 전역 상태도 즉시 갱신(아바타 버전 증가) → NavBar 즉시 반영
+  // ✅ 프로필 변경: 서버 → 전역 업데이트 → (옵션) /me 보강
   const handleProfileChange = async (newProfileId) => {
+    if (!user?.accessToken) return;
     try {
       await axios.patch('/api/v1/members/me', { profile: newProfileId }, {
         headers: { Authorization: `Bearer ${user.accessToken}` },
       });
 
-      // 페이지 로컬 상태
       setFormData((prev) => ({ ...prev, profile: newProfileId }));
       setShowProfileSelect(false);
       showAlert('프로필 이미지가 수정되었습니다.');
 
-      // 전역 상태 즉시 갱신 (캐시 버스트를 위해 _avatarVer 갱신됨)
+      // 전역 상태 즉시 갱신 → App에서 배경/캐릭터 동기화
       updateUser({ profile: newProfileId, profileImageUrl: null });
 
-      // (옵션) 서버 반영 지연/캐시 문제 대비해서 살짝 늦게 최신값 재동기화
-      // setTimeout(() => refreshMe(), 300);
+      // 백엔드가 다른 필드도 갱신했다면 서버값으로 보강
+      await refreshMe();
     } catch (err) {
       console.error('❌ 프로필 수정 실패:', err);
       alert('프로필 수정에 실패했습니다.');
@@ -102,6 +139,11 @@ function TherapistMyInfoPage() {
       alert('전화번호 1은 필수입니다.');
       return;
     }
+    if (formData.tel1.length > 15 || (formData.tel2 && formData.tel2.length > 15)) {
+      alert('전화번호는 최대 15자리까지 가능합니다.');
+      return;
+    }
+    if (!user?.accessToken) return;
     try {
       await axios.patch('/api/v1/members/me', {
         tel1: formData.tel1,
@@ -123,7 +165,7 @@ function TherapistMyInfoPage() {
       alert('시/군/구, 동(읍/면/리)을 모두 선택해주세요.');
       return;
     }
-
+    if (!user?.accessToken) return;
     try {
       await axios.patch('/api/v1/members/me', {
         city, district, dong, detail: detail || '',
@@ -144,21 +186,19 @@ function TherapistMyInfoPage() {
       alert('모든 입력 칸을 채워주세요.');
       return;
     }
-
     if (newPassword.length < 6) {
       alert('비밀번호는 6자 이상이어야 합니다.');
       return;
     }
-
     if (currentPassword === newPassword) {
       alert('같은 비밀번호로 변경할 수 없습니다.');
       return;
     }
-
     if (newPassword !== newPasswordConfirm) {
       alert('비밀번호를 다시 확인해주세요.');
       return;
     }
+    if (!user?.accessToken) return;
 
     try {
       await axios.patch('/api/v1/members/me/password', {
@@ -186,10 +226,10 @@ function TherapistMyInfoPage() {
       alert('경력 연차는 0 이상이어야 합니다.');
       return;
     }
-
+    if (!user?.accessToken) return;
     try {
       await axios.patch('/api/v1/members/me', {
-        careerYears: careerYears,
+        careerYears,
       }, {
         headers: { Authorization: `Bearer ${user.accessToken}` },
       });
@@ -201,30 +241,57 @@ function TherapistMyInfoPage() {
     }
   };
 
-  const handleCareerListUpdate = async () => {
-    const cleanedCareers = careerList.map((career) => ({
-      ...career,
-      startDate: career.startDate === '' ? null : career.startDate,
-      endDate: career.endDate === '' ? null : career.endDate,
+  const persistCareers = async (careers) => {
+    if (!user?.accessToken) return;
+    const cleaned = careers.map((c) => ({
+      ...c,
+      startDate: c.startDate || null,
+      endDate: c.endDate || null,
     }));
-
-    try {
-      await axios.patch('/api/v1/members/me', {
-        careerYears,
-        careers: cleanedCareers,
-      }, {
-        headers: { Authorization: `Bearer ${user.accessToken}` },
-      });
-
-      setEditCareers(false);
-      showAlert('경력 목록이 수정되었습니다.');
-    } catch (err) {
-      console.error('❌ 경력 수정 실패:', err);
-      alert('경력 수정에 실패했습니다.');
-    }
+    await axios.patch('/api/v1/members/me', {
+      careerYears,
+      careers: cleaned,
+    }, {
+      headers: { Authorization: `Bearer ${user.accessToken}` },
+    });
   };
 
-  // ✅ 페이지 내 프로필 프리뷰도 전역 버전으로 캐시 무력화
+  const handleCareerSaveOne = async (index, data) => {
+    const { company, position, startDate } = data;
+    if (!company?.trim() || !position?.trim() || !startDate || startDate < '1900-01-01') {
+      alert('회사명, 직책, 시작일(1900-01-01 이후)은 필수입니다.');
+      return;
+    }
+    const updated = [...careerList];
+    updated[index] = data;
+    await persistCareers(updated);
+    setCareerList(updated);
+    setEditingIndex(null);
+    showAlert('경력이 수정되었습니다.');
+  };
+
+  const handleCareerDeleteOne = async (index) => {
+    const updated = careerList.filter((_, i) => i !== index);
+    await persistCareers(updated);
+    setCareerList(updated);
+    showAlert('삭제되었습니다.');
+  };
+
+  const handleCareerAdd = async () => {
+    const { company, position, startDate } = newCareer;
+    if (!company.trim() || !position.trim() || !startDate || startDate < '1900-01-01') {
+      alert('회사명, 직책, 시작일(1900-01-01 이후)은 필수입니다.');
+      return;
+    }
+    const updated = [...careerList, newCareer];
+    await persistCareers(updated);
+    setCareerList(updated);
+    setNewCareer({ company: '', position: '', startDate: '', endDate: '' });
+    setAddingNew(false);
+    showAlert('경력이 추가되었습니다.');
+  };
+
+  // ✅ 전역 버전으로 프로필 이미지 캐시 무력화
   const avatarVer = user?._avatarVer || 0;
   const profileImgSrc = user?.profileImageUrl
     ? `${user.profileImageUrl}?v=${avatarVer}`
@@ -254,17 +321,22 @@ function TherapistMyInfoPage() {
       {/* 기본 정보 */}
       <div className="basic-info-box">
         <h5 className="section-title">기본 정보</h5>
-        {['name', 'nickname', 'birthDate', 'email'].map((key) => (
-          <div key={key} className="info-item-box">
-            <Form.Label>{{
-              name: '이름',
-              nickname: '닉네임',
-              birthDate: '생년월일',
-              email: '이메일'
-            }[key]}</Form.Label>
-            <div className="info-value-box">{formData[key]}</div>
-          </div>
-        ))}
+        <div className="info-item-box">
+          <Form.Label>이름</Form.Label>
+          <div className="info-value-box">{formData.name}</div>
+        </div>
+        <div className="info-item-box">
+          <Form.Label>닉네임</Form.Label>
+          <div className="info-value-box">{formData.nickname}</div>
+        </div>
+        <div className="info-item-box">
+          <Form.Label>생년월일</Form.Label>
+          <div className="info-value-box">{formData.birthDate}</div>
+        </div>
+        <div className="info-item-box">
+          <Form.Label>이메일</Form.Label>
+          <div className="info-value-box">{formData.email}</div>
+        </div>
       </div>
 
       {/* 비밀번호 재설정 */}
@@ -281,9 +353,11 @@ function TherapistMyInfoPage() {
           <Form.Control
             value={formData.tel1}
             onChange={(e) =>
-              setFormData({ ...formData, tel1: e.target.value.replace(/[^0-9]/g, '') })
+              setFormData({ ...formData, tel1: e.target.value.replace(/[^0-9]/g, '').slice(0, 15) })
             }
             readOnly={!editPhone}
+            inputMode="numeric"
+            placeholder="숫자만 입력 (최대 15자리)"
           />
         </Col>
         <Col>
@@ -291,9 +365,11 @@ function TherapistMyInfoPage() {
           <Form.Control
             value={formData.tel2}
             onChange={(e) =>
-              setFormData({ ...formData, tel2: e.target.value.replace(/[^0-9]/g, '') })
+              setFormData({ ...formData, tel2: e.target.value.replace(/[^0-9]/g, '').slice(0, 15) })
             }
             readOnly={!editPhone}
+            inputMode="numeric"
+            placeholder="숫자만 입력 (최대 15자리)"
           />
         </Col>
         <Col xs="auto">
@@ -323,14 +399,28 @@ function TherapistMyInfoPage() {
               {formData.city} {formData.district} {formData.dong}
               {formData.detail && ` ${formData.detail}`}
             </div>
-            <Button className="mt-2" onClick={() => setTempAddress(formData) || setEditAddress(true)}>수정</Button>
+            {/* 치료사 페이지는 기존 값으로 편집 시작 */}
+            <Button
+              className="mt-2"
+              onClick={() => {
+                setTempAddress({
+                  city: formData.city || '',
+                  district: formData.district || '',
+                  dong: formData.dong || '',
+                  detail: formData.detail || '',
+                });
+                setEditAddress(true);
+              }}
+            >
+              수정
+            </Button>
           </div>
         )}
       </div>
 
+      {/* 총 경력 연차 */}
       <div className="mb-4">
         <Form.Label>총 경력 연차</Form.Label>
-
         {!editCareerYears ? (
           <div className="d-flex align-items-center gap-3">
             <div className="info-value-box">{careerYears}년</div>
@@ -350,6 +440,7 @@ function TherapistMyInfoPage() {
         )}
       </div>
 
+      {/* 경력 목록 */}
       <div className="mb-4">
         <h5 className="d-flex justify-content-between align-items-center">
           경력 목록
@@ -430,30 +521,7 @@ function TherapistMyInfoPage() {
                   </Col>
                 </Row>
                 <div className="d-flex gap-2">
-                  <Button
-                    variant="success"
-                    onClick={async () => {
-                      const updated = [...careerList];
-                      updated[index] = editedCareer;
-
-                      const cleanedCareers = updated.map((c) => ({
-                        ...c,
-                        startDate: c.startDate || null,
-                        endDate: c.endDate || null,
-                      }));
-
-                      await axios.patch('/api/v1/members/me', {
-                        careerYears,
-                        careers: cleanedCareers,
-                      }, {
-                        headers: { Authorization: `Bearer ${user.accessToken}` },
-                      });
-
-                      setCareerList(updated);
-                      setEditingIndex(null);
-                      showAlert('경력이 수정되었습니다.');
-                    }}
-                  >저장</Button>
+                  <Button variant="success" onClick={() => handleCareerSaveOne(index, editedCareer)}>저장</Button>
                   <Button variant="secondary" onClick={() => setEditingIndex(null)}>취소</Button>
                 </div>
               </>
@@ -472,29 +540,16 @@ function TherapistMyInfoPage() {
                         setEditingIndex(index);
                         setEditedCareer({ ...career });
                       }}
-                    >수정</Button>
+                    >
+                      수정
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline-danger"
-                      onClick={async () => {
-                        const updated = careerList.filter((_, i) => i !== index);
-                        const cleanedCareers = updated.map((c) => ({
-                          ...c,
-                          startDate: c.startDate || null,
-                          endDate: c.endDate || null,
-                        }));
-
-                        await axios.patch('/api/v1/members/me', {
-                          careerYears,
-                          careers: cleanedCareers,
-                        }, {
-                          headers: { Authorization: `Bearer ${user.accessToken}` },
-                        });
-
-                        setCareerList(updated);
-                        showAlert('삭제되었습니다.');
-                      }}
-                    >삭제</Button>
+                      onClick={() => handleCareerDeleteOne(index)}
+                    >
+                      삭제
+                    </Button>
                   </div>
                 )}
               </>
@@ -550,35 +605,7 @@ function TherapistMyInfoPage() {
               </Col>
             </Row>
             <div className="d-flex gap-2">
-              <Button
-                variant="success"
-                onClick={async () => {
-                  const { company, position, startDate } = newCareer;
-                  if (!company.trim() || !position.trim() || !startDate || startDate < '1900-01-01') {
-                    alert('회사명, 직책, 시작일(1900년 이후)은 필수입니다.');
-                    return;
-                  }
-
-                  const updated = [...careerList, newCareer];
-                  const cleanedCareers = updated.map((c) => ({
-                    ...c,
-                    startDate: c.startDate || null,
-                    endDate: c.endDate || null,
-                  }));
-
-                  await axios.patch('/api/v1/members/me', {
-                    careerYears,
-                    careers: cleanedCareers,
-                  }, {
-                    headers: { Authorization: `Bearer ${user.accessToken}` },
-                  });
-
-                  setCareerList(updated);
-                  setNewCareer({ company: '', position: '', startDate: '', endDate: '' });
-                  setAddingNew(false);
-                  showAlert('경력이 추가되었습니다.');
-                }}
-              >추가하기</Button>
+              <Button variant="success" onClick={handleCareerAdd}>추가하기</Button>
               <Button variant="secondary" onClick={() => setAddingNew(false)}>취소</Button>
             </div>
           </div>
@@ -589,10 +616,7 @@ function TherapistMyInfoPage() {
       <Modal show={showProfileSelect} onHide={() => setShowProfileSelect(false)}>
         <Modal.Header closeButton><Modal.Title>캐릭터 선택</Modal.Title></Modal.Header>
         <Modal.Body>
-          <ProfileImageSelect
-            value={formData.profile}
-            onChange={handleProfileChange}
-          />
+          <ProfileImageSelect value={formData.profile} onChange={handleProfileChange} />
         </Modal.Body>
       </Modal>
 

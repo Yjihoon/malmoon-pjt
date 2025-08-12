@@ -7,15 +7,17 @@
   --spacing-sm: 16px;
   --spacing-md: 24px;
   --spacing-lg: 48px;
+
+  /* ✅ 파스텔 포인트 (2,3번에서 공통 사용) */
+  --accent-pastel: var(--light-bg-color-4);     /* 부드러운 크림톤 */
+  --accent-pastel-border: #eedfcb;              /* 살짝 짙은 경계선 */
 }
 
 .home-page {
   padding: var(--spacing-lg) var(--spacing-sm);
 }
 
-.logo-header {
-  text-align: center;
-}
+.logo-header { text-align: center; }
 
 .main-logo {
   max-width: 300px;
@@ -23,6 +25,7 @@
   height: auto;
 }
 
+/* ====== 타이포 ====== */
 .homepage-subtitle {
   text-align: center;
   font-size: 2rem;
@@ -31,27 +34,11 @@
   color: #333;
   line-height: 1.8;
 }
+.homepage-subtitle p { font-size: 2rem !important; }
+.red-text { color: #e74c3c; font-weight: bold; }
+.blue-text { color: var(--primary-color); font-weight: bold; }
 
-.homepage-subtitle p {
-  font-size: 2rem !important;
-}
-
-
-.red-text {
-  color: #e74c3c; /* 말 → 빨간색 */
-  font-weight: bold;
-}
-
-.blue-text {
-  color: var(--primary-color); /* 문 → 기존 파란색 */
-  font-weight: bold;
-}
-
-.homepage-subtitle strong {
-  color: var(--primary-color);
-}
-
-/* Slider */
+/* ====== 슬라이더 ====== */
 .slider-wrapper {
   display: flex;
   flex-direction: column;
@@ -64,10 +51,11 @@
   position: relative;
   width: 100%;
   max-width: 1200px;
-  height: 800px;
+  height: clamp(260px, 60vh, 480px);
   overflow: hidden;
   border-radius: var(--border-radius-lg);
   box-shadow: 0 4px 12px var(--shadow-color);
+  background: transparent;
 }
 
 .slider-track {
@@ -81,120 +69,146 @@
   min-width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
-/* Slider Arrows */
+/* 화살표: 기호만 보이게 (투명 배경) */
 .arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 40px;
-  background: rgba(255, 255, 255, 0.5);
+  font-size: 48px;
+  background: transparent;
   border: none;
-  border-radius: 50%;
   cursor: pointer;
-  padding: 10px;
-  color: var(--primary-color);
-  transition: background 0.3s ease, transform 0.3s ease;
+  padding: 0 8px; /* 클릭 영역 확보 */
+  color: #ffffff;
+  line-height: 1;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  transition: transform 0.2s ease, opacity 0.2s ease;
   z-index: 2;
 }
+.arrow.left { left: 12px; }
+.arrow.right { right: 12px; }
+.arrow:hover,
+.arrow:focus { transform: translateY(-50%) scale(1.05); opacity: 0.9; outline: none; }
 
-.arrow.left {
-  left: 20px;
-}
-
-.arrow.right {
-  right: 20px;
-}
-
-.arrow:hover {
-  background: rgba(255, 255, 255, 0.8);
-  transform: translateY(-50%) scale(1.1);
-}
-
-/* 슬라이더 인디케이터 */
+/* 인디케이터 */
 .slider-indicators {
   display: flex;
   justify-content: center;
   margin-top: 8px;
 }
-
 .indicator {
   width: 10px;
   height: 10px;
   background-color: var(--primary-color);
-  opacity: 0.4;
+  opacity: 0.35;
   border-radius: 50%;
   margin: 0 5px;
   cursor: pointer;
   transition: opacity 0.3s ease;
 }
+.indicator.active { opacity: 1; }
 
-.indicator.active {
-  opacity: 1;
-}
-
-/* Character */
+/* ====== '우리는 무엇을 하나요?' 섹션 (레이어 분리) ====== */
 .about-section {
-  background-color: var(--light-bg-color-4);
-  padding: var(--spacing-lg) var(--spacing-sm);
+  padding: calc(var(--spacing-lg) - 8px) var(--spacing-sm);
   text-align: center;
+  background: var(--accent-pastel);                 /* ✅ 파스텔 배경 */
+  border-top: 2px solid var(--accent-pastel-border);/* ✅ 상단 선 */
+  border-bottom: 2px solid var(--accent-pastel-border);/* ✅ 하단 선 */
+  box-shadow: 0 10px 20px rgba(0,0,0,0.04), 0 -6px 16px rgba(0,0,0,0.03); /* 살짝 층감 */
 }
-
+.section-title {
+  font-family: 'Jua', 'Gamja Flower', 'Gowun Dodum', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 var(--spacing-md) 0;
+}
 .about-section p {
   max-width: 700px;
   margin: 0 auto;
+  font-family: 'Gowun Dodum', sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.9;
+  color: #444;
 }
 
+/* ====== 캐릭터 ====== */
 .character-info-section {
-  background-color: var(--light-bg-color-3);
   padding: var(--spacing-lg) var(--spacing-sm);
 }
 
 .character-info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
   max-width: 900px;
   margin: 0 auto;
   padding: var(--spacing-md);
 }
 
-.character-card {
+/* 카드 박스 제거 → 미니멀 레이아웃 */
+.character-item {
   text-align: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  background-color: white;
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-md);
-  box-shadow: 0 2px 8px var(--shadow-color);
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
 }
 
-.character-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px var(--shadow-color);
+/* 원형 아바타 */
+.character-avatar {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto var(--spacing-sm);
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid var(--primary-color);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.character-avatar img {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
 }
 
-.character-image {
-  width: 100px;
-  height: auto;
-  margin-bottom: var(--spacing-md);
+/* ✅ 이름/설명 캡션만 따로 박스 처리 (2번과 동일 파스텔) */
+.character-caption {
+  background: var(--accent-pastel);
+  border: 1px solid var(--accent-pastel-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  max-width: 280px;
+  margin: 0 auto;
+}
+.character-name {
+  font-family: 'Jua', 'Gamja Flower', 'Gowun Dodum', sans-serif;
+  font-size: 1.2rem;
+  margin: 2px 0 6px;
+  color: #333;
+}
+.character-desc {
+  font-family: 'Gowun Dodum', sans-serif;
+  font-size: 0.98rem;
+  color: #555;
+  line-height: 1.7;
+  margin: 0;
 }
 
-/* Responsive */
+/* ====== 반응형 ====== */
+@media screen and (max-width: 992px) {
+  .character-avatar { width: 120px; height: 120px; }
+  .character-caption { max-width: 260px; }
+}
 @media screen and (max-width: 768px) {
-  .slider-frame {
-    height: 250px;
-  }
-
-  .character-info-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  }
-
-  .character-image {
-    width: 80px;
-  }
-
-  .main-logo {
-    max-width: 200px;
-  }
+  .slider-frame { height: 240px; }
+  .main-logo { max-width: 200px; }
+  .character-info-grid { grid-template-columns: repeat(2, 1fr); }
+  .character-avatar { width: 110px; height: 110px; }
+  .character-name { font-size: 1.1rem; }
+  .character-desc { font-size: 0.95rem; }
 }
