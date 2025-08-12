@@ -10,6 +10,7 @@ GMS_ENDPOINT = os.getenv("GMS_FEEDBACK_URL")
 MODEL = "gpt-4o-mini"
 
 
+
 def generate_feedback_response(sentences: List[SentencePair]) -> Tuple[float, str]:
     prompt = (
         "다음은 아동이 동화책 문장을 읽은 결과입니다.\n"
@@ -96,3 +97,4 @@ def generate_initial_feedback_response(words: List[WordsPair]) -> Tuple[float, s
     feedback = feedback_line.replace("피드백:", "").strip()
 
     return accuracy, feedback
+
