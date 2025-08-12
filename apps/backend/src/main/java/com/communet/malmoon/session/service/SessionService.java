@@ -1,9 +1,25 @@
 package com.communet.malmoon.session.service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.communet.malmoon.chat.domain.ChatMessage;
 import com.communet.malmoon.chat.domain.ChatMessageType;
 import com.communet.malmoon.chat.domain.RoomType;
 import com.communet.malmoon.chat.dto.request.ChatRoomSessionCreateReq;
+import com.communet.malmoon.chat.dto.request.ChatSessionMessageReq;
 import com.communet.malmoon.chat.dto.response.ChatRoomCreateRes;
 import com.communet.malmoon.chat.exception.ChatErrorCode;
 import com.communet.malmoon.chat.exception.ChatException;
@@ -15,23 +31,24 @@ import com.communet.malmoon.member.repository.MemberRepository;
 import com.communet.malmoon.session.config.LiveKitConfig;
 import com.communet.malmoon.session.dto.response.SessionTokenRes;
 import com.communet.malmoon.session.service.retry.FailedRoomDeletionQueue;
-import io.livekit.server.*;
+
+import io.livekit.server.AccessToken;
+import io.livekit.server.RoomJoin;
+import io.livekit.server.RoomName;
+import io.livekit.server.RoomServiceClient;
+import io.livekit.server.WebhookReceiver;
 import jakarta.persistence.EntityNotFoundException;
 import livekit.LivekitWebhook;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-
+/**
+ * LiveKit 세션 생성/참여/종료 및 채팅방 연동을 담당하는 서비스.
+ * - 치료사/클라이언트 최초 입장 시 ENTER 시스템 메시지를 Redis에 1회 저장
+ * - 세션 종료 시 LEAVE 메시지는 즉시 DB 저장, 나머지는 Redis → DB flush
+ */
 @Slf4j
 @Service
 public class SessionService {
@@ -90,18 +107,24 @@ public class SessionService {
 		// 이미 생성한 세션이 있으면 재입장
 		if (redisTemplate.hasKey(REDIS_THERAPIST_PREFIX + therapist.getEmail())) {
 			String roomName = Objects.requireNonNull(
-					redisTemplate.opsForValue().get(REDIS_THERAPIST_PREFIX + therapist.getEmail()), "생성한 세션이 없습니다.").toString();
+					redisTemplate.opsForValue().get(REDIS_THERAPIST_PREFIX + therapist.getEmail()), "생성한 세션이 없습니다.")
+				.toString();
 
-			String chatRoomIdStr = (String) redisTemplate.opsForValue().get(REDIS_CHAT_ROOM_PREFIX + roomName);
+			String chatRoomIdStr = (String)redisTemplate.opsForValue().get(REDIS_CHAT_ROOM_PREFIX + roomName);
+
+			if (chatRoomIdStr == null || chatRoomIdStr.isBlank()) {
+				throw new ChatException(ChatErrorCode.INVALID_ROOM_ID);
+			}
+
 			Long chatRoomId = Long.valueOf(chatRoomIdStr);
 
 			return SessionTokenRes.builder()
-					.token(generateAccessToken(therapist, roomName))
-					.chatRoomId(chatRoomId)
-					.build();
+				.token(generateAccessToken(therapist, roomName))
+				.chatRoomId(chatRoomId)
+				.build();
 		}
 
-		// 랜덤한 room 이름 생성
+		// roomName 생성 & Redis Hash에 방 정보 저장
 		String roomName = UUID.randomUUID().toString();
 		String clientEmail = getClientEmail(clientId);
 		String sessionKey = REDIS_ROOM_PREFIX + roomName;
@@ -120,6 +143,8 @@ public class SessionService {
 		// Redis String에 therapist/client → roomName 매핑 저장
 		redisTemplate.opsForValue().set(REDIS_THERAPIST_PREFIX + therapist.getEmail(), roomName);
 		redisTemplate.opsForValue().set(REDIS_CLIENT_PREFIX + clientEmail, roomName);
+
+		chatRedisService.saveToRedis(enterMessage(roomName, createdRoom.getRoomId(), therapist));
 
 		// 여기 추가함
 		return SessionTokenRes.builder()
@@ -148,6 +173,19 @@ public class SessionService {
 		return createdRoom; // 여기 추가함
 	}
 
+	private ChatSessionMessageReq enterMessage(String roomName, Long chatRoomId, Member member) {
+		String display = displayName(member);
+
+		return ChatSessionMessageReq.builder()
+			.sessionId(roomName)
+			.roomId(chatRoomId)
+			.senderId(member.getMemberId())
+			.messageType(ChatMessageType.ENTER)
+			.content(display + "님이 입장했습니다.")
+			.sendAt(LocalDateTime.now())
+			.build();
+	}
+
 	/**
 	 * 치료사의 세션 방 정보를 Redis에서 삭제
 	 * @param therapistEmail 삭제 대상 치료사 이메일
@@ -155,7 +193,7 @@ public class SessionService {
 	@Transactional
 	public void deleteRoomInfo(String therapistEmail) {
 		String roomName = Objects.requireNonNull(
-				redisTemplate.opsForValue().get(REDIS_THERAPIST_PREFIX + therapistEmail), "생성한 세션이 없습니다.").toString();
+			redisTemplate.opsForValue().get(REDIS_THERAPIST_PREFIX + therapistEmail), "생성한 세션이 없습니다.").toString();
 		String clientEmail = Objects.requireNonNull(hashOps.get(REDIS_ROOM_PREFIX + roomName, "client")).toString();
 
 		redisTemplate.delete(REDIS_ROOM_PREFIX + roomName);
@@ -214,7 +252,13 @@ public class SessionService {
 
 			chatRoomService.deleteSessionRoom(chatRoomId);
 
-			chatRedisService.flushSessionMessagesToDb(roomName);
+			try {
+				chatRedisService.flushSessionMessagesToDb(roomName);
+			} catch (ChatException e) {
+				if (e.getErrorCode() != ChatErrorCode.MESSAGE_EMPTY)
+					throw e;
+				log.info("세션 {}: 저장할 메시지 없음, 정리 계속 진행", roomName);
+			}
 
 			redisTemplate.delete(REDIS_CHAT_ROOM_PREFIX + roomName);
 		}
@@ -229,23 +273,37 @@ public class SessionService {
 		String key = REDIS_CLIENT_PREFIX + client.getEmail();
 		if (redisTemplate.hasKey(key)) {
 			String roomName = Objects.requireNonNull(
-					redisTemplate.opsForValue().get(key), "참여할 수 있는 세션이 없습니다.").toString();
+				redisTemplate.opsForValue().get(key), "참여할 수 있는 세션이 없습니다.").toString();
 
-			String chatRoomIdStr = (String) redisTemplate.opsForValue().get(REDIS_CHAT_ROOM_PREFIX + roomName);
+			String chatRoomIdStr = (String)redisTemplate.opsForValue().get(REDIS_CHAT_ROOM_PREFIX + roomName);
+
+			if (chatRoomIdStr == null || chatRoomIdStr.isBlank()) {
+				throw new ChatException(ChatErrorCode.INVALID_ROOM_ID);
+			}
+
 			Long chatRoomId = Long.valueOf(chatRoomIdStr);
 
+			chatRedisService.saveToRedis(enterMessage(roomName, chatRoomId, client));
+
 			return SessionTokenRes.builder()
-					.token(generateAccessToken(client, roomName))
-					.chatRoomId(chatRoomId)
-					.build();
+				.token(generateAccessToken(client, roomName))
+				.chatRoomId(chatRoomId)
+				.build();
 		}
 
 		String roomName = Objects.requireNonNull(
 			redisTemplate.opsForValue().get(REDIS_CLIENT_PREFIX + client.getEmail()), "참여할 수 있는 세션이 없습니다.").toString();
 
 		// 여기 추가함
-		String chatRoomIdStr = (String) redisTemplate.opsForValue().get(REDIS_CHAT_ROOM_PREFIX + roomName);
+		String chatRoomIdStr = (String)redisTemplate.opsForValue().get(REDIS_CHAT_ROOM_PREFIX + roomName);
+
+		if (chatRoomIdStr == null || chatRoomIdStr.isBlank()) {
+			throw new ChatException(ChatErrorCode.INVALID_ROOM_ID);
+		}
+
 		Long chatRoomId = Long.valueOf(chatRoomIdStr);
+
+		chatRedisService.saveToRedis(enterMessage(roomName, chatRoomId, client));
 
 		return SessionTokenRes.builder()
 			.token(generateAccessToken(client, roomName))
@@ -283,9 +341,13 @@ public class SessionService {
 	 */
 	private String generateAccessToken(Member member, String roomName) {
 		AccessToken token = new AccessToken(liveKitConfig.getApiKey(), liveKitConfig.getApiSecret());
-		token.setName(member.getNickname());
+		token.setName(displayName(member));
 		token.setIdentity(member.getEmail());
 		token.addGrants(new RoomJoin(true), new RoomName(roomName));
 		return token.toJwt();
+	}
+
+	private String displayName(Member m) {
+		return (m.getNickname() != null && !m.getNickname().isBlank()) ? m.getNickname() : m.getName();
 	}
 }
