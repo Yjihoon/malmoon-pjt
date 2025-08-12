@@ -102,7 +102,7 @@ function NavBar({ setCurrentCharacter, getRandomCharacter, onShowChat }) {
 
         {/* ✅ 우측 컨트롤(채팅 아이콘 + 프로필 드롭다운) */}
         <div className="right-controls">
-          {isLoggedIn && (
+          {isLoggedIn && userType === 'user' && (
             <button
               type="button"
               className="chat-icon-btn desktop-only"
