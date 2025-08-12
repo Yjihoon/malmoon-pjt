@@ -98,6 +98,7 @@ public class SessionFeedbackService {
 				// 예: {"text":"..."} 형태면 파싱해서 텍스트만 꺼내기
 				try {
 					ObjectMapper mapper = new ObjectMapper();
+					log.info("REQ JSON to FastAPI: {}", mapper.writeValueAsString(requestBody)); //
 					JsonNode node = mapper.readTree(sttValue);
 					if (node.has("text")) {
 						sttValue = node.get("text").asText();

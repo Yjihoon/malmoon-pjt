@@ -25,6 +25,8 @@ import com.communet.malmoon.storybook.domain.SpeechResult;
 import com.communet.malmoon.storybook.domain.StorybookSentence;
 import com.communet.malmoon.storybook.repository.SpeechResultRepository;
 import com.communet.malmoon.storybook.repository.StorybookSentenceRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -81,21 +83,30 @@ public class SpeechResultService {
 		body.add("file", new FileSystemResource(savePath)); // FastAPI에서 field명이 "file"인지 확인
 
 		HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-		String sttText = restTemplate.postForObject(
-			fastApiBaseUrl + "/api/v1/stt/transcribe",
+		String fastApiResponse = restTemplate.postForObject(
+			"http://localhost:8000/api/v1/stt/transcribe",
 			requestEntity,
 			String.class
 		);
 
-		// ✅ FastAPI 응답 디버깅 로그
-		// System.out.println("🟢 [Spring] Whisper(FastAPI)로부터 받은 STT 텍스트:");
-		// System.out.println("     " + sttText);
+		// ✅ FastAPI 응답 디버깅
+		System.out.println("🟢 [Spring] Whisper(FastAPI) 원본 응답: " + fastApiResponse);
 
-		// if (sttText == null || sttText.trim().isEmpty()) {
-		// 	System.out.println("🔴 [Spring] STT 결과가 비어있거나 null입니다!");
-		// } else {
-		// 	System.out.println("🟢 [Spring] STT 결과 길이: " + sttText.length());
-		// }
+		String sttText = null;
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			JsonNode root = mapper.readTree(fastApiResponse); // JSON 파싱
+			sttText = root.path("text").asText(); // text 필드 값만 추출
+		} catch (Exception e) {
+			System.err.println("❌ [Spring] FastAPI 응답 파싱 실패: " + e.getMessage());
+		}
+
+		if (sttText == null || sttText.trim().isEmpty()) {
+			System.out.println("🔴 [Spring] STT 결과가 비어있거나 null입니다!");
+		} else {
+			System.out.println("🟢 [Spring] STT 결과: " + sttText);
+			System.out.println("🟢 [Spring] STT 결과 길이: " + sttText.length());
+		}
 
 		//3. DB 저장
 		SpeechResult result = SpeechResult.builder()
