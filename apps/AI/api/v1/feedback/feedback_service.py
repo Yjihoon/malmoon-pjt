@@ -1,13 +1,15 @@
 import os
-import requests
-from dotenv import load_dotenv
 from typing import List, Tuple
-from apps.AI.api.v1.feedback.feedback_schema import SentencePair, WordsPair
+import requests
+from api.v1.feedback.feedback_schema import SentencePair, WordsPair
+from dotenv import load_dotenv
 
 load_dotenv()
 GMS_API_KEY = os.getenv("GMS_API_KEY")
 GMS_ENDPOINT = os.getenv("GMS_FEEDBACK_URL")
 MODEL = "gpt-4o-mini"
+
+
 
 def generate_feedback_response(sentences: List[SentencePair]) -> Tuple[float, str]:
     prompt = (
@@ -95,3 +97,4 @@ def generate_initial_feedback_response(words: List[WordsPair]) -> Tuple[float, s
     feedback = feedback_line.replace("피드백:", "").strip()
 
     return accuracy, feedback
+
