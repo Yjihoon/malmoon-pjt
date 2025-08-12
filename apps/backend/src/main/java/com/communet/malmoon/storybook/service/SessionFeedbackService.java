@@ -128,7 +128,7 @@ public class SessionFeedbackService {
 			.build();
 
 		sessionFeedbackRepository.save(feedback);
-		System.out.println("✅ SessionFeedback 저장 완료");
+		//System.out.println("✅ SessionFeedback 저장 완료");
 	}
 
 	// 관리 영역 (피드백 열람)

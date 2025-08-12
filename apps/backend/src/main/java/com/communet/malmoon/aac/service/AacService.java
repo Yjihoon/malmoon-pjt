@@ -167,7 +167,7 @@ public class AacService {
 				.status(request.getStatus())
 				.build());
 
-			System.out.println(fileUploadRes.getFileId());
+			//System.out.println(fileUploadRes.getFileId());
 		} catch (Exception e) {
 			log.error("🧩 AAC 저장 실패", e);
 			throw new AacException(AacErrorCode.AAC_SAVE_FAILED);

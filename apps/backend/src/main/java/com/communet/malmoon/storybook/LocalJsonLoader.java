@@ -38,7 +38,7 @@ public class LocalJsonLoader implements CommandLineRunner {
 			try (InputStream in = resource.getInputStream()) {
 				StorybookRequestDto dto = objectMapper.readValue(in, StorybookRequestDto.class);
 				dataLoadService.save(dto);
-				log.info("✅ 저장 완료: {}", dto.getTitle());
+				//log.info("✅ 저장 완료: {}", dto.getTitle());
 			} catch (Exception e) {
 				log.error("❌ 저장 실패: {} → {}", resource.getFilename(), e.getMessage());
 			}
