@@ -19,9 +19,9 @@ services:
       - "host.docker.internal:host-gateway"
 
   frontend:
-    #    build:
-    #      context: ./apps/frontend
-    #      dockerfile: Dockerfile
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
     image: inttype/malmoon:frontend
     container_name: frontend
     expose:
@@ -30,9 +30,9 @@ services:
       - malmoon-net
 
   backend:
-    #    build:
-    #      context: ./apps/backend
-    #      dockerfile: Dockerfile
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
     image: inttype/malmoon:backend
     env_file:
       - ./apps/backend/.env
@@ -63,9 +63,9 @@ services:
       - malmoon-net
 
   ai:
-    #    build:
-    #      context: ./apps/AI
-    #      dockerfile: Dockerfile
+    build:
+      context: ./apps/AI
+      dockerfile: Dockerfile
     image: inttype/malmoon:ai
     env_file:
       - ./apps/AI/.env
