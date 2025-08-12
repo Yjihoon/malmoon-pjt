@@ -250,16 +250,13 @@ public class SessionService {
 				.build();
 			chatMessageRepository.save(leaveMessage);
 
+			// 방 종료 처리
 			chatRoomService.deleteSessionRoom(chatRoomId);
 
-			try {
-				chatRedisService.flushSessionMessagesToDb(roomName);
-			} catch (ChatException e) {
-				if (e.getErrorCode() != ChatErrorCode.MESSAGE_EMPTY)
-					throw e;
-				log.info("세션 {}: 저장할 메시지 없음, 정리 계속 진행", roomName);
-			}
+			// flush: 메시지 없어도 예외 없음
+			chatRedisService.flushSessionMessagesToDb(roomName);
 
+			// 세션 매핑 제거
 			redisTemplate.delete(REDIS_CHAT_ROOM_PREFIX + roomName);
 		}
 	}
