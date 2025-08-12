@@ -1,5 +1,3 @@
-/* TherapistFeedbackPage.css */
-
 /* TherapistMatchingPage.css에서 가져온 스타일 */
 .matching-client-list {
     list-style: none;
@@ -49,7 +47,6 @@
 .card-base {
     border: none;
     border-radius: 15px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 /* global.css에 정의된 .btn-soft-* 스타일을 사용 */
@@ -110,7 +107,7 @@
 }
 
 .react-calendar-custom .react-calendar__tile--active {
-    background: #007bff !important; /* 선택된 날짜 배경색 */
+    background: var(--calendar-selected-day-bg);
     color: white !important;
     border-radius: 8px;
 }

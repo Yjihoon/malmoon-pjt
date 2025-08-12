@@ -1,5 +1,4 @@
 /* TherapistSchedulePage.css */
-
 .title-container {
     position: relative;
     width: 100%;
@@ -23,7 +22,7 @@
     display: flex;
     flex-direction: column;
     padding: 20px;
-    background-color: #f8f9fa; /* 연한 배경색 */
+    background-color: transparent; /* 연한 배경색 */
 }
 
 /* Row의 높이를 100%로 설정하여 Col들이 공간을 채우도록 함 */
@@ -33,19 +32,18 @@
 
 /* 좌측 캘린더 패널 */
 .calendar-panel {
-    background-color: #ffffff;
+    background-color: transparent;
     border-radius: 15px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    padding: 30px;
+    padding: 15px;
     display: flex;
     flex-direction: column;
 }
 
 /* 우측 상세 일정 패널 */
 .schedule-detail-panel {
-    background-color: #f1f5f9; /* 캘린더 패널과 구분되는 색상 */
+    background-color: transparent; /* 캘린더 패널과 구분되는 색상 */
     border-radius: 15px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
     padding: 30px;
     display: flex;
     flex-direction: column;
@@ -71,11 +69,12 @@
     flex-direction: column;
     justify-content: center; /* 캘린더를 수직 중앙 정렬 */
     align-items: center; /* 캘린더를 수평 중앙 정렬 */
+    max-height: calc(100vh - 125px); /* schedule-list-card와 동일하게 높이 제한 */
 }
 
 /* 캘린더 커스터마이징 */
 .react-calendar-custom {
-    width: 100%; /* 부모 컨테이너에 맞춤 */
+    width: 80%; /* 부모 컨테이너에 맞춤 */
     border: none;
     font-family: 'Noto Sans KR', sans-serif;
     border-radius: 10px;
@@ -84,7 +83,7 @@
 
 .react-calendar-custom .react-calendar__navigation button {
     font-size: 1.2em;
-    color: #007bff; /* 네비게이션 버튼 색상 */
+    color: black !important;  /* 네비게이션 버튼 색상 */
 }
 
 .react-calendar-custom .react-calendar__navigation button:enabled:hover {
@@ -104,7 +103,7 @@
 }
 
 .react-calendar-custom .react-calendar__tile {
-    padding: 30px 6px;
+    padding: 15px 6px;
     border-radius: 8px;
     font-size: 1em;
     position: relative; /* 마커 위치 지정을 위해 추가 */
@@ -112,12 +111,12 @@
 }
 
 .react-calendar-custom .react-calendar__tile--now {
-    background: #e0f7fa; /* 오늘 날짜 배경색 */
+    background: var(--calendar-selected-day-bg); /* 오늘 날짜 배경색 */
     color: #007bff;
 }
 
 .react-calendar-custom .react-calendar__tile--active {
-    background: #007bff !important; /* 선택된 날짜 배경색 */
+    background: var(--calendar-selected-day-bg) !important; /* 선택된 날짜 배경색 */
     color: white !important;
     border-radius: 8px;
 }
@@ -186,19 +185,25 @@
 
 /* 일정 목록 카드 */
 .schedule-list-card {
-    flex-grow: 1;
     overflow-y: auto; /* 내용이 많아지면 스크롤 */
-    max-height: calc(100vh - 250px); /* 화면 높이에 따라 적절히 조절 */
+    max-height: calc(100vh - 125px); /* 화면 높이에 따라 적절히 조절 */
 }
 
 /* 개별 일정 항목 */
 .schedule-item-card {
-    border: 1px solid #dee2e6;
-    border-radius: 10px;
     margin-bottom: 15px;
     padding: 15px;
     background-color: #fff;
     transition: all 0.2s ease-in-out;
+    min-height: 80px; /* 세로 길이 */
+    display: flex; /* Flex container */
+    justify-content: space-between; /* 좌우 양 끝 배치 */
+    align-items: center; /* 세로 중앙 정렬 */
+}
+
+
+.schedule-item-card > .row {
+    flex-grow: 1; /* Row가 부모의 남은 수직 공간을 채우도록 */
 }
 
 .schedule-item-card:hover {
@@ -209,7 +214,7 @@
 .schedule-info .schedule-time {
     font-size: 1.1em;
     font-weight: bold;
-    color: #007bff;
+    color: black;
 }
 
 .schedule-info .schedule-client-name {
@@ -225,30 +230,29 @@
 
 /* 수업 시작/예정 버튼 */
 .btn-soft-primary {
-    background-color: #e6f2ff;
-    color: #007bff;
-    border-color: #cce5ff;
+    background-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border-color: var(--btn-primary-bg);
     transition: all 0.2s ease-in-out;
 }
 
 .btn-soft-primary:hover:enabled {
-    background-color: #cce5ff;
-    color: #0056b3;
-    border-color: #99cdff;
+    background-color: var(--btn-primary-hover-bg);
+    color: var(--btn-primary-text);
+    border-color: var(--btn-primary-hover-bg);
 }
 
 .btn-soft-secondary {
-    background-color: #e2e6ea;
-    color: #6c757d;
-    border-color: #dae0e5;
+    background-color: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border-color: var(--btn-secondary-bg);
 }
 
 .btn-soft-secondary:hover:enabled {
-    background-color: #d3d7db;
-    color: #5a6268;
-    border-color: #c6cbcf;
+    background-color: var(--btn-secondary-hover-bg);
+    color: var(--btn-secondary-text);
+    border-color: var(--btn-secondary-hover-bg);
 }
-
 .btn-soft-primary:disabled,
 .btn-soft-secondary:disabled {
     opacity: 0.65;

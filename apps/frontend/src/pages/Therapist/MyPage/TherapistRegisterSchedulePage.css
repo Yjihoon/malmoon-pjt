@@ -1,15 +1,17 @@
-/* TherapistRegisterSchedulePage.css */
-
+/* 반투명 컨테이너 */
 .register-schedule-container {
-    background-color: #f8f9fa;
+    background-color: transparent;
+    backdrop-filter: blur(8px);
     padding: 40px;
     border-radius: 15px;
 }
 
+/* 요일 버튼 */
 .day-selection-group .btn {
     flex-grow: 1;
 }
 
+/* 시간 버튼 그리드 */
 .time-slot-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
@@ -22,25 +24,39 @@
     transition: all 0.2s ease-in-out;
 }
 
+/* 선택된 시간 요약 */
 .selected-times-summary {
-    background-color: #ffffff;
-    border: 1px solid #e9ecef;
+    background-color: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(6px);
     border-radius: 10px;
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-.selected-times-summary ul {
-    padding-left: 0;
-    list-style: none;
+/* 요일별 블록 */
+.selected-day-block {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 8px;
 }
 
-.selected-times-summary li {
-    font-size: 1.1em;
-    margin-bottom: 8px;
-    color: #333;
-}
-
-.selected-times-summary strong {
+.selected-day-title {
+    font-weight: bold;
+    margin-bottom: 6px;
     color: #007bff;
-    margin-right: 10px;
+}
+
+.selected-time-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.selected-time-chip {
+    background-color: #007bff;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
 }

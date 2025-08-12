@@ -26,7 +26,7 @@ const reverseDayMapping = {
 };
 
 const daysOfWeek = Object.keys(dayMapping);
-const timeSlots = Array.from({ length: 10 }, (_, i) => `${String(i + 9).padStart(2, '0')}:00`); // 09:00 to 18:00
+const timeSlots = Array.from({ length: 10 }, (_, i) => `${String(i + 9).padStart(2, '0')}:00`);
 
 function TherapistRegisterSchedulePage() {
     const navigate = useNavigate();
@@ -35,7 +35,7 @@ function TherapistRegisterSchedulePage() {
     const [selectedTimes, setSelectedTimes] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [initialLoad, setInitialLoad] = useState(true); // 초기 로딩 상태
+    const [initialLoad, setInitialLoad] = useState(true);
 
     // 기존 치료 가능 시간 불러오기
     useEffect(() => {
@@ -106,7 +106,6 @@ function TherapistRegisterSchedulePage() {
         }
 
         try {
-            // PATCH 요청으로 변경
             await api.patch('/treatment-time', {
                 treatmentTimes: treatmentTimesPayload
             }, {
@@ -188,15 +187,18 @@ function TherapistRegisterSchedulePage() {
                                 {Object.keys(selectedTimes).length === 0 || Object.values(selectedTimes).every(t => t.length === 0) ? (
                                     <p className="text-muted m-0">선택된 시간이 없습니다.</p>
                                 ) : (
-                                    <ul>
-                                        {Object.entries(selectedTimes).map(([day, times]) =>
-                                            times.length > 0 && (
-                                                <li key={day}>
-                                                    <strong>{day}요일:</strong> {times.sort().join(', ')}
-                                                </li>
-                                            )
-                                        )}
-                                    </ul>
+                                    Object.entries(selectedTimes).map(([day, times]) =>
+                                        times.length > 0 && (
+                                            <div key={day} className="selected-day-block">
+                                                <div className="selected-day-title">{day}요일</div>
+                                                <div className="selected-time-chips">
+                                                    {times.sort().map(time => (
+                                                        <div key={time} className="selected-time-chip">{time}</div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )
+                                    )
                                 )}
                             </div>
 

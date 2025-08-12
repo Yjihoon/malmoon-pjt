@@ -24,14 +24,14 @@
   position: fixed;
   bottom: 20px;
   right: 20px;
-  width: 200px;
-  height: 200px;
+    width: 150px;
+  height: 150px;
   /* App.js에서 전달받은 캐릭터 이미지 변수 사용 */
   background-image: var(--bg-character);
   background-size: contain;
   background-repeat: no-repeat;
   opacity: 0.6;
-  z-index: -1;
+  z-index: 999;
   transition: opacity 0.3s, transform 0.3s;
 }
 
