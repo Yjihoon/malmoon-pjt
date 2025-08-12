@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import logoImage from '../../logoimage/logo.png';
-import chatIcon from '../../assets/icons/chat-envelope.svg'; // ✅ 새 아이콘
+import chatIcon from '../../assets/icons/chat-envelope.svg';
 import './NavBar.css';
 
 // 아바타 경로 계산: 업로드 URL 우선, 없으면 /images/profile{n}.png + 버전 쿼리
@@ -64,16 +64,13 @@ function NavBar({ setCurrentCharacter, getRandomCharacter, onShowChat }) {
           <img src={logoImage} alt="말문 로고" className="logo" />
         </Link>
 
-        {/* 가운데 메뉴(데스크톱) */}
+        {/* 가운데 메뉴(데스크톱) : 로그인일 때만 ‘이용안내’ 및 내부 메뉴 렌더 */}
         <nav className="menu">
-          <Link to="/guide" onClick={handleLinkClick}>이용안내</Link>
+          {isLoggedIn && (
+            <Link to="/guide" onClick={handleLinkClick}>이용안내</Link>
+          )}
 
-          {!isLoggedIn ? (
-            <>
-              <Link to="/login" onClick={handleLinkClick}>로그인</Link>
-              <Link to="/signup" onClick={handleLinkClick}>회원가입</Link>
-            </>
-          ) : (
+          {isLoggedIn && (
             <>
               <Link
                 to={userType === 'therapist' ? "/therapist/feedback" : "/user/mypage/matching"}
@@ -91,17 +88,22 @@ function NavBar({ setCurrentCharacter, getRandomCharacter, onShowChat }) {
                 <Link to="/therapist/mypage/tools" onClick={handleLinkClick}>수업 도구 관리</Link>
               )}
               {userType === 'user' && (
-                <>
-                  <Link to="/assessment" onClick={handleLinkClick}>간이 언어 평가</Link>
-                  {/* ✅ 데스크톱에서는 아이콘으로 오른쪽에 따로 배치하므로 중앙 메뉴의 '채팅' 링크는 제거 */}
-                </>
+                <Link to="/assessment" onClick={handleLinkClick}>간이 언어 평가</Link>
               )}
             </>
           )}
         </nav>
 
-        {/* ✅ 우측 컨트롤(채팅 아이콘 + 프로필 드롭다운) */}
+        {/* 우측 컨트롤(비로그인: 안내/로그인/회원가입, 로그인: 채팅 아이콘 + 프로필) */}
         <div className="right-controls">
+          {!isLoggedIn && (
+            <div className="auth-actions desktop-only">
+              <Link to="/guide" onClick={handleLinkClick}>이용안내</Link>
+              <Link to="/login" onClick={handleLinkClick}>로그인</Link>
+              <Link to="/signup" onClick={handleLinkClick}>회원가입</Link>
+            </div>
+          )}
+
           {isLoggedIn && userType === 'user' && (
             <button
               type="button"
@@ -202,7 +204,6 @@ function NavBar({ setCurrentCharacter, getRandomCharacter, onShowChat }) {
               {userType === 'user' && (
                 <>
                   <Link to="/assessment" onClick={handleLinkClick}>간이 언어 평가</Link>
-                  {/* ✅ 모바일에서는 메뉴 안에 '채팅' 유지 */}
                   <Link to="#" onClick={() => { onShowChat?.(); handleLinkClick(); }}>채팅</Link>
                 </>
               )}

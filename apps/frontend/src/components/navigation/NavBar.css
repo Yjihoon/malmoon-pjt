@@ -44,8 +44,9 @@
   margin-left: 22px;
 }
 
-/* 메뉴 버튼: 글자/클릭영역 확대 + 살짝 둥글게 */
-.menu a {
+/* 메뉴/우측-인증공용 버튼 스타일 공유 */
+.menu a,
+.auth-actions a {
   text-decoration: none;
   font-weight: 700;
   font-size: 17px;
@@ -54,13 +55,14 @@
   border-radius: 12px;
   transition: background-color 0.2s ease, color 0.2s ease, transform .1s ease;
 }
-.menu a:hover {
+.menu a:hover,
+.auth-actions a:hover {
   background-color: #ffe0b2;
   color: #2a2218;
   transform: translateY(-1px);
 }
 
-/* ===== 우측 컨트롤(채팅 아이콘 + 프로필) ===== */
+/* ===== 우측 컨트롤 ===== */
 .right-controls {
   margin-left: auto;            /* 오른쪽 끝으로 밀기 */
   display: inline-flex;
@@ -68,7 +70,14 @@
   gap: 12px;
 }
 
-/* 채팅 아이콘 버튼(데스크톱 전용) */
+/* 비로그인 우측 버튼 묶음 */
+.auth-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* 채팅 아이콘 버튼(로그인+일반유저 전용) */
 .chat-icon-btn {
   border: none;
   background: transparent;
@@ -81,7 +90,7 @@
   transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
 }
 .chat-icon-btn img {
-  width: 36px;  /* 필요시 32~40 사이 조절 */
+  width: 36px;
   height: 36px;
   display: block;
 }
@@ -123,10 +132,7 @@
 .dropdown-menu-mobile a:last-child { border-bottom: none; }
 
 /* ===== 프로필 아바타 + 인사문구 트리거(투명 박스 클릭) ===== */
-.profile-menu {
-  position: relative;
-  /* margin-left: auto;  → right-controls로 이관 */
-}
+.profile-menu { position: relative; }
 .profile-trigger {
   display: inline-flex;
   align-items: center;
@@ -235,6 +241,6 @@
   .menu-icon { display: block; }
   .dropdown-menu-mobile { display: flex; }
 
-  /* 모바일에서 채팅 아이콘/프로필 드롭다운은 숨기고, 메뉴에 '채팅' 노출 */
+  /* 모바일: 우측 컨트롤 숨기고, 메뉴에서 로그인/회원가입 노출 */
   .desktop-only { display: none; }
 }
