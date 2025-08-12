@@ -4,9 +4,6 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-router = APIRouter()
-
-
 @router.post("/eval", response_model=FeedbackEvalResponse)
 def evaluate_feedback(request: FeedbackEvalRequest):
     accuracy, feedback_text = feedback_service.generate_feedback_response(request.sentences)
