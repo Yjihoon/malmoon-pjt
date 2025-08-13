@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Container } from 'react-bootstrap';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import './TherapistSessionRoom.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { bootstrapCameraKit } from "@snap/camera-kit";
-import { LocalVideoTrack } from 'livekit-client';
+import { LocalVideoTrack, createLocalVideoTrack } from 'livekit-client';
+import api from '../../api/axios';
 
 import SessionRoomContent from '../../components/TherapistSession/SessionRoomContent';
 
@@ -21,12 +22,14 @@ function TherapistSessionRoom() {
   const { user } = useAuth();
 
   // URL 쿼리 파라미터에서 clientId 추출 및 숫자로 변환
-  const queryParams = new URLSearchParams(location.search);
-  const clientId = parseInt(queryParams.get('clientId'), 10); 
+  const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const clientId = parseInt(queryParams.get('clientId'), 10);
 
   const [showToolPanel, setShowToolPanel] = useState(false);
   const [activeToolTab, setActiveToolTab] = useState(null);
   const [sessionTools, setSessionTools] = useState([]);
+  const [resolvedAacIds, setResolvedAacIds] = useState([]); // Resolved individual AAC IDs
+  const [resolvedFilterIds, setResolvedFilterIds] = useState([]); // Resolved individual Filter IDs
   const [selectedSentence, setSelectedSentence] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
 
@@ -50,21 +53,135 @@ function TherapistSessionRoom() {
     selectedBackgroundImageRef.current = selectedBackgroundImage;
   }, [isFilterActive, selectedBackgroundImage]);
 
-  // useLiveKitSession을 먼저 호출하여 roomRef와 localVideoRef를 얻습니다.
-  const { 
+  const [allToolBundles, setAllToolBundles] = useState([]); // 모든 도구 묶음 저장
+  const [allAacs, setAllAacs] = useState([]); // 모든 개별 AAC 저장
+  const [allFilters, setAllFilters] = useState([]); // 모든 개별 필터 저장
+
+  useEffect(() => {
+    const fetchAndResolveTools = async () => {
+      if (!user || !user.accessToken) return;
+
+      const tools = queryParams.get('tools');
+      if (!tools) return;
+
+      try {
+        // Fetch tool bundle
+        const toolBundlesResponse = await api.get(`/tool-bundles/${tools}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        });
+        const toolBundle = toolBundlesResponse.data;
+        setAllToolBundles(toolBundle ? [toolBundle] : []);
+
+        let aacs = [];
+        if (toolBundle && toolBundle.aacSetId) {
+            const aacSetContentResponse = await api.get(`/aacs/sets/my/${toolBundle.aacSetId}`, {
+              headers: { Authorization: `Bearer ${user.accessToken}` },
+            });
+            const aacSet = aacSetContentResponse.data || [];
+            const aacIds = aacSet.map(item => item.id);
+
+            const aacPromises = aacIds.map(id =>
+              api.get(`/aacs/${id}`, {
+                headers: { Authorization: `Bearer ${user.accessToken}` },
+              })
+            );
+            const aacResponses = await Promise.all(aacPromises);
+            aacs = aacResponses.map(response => response.data);
+        }
+        
+
+
+        setAllAacs(aacs.map(item => ({ ...item, imageUrl: item.fileUrl })));
+
+        const filterResponse = await api.get('/filters', {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+          params: { page: 0, size: 100 }
+        });
+        const allFilters = filterResponse.data.filters.map(item => ({ ...item, imageUrl: item.fileUrl })) || [];
+        setAllFilters(allFilters);
+
+        // Parse and resolve selected tools
+        const toolsParam = queryParams.get('tools');
+        const selectedToolIds = toolsParam ? toolsParam.split(',').map(id => id.trim()) : [];
+
+        let initialAacIds = [];
+        let initialFilterIds = [];
+
+        for (const toolId of selectedToolIds) {
+          const bundle = (toolBundle && String(toolBundle.toolBundleId) === toolId) ? toolBundle : null;
+          if (bundle) {
+            if (bundle.aacSetId) {
+              const aacSetContentResponse = await api.get(`/aacs/sets/my/${bundle.aacSetId}`, {
+                headers: { Authorization: `Bearer ${user.accessToken}` },
+              });
+              const aacsInSet = aacSetContentResponse.data;
+              initialAacIds = [...new Set([...initialAacIds, ...aacsInSet.map(item => String(item.id))])];
+            }
+
+            if (bundle.filterSetId) {
+              const filterSetContentResponse = await api.get(`/filters/sets/my/${bundle.filterSetId}`, {
+                headers: { Authorization: `Bearer ${user.accessToken}` },
+              });
+              const filtersInSet = filterSetContentResponse.data;
+              initialFilterIds = [...new Set([...initialFilterIds, ...filtersInSet.map(item => String(item.filterId))])];
+            }
+          } else {
+            // This part is for individual tools, not bundles
+            if (aacs.some(aac => String(aac.id) === toolId)) {
+              initialAacIds.push(toolId);
+            }
+            else if (allFilters.some(filter => String(filter.filterId) === toolId)) {
+              initialFilterIds.push(toolId);
+            }
+          }
+        }
+        setResolvedAacIds(initialAacIds);
+        setResolvedFilterIds(initialFilterIds);
+
+      } catch (error) {
+        console.error('Error fetching and resolving tool data:', error);
+        setResolvedAacIds([]);
+        setResolvedFilterIds([]);
+      }
+    };
+
+    fetchAndResolveTools();
+  }, [user, location.search, queryParams]);
+
+  const {
     isMuted, setIsMuted, isVideoOff, setIsVideoOff, isRemoteVideoOff, setIsRemoteVideoOff,
     rtcStatus, setRtcStatus, remoteVideoTrack, remoteAudioTrack,
     localVideoRef, remoteVideoRef, remoteAudioRef, roomRef,
-    chatRoomId, 
+    chatRoomId,
     isLiveKitReady,
-    connectToLiveKit, toggleMute, endSession, 
-    toggleVideo: liveKitToggleVideo // useLiveKitSession의 toggleVideo를 다른 이름으로 가져옵니다.
-  } = useLiveKitSession(user, navigate, clientId, // clientId 전달
+    connectToLiveKit, toggleMute, endSession,
+    toggleVideo: liveKitToggleVideo,
+    finalChosenAacByClient
+  } = useLiveKitSession(user, navigate, clientId,
     (sender, message) => setChatMessages(prevMessages => [...prevMessages, { sender, message }]),
     (sentence) => setSelectedSentence(sentence)
   );
 
-  // 필터 캔버스 Ref
+  const handleSendAacToLiveKit = useCallback(async (aacs) => {
+    if (!roomRef.current || !roomRef.current.localParticipant) {
+      console.warn("LiveKit room not ready to send AAC data.");
+      return;
+    }
+    try {
+      const payload = JSON.stringify({
+        type: 'AAC_OPTIONS',
+        data: aacs.map(aac => ({ id: aac.id, name: aac.name, imageUrl: aac.imageUrl }))
+      });
+      await roomRef.current.localParticipant.publishData(new TextEncoder().encode(payload), {
+        reliable: true,
+        topic: 'aac-options'
+      });
+      console.log("AAC options sent via LiveKit data channel:", aacs);
+    } catch (error) {
+      console.error("Failed to send AAC options via LiveKit:", error);
+    }
+  }, [roomRef]);
+
   const outputCanvasRef = useRef(null);
   const outputCKCanvasRef = useRef(null);
 
@@ -81,7 +198,7 @@ function TherapistSessionRoom() {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
-  }, [roomRef, localVideoRef, outputCanvasRef, outputCKCanvasRef]);
+  }, []);
 
   const initializeCameraKit = useCallback(async () => {
     await stopCameraKit();
@@ -116,7 +233,7 @@ function TherapistSessionRoom() {
     if (outputCanvasRef.current) outputCanvasRef.current.style.visibility = 'hidden';
     if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'visible';
 
-  }, [stopCameraKit, roomRef, localVideoRef, outputCanvasRef, outputCKCanvasRef]);
+  }, [stopCameraKit, roomRef]);
 
   const removeBackgroundFilter = useCallback(() => {
     if (cameraKitSessionRef.current) {
@@ -130,191 +247,207 @@ function TherapistSessionRoom() {
   const applyLensById = useCallback(async (lensId) => {
     setUseCameraKit(true);
     setIsFilterActive(false);
-
     await initializeCameraKit();
-    
     const lens = await cameraKitRef.current.lensRepository.loadLens(lensId, '1d348e19-0526-44d6-b5fb-cdc9f664b6bc');
     await cameraKitSessionRef.current.applyLens(lens);
   }, [initializeCameraKit]);
 
   const applyBackgroundFilter = useCallback((imageUrl) => {
-    
     if (cameraKitSessionRef.current) {
         cameraKitSessionRef.current.pause();
     }
     if (!imageUrl) {
       removeBackgroundFilter();
-      
       return;
     }
     setUseCameraKit(false);
     setIsFilterActive(true);
     setSelectedBackgroundImage(imageUrl);
-    
   }, [removeBackgroundFilter]);
 
-  // toggleVideo 함수를 여기서 정의하여 useFilterLogic의 stopCameraKit을 호출합니다.
   const toggleVideo = useCallback(() => {
     const newVideoOffState = !isVideoOff;
     if (newVideoOffState) {
-      stopCameraKit(); // 비디오를 끌 때 필터도 중지합니다.
+      stopCameraKit();
     }
-    liveKitToggleVideo(); // LiveKit의 비디오 토글 함수를 호출합니다.
+    liveKitToggleVideo();
   }, [isVideoOff, stopCameraKit, liveKitToggleVideo]);
 
-  const { 
+  const {
     fairyTaleInfo, fairyTaleContent, currentFairyTalePage,
     isRecording, setIsRecording,
     handlePageChange, sendSentence, startRecording, stopRecording
-  } = useFairyTaleLogic(location, user, clientId, selectedSentence, roomRef); // clientId 전달
+  } = useFairyTaleLogic(location, user, clientId, selectedSentence, roomRef);
 
-  const { 
+  const {
     chatInput, setChatInput, sendChatMessage
   } = useChatLogic(roomRef, user, chatRoomId, setChatMessages);
 
+  // --- START: 최종 수정된 필터 로직 ---
   useEffect(() => {
-    
     let isCleaningUp = false;
+    // createObjectURL로 생성된 임시 URL을 관리하기 위한 변수
+    let objectUrl = null;
+
+    const unpublishAndHide = async (trackNamesToUnpublish, visibleVideo, hiddenCanvas1, hiddenCanvas2) => {
+      if (!roomRef.current || !roomRef.current.localParticipant) return;
+      const unpublishPromises = [];
+      roomRef.current.localParticipant.videoTrackPublications.forEach((publication) => {
+        if (publication.track && trackNamesToUnpublish.includes(publication.track.name)) {
+          unpublishPromises.push(roomRef.current.localParticipant.unpublishTrack(publication.track, true));
+        }
+      });
+      await Promise.all(unpublishPromises);
+
+      if (visibleVideo) visibleVideo.style.visibility = 'visible';
+      if (hiddenCanvas1) hiddenCanvas1.style.visibility = 'hidden';
+      if (hiddenCanvas2) hiddenCanvas2.style.visibility = 'hidden';
+    };
 
     const manageTracks = async () => {
-      
-      
+      if (isCleaningUp || !isLiveKitReady || !roomRef.current || !roomRef.current.localParticipant) {
+        await stopCameraKit();
+        return;
+      }
 
-      try {
-        if (isCleaningUp) {
-          
-          return;
-        }
+      if (useCameraKit) {
+        await unpublishAndHide(['canvas'], null, localVideoRef.current, outputCanvasRef.current);
+        if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'visible';
+        return;
+      }
 
-        if (!isLiveKitReady) {
-          
-          await stopCameraKit();
-          return;
-        }
+      if (isFilterActive && selectedBackgroundImage) {
+        await unpublishAndHide(['camera-kit'], null, localVideoRef.current, null);
+        const videoElement = localVideoRef.current;
+        const canvasElement = outputCanvasRef.current;
+        if (!videoElement || !canvasElement) return;
 
-        const room = roomRef.current;
-        if (!room || !room.localParticipant) {
-          
-          return;
-        }
-
+        const canvasCtx = canvasElement.getContext('2d');
         
-
-        
-
-        if (useCameraKit) {
-          
-          if (room.localParticipant) {
-            const unpublishPromises = [];
-            room.localParticipant.videoTrackPublications.forEach((publication) => {
-              if (publication.track && publication.track.name === 'canvas') {
-                unpublishPromises.push(room.localParticipant.unpublishTrack(publication.track, true));
+        // fetch를 사용하여 URL 변경 없이 캐시를 무시하고 이미지를 로드하는 함수
+        const loadImageWithFetch = (url) => {
+          return new Promise(async (resolve, reject) => {
+            try {
+              // cache: 'reload' 옵션으로 브라우저 캐시를 무시하고 새로 요청
+              const response = await fetch(url, { cache: 'reload' });
+              if (!response.ok) {
+                // response.status와 함께 에러를 던져서 원인을 명확히 함
+                throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
               }
-            });
-            await Promise.all(unpublishPromises);
-          }
-          if (localVideoRef.current) localVideoRef.current.style.visibility = 'hidden';
-          if (outputCanvasRef.current) outputCanvasRef.current.style.visibility = 'hidden';
-          if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'visible';
-          return;
-        } else if (isFilterActive && selectedBackgroundImage) {
-            
-            if (room.localParticipant) {
-              const unpublishPromises = [];
-              room.localParticipant.videoTrackPublications.forEach((publication) => {
-                if (publication.track && publication.track.name === 'camera-kit') {
-                  unpublishPromises.push(room.localParticipant.unpublishTrack(publication.track, true));
-                }
-              });
-              await Promise.all(unpublishPromises);
+              const blob = await response.blob();
+              
+              // 메모리 누수 방지를 위해 이전 objectUrl 해제
+              if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+              }
+              // blob으로부터 새로운 임시 URL 생성
+              objectUrl = URL.createObjectURL(blob);
+
+              const img = new Image();
+              img.onload = () => resolve(img);
+              img.onerror = (err) => reject(err);
+              img.src = objectUrl;
+
+            } catch (error) {
+              reject(error);
             }
-            
-            
+          });
+        };
 
-            const videoElement = localVideoRef.current;
-            const canvasElement = outputCanvasRef.current;
-            
-            if (!videoElement || !canvasElement) {
-              setTimeout(manageTracks, 100); // 100ms 후 재시도
-              return;
-            }
-            
-            
+        try {
+          const backgroundImage = await loadImageWithFetch(selectedBackgroundImageRef.current);
 
-            const canvasCtx = canvasElement.getContext('2d');
-            const backgroundImage = new Image();
-            backgroundImage.crossOrigin = "anonymous";
-
+          if (!selfieSegmentationRef.current) {
             const selfieSegmentation = new window.SelfieSegmentation({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}` });
-            selfieSegmentationRef.current = selfieSegmentation;
             selfieSegmentation.setOptions({ modelSelection: 1, selfieMode: false });
+            selfieSegmentationRef.current = selfieSegmentation;
 
             selfieSegmentation.onResults((results) => {
-              if (isCleaningUp || !canvasElement || !videoElement) return;
+              if (isCleaningUp || !isFilterActiveRef.current) return;
               canvasElement.width = videoElement.videoWidth;
               canvasElement.height = videoElement.videoHeight;
               canvasCtx.save();
               canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-
-              if (isFilterActiveRef.current && selectedBackgroundImageRef.current) {
-                backgroundImage.src = selectedBackgroundImageRef.current; // Set src here
-                canvasCtx.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
-                canvasCtx.globalCompositeOperation = 'source-out';
-                canvasCtx.drawImage(backgroundImage, 0, 0, canvasElement.width, canvasElement.height);
-                canvasCtx.globalCompositeOperation = 'destination-atop';
-                canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-              } else {
-                canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-              }
+              canvasCtx.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
+              canvasCtx.globalCompositeOperation = 'source-out';
+              canvasCtx.drawImage(backgroundImage, 0, 0, canvasElement.width, canvasElement.height);
+              canvasCtx.globalCompositeOperation = 'destination-atop';
+              canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
               canvasCtx.restore();
             });
+          }
 
-            const animate = async () => {
-                if (isCleaningUp) return;
-                if (videoElement && videoElement.readyState >= 4) {
-                    try {
-                        await selfieSegmentation.send({ image: videoElement });
-                    } catch (error) {
-                        console.error("MediaPipe send() failed:", error);
-                        isCleaningUp = true;
-                    }
-                }
-                if (!isCleaningUp) {
-                    animationFrameRef.current = requestAnimationFrame(animate);
-                }
-            };
-            animate();
-
-            const canvasStream = canvasElement.captureStream(25);
-            const canvasVideoTrack = new LocalVideoTrack(canvasStream.getVideoTracks()[0], { name: 'canvas' });
-            try {
-              await room.localParticipant.publishTrack(canvasVideoTrack);
-              
-            } catch (error) {
-              console.error("manageTracks: Canvas 비디오 트랙 게시 실패:", error);
+          const animate = async () => {
+            if (isCleaningUp || !isFilterActiveRef.current) {
+              if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+              animationFrameRef.current = null;
+              return;
             }
+            if (videoElement.readyState >= 4) {
+              await selfieSegmentationRef.current.send({ image: videoElement });
+            }
+            animationFrameRef.current = requestAnimationFrame(animate);
+          };
+          animate();
 
-            if (outputCanvasRef.current) outputCanvasRef.current.style.visibility = 'visible';
-            if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'hidden';
-        } else { // No filter active, ensure original video is visible and filter tracks are unpublished
-          
-          if (localVideoRef.current) localVideoRef.current.style.visibility = 'visible';
-          if (outputCanvasRef.current) outputCanvasRef.current.style.visibility = 'hidden';
+          const canvasStream = canvasElement.captureStream(25);
+          const canvasVideoTrack = new LocalVideoTrack(canvasStream.getVideoTracks()[0], { name: 'canvas' });
+          await roomRef.current.localParticipant.publishTrack(canvasVideoTrack);
+
+          if (outputCanvasRef.current) outputCanvasRef.current.style.visibility = 'visible';
           if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'hidden';
-          // The original video track should already be published by useLiveKitSession.
-          // We just need to ensure any previously published filter tracks are unpublished.
-          const unpublishPromises = [];
-          room.localParticipant.videoTrackPublications.forEach((publication) => {
-            if (publication.track && (publication.track.name === 'canvas' || publication.track.name === 'camera-kit')) {
-              
-              unpublishPromises.push(room.localParticipant.unpublishTrack(publication.track, true));
-            }
-          });
-          await Promise.all(unpublishPromises);
-          
+
+        } catch (error) {
+          console.error("배경 이미지 로드에 실패하여 필터를 중단합니다.", error);
+          setIsFilterActive(false);
+          setSelectedBackgroundImage(null);
+          await unpublishAndHide(['canvas', 'camera-kit'], localVideoRef.current, outputCanvasRef.current, outputCKCanvasRef.current);
         }
-      } finally {
-        
+      } else {
+        // 필터 제거 로직: 모든 비디오 트랙을 정리하고 원본 카메라 트랙을 새로 게시합니다.
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+        if (selfieSegmentationRef.current) {
+            selfieSegmentationRef.current.close();
+            selfieSegmentationRef.current = null;
+        }
+
+        if (roomRef.current && roomRef.current.localParticipant) {
+          // 모든 기존 비디오 트랙(필터 및 원본) 발행 중단
+          const publications = Array.from(roomRef.current.localParticipant.videoTrackPublications.values());
+          const unpublishPromises = publications.map(pub => roomRef.current.localParticipant.unpublishTrack(pub.track, true).catch(e => console.error("Failed to unpublish track", e)));
+          await Promise.all(unpublishPromises);
+
+          // 비디오가 꺼져있지 않은 경우에만 새 트랙 생성 및 게시
+          if (!isVideoOff) {
+            try {
+              // 원본 비디오 트랙을 새로 생성
+              const newVideoTrack = await createLocalVideoTrack();
+              
+              // 로컬 비디오 요소에 연결
+              if (localVideoRef.current) {
+                // 이전 트랙이 있다면 분리
+                const oldTracks = localVideoRef.current.srcObject?.getVideoTracks();
+                if (oldTracks) {
+                  oldTracks.forEach(t => t.stop());
+                }
+                newVideoTrack.attach(localVideoRef.current);
+              }
+              
+              // 새 트랙을 게시
+              await roomRef.current.localParticipant.publishTrack(newVideoTrack);
+
+            } catch (error) {
+              console.error("필터 제거 후 새 비디오 트랙 생성에 실패했습니다:", error);
+              // 실패 시 비디오를 끈 것으로 상태 업데이트
+              setIsVideoOff(true);
+            }
+          }
+        }
+        // 캔버스 숨기고 비디오 보이기
+        if (localVideoRef.current) localVideoRef.current.style.visibility = 'visible';
+        if (outputCanvasRef.current) outputCanvasRef.current.style.visibility = 'hidden';
+        if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'hidden';
       }
     };
 
@@ -322,60 +455,46 @@ function TherapistSessionRoom() {
 
     return () => {
       isCleaningUp = true;
-      
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        
-      }
-      const room = roomRef.current;
-      if (room && room.localParticipant) {
-        
-        room.localParticipant.videoTrackPublications.forEach((publication) => {
-          if (publication.track && (publication.track.name === 'canvas' || publication.track.name === 'camera-kit')) {
-            try {
-              room.localParticipant.unpublishTrack(publication.track, true);
-              
-            } catch (error) {
-              console.error(`useEffect 클린업: ${publication.track.name} 트랙 언퍼블리시 실패:`, error);
-            }
-          }
-        });
-      }
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+      // stopCameraKit() 호출을 useEffect 메인 로직으로 이동하여 레이스 컨디션 방지
       if (selfieSegmentationRef.current) {
-        
-        selfieSegmentationRef.current.close();
-        selfieSegmentationRef.current = null;
+          selfieSegmentationRef.current.close();
+          selfieSegmentationRef.current = null;
       }
-      if (cameraKitSessionRef.current) {
-        
-        cameraKitSessionRef.current.destroy();
-        cameraKitSessionRef.current = null;
+      // 컴포넌트가 사라질 때 메모리 누수 방지
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
       }
-      
     };
-  }, [rtcStatus, useCameraKit, isVideoOff, roomRef, stopCameraKit, isFilterActive, selectedBackgroundImage, isLiveKitReady]);
+  }, [rtcStatus, useCameraKit, isVideoOff, stopCameraKit, isFilterActive, selectedBackgroundImage, isLiveKitReady]);
+  // --- END: 최종 수정된 필터 로직 ---
+
 
   useEffect(() => {
     const fetchBackgroundImages = async () => {
-      try {
-        const placeholderImages = [
-          { id: 1, name: '카리나', url: '/bg.jpg' },
-          { id: 2, name: '윈터', url: '/bg2.jpg' },
-          { id: 3, name: '닝닝', url: '/bg3.jpg' },
-          { id: 4, name: '지젤', url: '/bg4.jpg' },
-        ];
-        setBackgroundImages(placeholderImages);
-      } catch (error) {
-        console.error("배경 이미지 로딩 실패:", error);
-      }
+      const backendOrigin = 'http://localhost:8080';
+      setBackgroundImages(allFilters.map(filter => ({
+        id: filter.filterId,
+        name: filter.name,
+        url: filter.imageUrl && !filter.imageUrl.startsWith('http') ? `${backendOrigin}${filter.imageUrl}` : filter.imageUrl,
+      })));
     };
-    if (rtcStatus === 'connected') fetchBackgroundImages();
-  }, [rtcStatus]);
+    if (rtcStatus === 'connected' && allFilters.length > 0) fetchBackgroundImages();
+  }, [rtcStatus, allFilters]);
 
   const toggleToolPanel = (toolType) => {
     setShowToolPanel(prev => prev && activeToolTab === toolType ? false : true);
     setActiveToolTab(toolType);
   };
+
+  const filteredAacs = useMemo(() => {
+    return allAacs.filter(aac => resolvedAacIds.includes(String(aac.id)));
+  }, [allAacs, resolvedAacIds]);
+
+  const filteredFilters = useMemo(() => {
+    return allFilters.filter(filter => resolvedFilterIds.includes(String(filter.filterId)));
+  }, [allFilters, resolvedFilterIds]);
 
   return (
     <Container fluid className="session-room-container">
@@ -420,6 +539,18 @@ function TherapistSessionRoom() {
         outputCanvasRef={outputCanvasRef}
         outputCKCanvasRef={outputCKCanvasRef}
         containerRef={containerRef}
+        // --- FIX START ---
+        // '조회'된 AAC 목록은 allAacs prop으로 전달하고,
+        // '초기 선택'은 빈 배열로 설정하여 아무것도 선택되지 않은 상태로 시작합니다.
+        initialSelectedAacIds={[]}
+        // --- FIX END ---
+        initialSelectedFilterIds={resolvedFilterIds}
+        allAacs={filteredAacs}
+        allFilters={filteredFilters}
+        availableAacs={allAacs} // 전체 AAC 목록을 전달
+        onSendAac={handleSendAacToLiveKit}
+        finalChosenAacByClient={finalChosenAacByClient}
+        roomRef={roomRef}
       />
     </Container>
   );

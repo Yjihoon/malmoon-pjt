@@ -5,10 +5,11 @@ import './UserSessionRoom.css';
 import axios from 'axios';
 import {createLocalTracks, Room, RoomEvent, Track} from 'livekit-client';
 import {useAuth} from '../../contexts/AuthContext';
+import AacDisplay from '../../pages/User/AacDisplay'; // ADDED: AacDisplay import
 
-const LIVEKIT_URL = 'wss://www.malmoon.store';
+//const LIVEKIT_URL = 'wss://www.malmoon.store';
 
-//const LIVEKIT_URL = 'wss://i13c107.p.ssafy.io:7881';
+const LIVEKIT_URL = 'wss://i13c107.p.ssafy.io:8443';
 
 function UserSessionRoom() {
     const navigate = useNavigate();
@@ -25,7 +26,8 @@ function UserSessionRoom() {
     const [chatMessages, setChatMessages] = useState([]);
     const [chatInput, setChatInput] = useState('');
     const [showChatPanel, setShowChatPanel] = useState(false);
-    const [chatRoomId, setChatRoomId] = useState(null); // 여기 추가함
+    const [chatRoomId, setChatRoomId] = useState(null);
+    const [receivedAacQuestion, setReceivedAacQuestion] = useState(null); // ADDED: State for AAC question
 
     const [remoteVideoTrack, setRemoteVideoTrack] = useState(null);
     const [remoteAudioTrack, setRemoteAudioTrack] = useState(null);
@@ -76,9 +78,9 @@ function UserSessionRoom() {
             participant.on(RoomEvent.IsSpeakingChanged, setIsRemoteSpeaking);
 
             participant.on(RoomEvent.TrackUnsubscribed, (track) => {
-                if (track.kind === 'video') {
-                    setRemoteVideoTrack(null);
-                    setIsRemoteVideoOff(true);
+                if (track.kind === 'video' && remoteVideoTrack?.sid === track.sid) {
+                setRemoteVideoTrack(null);
+                setIsRemoteVideoOff(true);
                 } else if (track.kind === 'audio') {
                     setRemoteAudioTrack(null);
                 }
@@ -102,18 +104,31 @@ function UserSessionRoom() {
             // This event is now handled within the handleParticipantConnected logic
         });
 
+        // MODIFIED: DataReceived listener to handle AAC questions and add debug logs
         room.on(RoomEvent.DataReceived, (payload, participant, kind) => {
-            const decoder = new TextDecoder();
-            const data = JSON.parse(decoder.decode(payload));
-            if (data.type === 'sentence') {
-                setReceivedSentence(data.payload);
-            } else if (data.type === 'chat') {
-                setChatMessages(prevMessages => [...prevMessages, {
-                    sender: participant.identity,
-                    message: data.payload
-                }]);
+            console.log('UserSessionRoom: DataReceived listener triggered!'); // DEBUG LOG
+            console.log('UserSessionRoom: Raw payload received:', payload);
+            console.log('UserSessionRoom: Participant:', participant);
+            console.log('UserSessionRoom: Kind:', kind);
+            try {
+                const decoder = new TextDecoder();
+                const data = JSON.parse(decoder.decode(payload));
+                console.log('UserSessionRoom: Parsed data:', data);
+                if (data.type === 'sentence') {
+                    setReceivedSentence(data.payload);
+                } else if (data.type === 'chat') {
+                    setChatMessages(prevMessages => [...prevMessages, {
+                        sender: participant.identity,
+                        message: data.payload
+                    }]);
+                } else if (data.type === 'aac-question') {
+                    setReceivedAacQuestion(data);
+                }
+            } catch (error) {
+                console.error('UserSessionRoom: Error parsing received data:', error, 'Raw payload:', payload);
             }
         });
+        console.log('UserSessionRoom: DataReceived listener attached.'); // DEBUG LOG
 
         try {
             const response = await axios.post('/api/v1/sessions/join', {bookingId}, {
@@ -122,8 +137,8 @@ function UserSessionRoom() {
                     "Content-Type": "application/json"
                 }
             });
-            const {token: livekitToken, chatRoomId: newChatRoomId} = response.data; // 여기 수정함
-            setChatRoomId(newChatRoomId); // 여기 추가함
+            const {token: livekitToken, chatRoomId: newChatRoomId} = response.data;
+            setChatRoomId(newChatRoomId);
 
             await room.connect(LIVEKIT_URL, livekitToken);
 
@@ -293,6 +308,9 @@ function UserSessionRoom() {
                                 {receivedSentence}
                             </div>
                         )}
+
+                        {/* Add AacDisplay here */}
+                        <AacDisplay roomRef={roomRef} receivedAacQuestion={receivedAacQuestion} />
 
                         <div className="control-panel">
                             <div className="d-flex align-items-center justify-content-center h-100">

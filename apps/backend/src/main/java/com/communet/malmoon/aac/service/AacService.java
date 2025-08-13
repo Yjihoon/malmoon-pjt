@@ -179,7 +179,7 @@ public class AacService {
 		Aac aac = aacRepository.findById(aacId)
 			.orElseThrow(() -> new AacException(AacErrorCode.NOT_FOUND));
 
-		String ImageUrl = fileService.getFileUrl(aac.getFileId());
+		String ImageUrl = fileService.getPresignedFileUrl(aac.getFileId());
 
 		return AacGetRes.from(aac, ImageUrl);
 	}
