@@ -84,11 +84,6 @@
   row-gap: 12px;
   transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
 }
-.therapist-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 26px rgba(0,0,0,0.1);
-  border-color: #dde7f5;
-}
 
 /* 아바타 */
 .avatar {
@@ -115,7 +110,7 @@
   font-size: 12px; font-weight: 700; padding: 6px 10px;
   background: #fff3e8; color: #b45309; border: 1px solid #ffe3c7; border-radius: 999px;
 }
-.meta { color: var(--muted); font-size: 14px; margin: 2px 0; }
+.meta { color: var(--muted); font-size: 14px; margin: 2px 0; text-align: left;}
 
 /* 액션 */
 .actions { grid-area: actions; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }

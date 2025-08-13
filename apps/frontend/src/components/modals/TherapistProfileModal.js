@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Button, ListGroup, Card, Row, Col, Image } from 'react-bootstrap';
+import { Modal, ListGroup, Card, Image } from 'react-bootstrap';
 import './TherapistProfileModal.css';
 import defaultImage from '../../assets/therapist.png';
 
@@ -66,18 +66,11 @@ function TherapistProfileModal({ show, handleClose, therapistProfile }) {
             />
           ) : (
             <>
-              {/* 이미지가 전혀 없으면 기본 이미지 or 이니셜 표시 중 택1 */}
               <Image
                 src={defaultImage}
                 className="profile-image"
                 alt="기본 프로필"
               />
-              {/* 이니셜 버전을 쓰고 싶으면 위 Image 대신 아래 블록 사용 */}
-              {false && (
-                <div className="profile-initial">
-                  {therapistProfile?.name?.[0] ?? '치'}
-                </div>
-              )}
             </>
           )}
 
@@ -88,35 +81,7 @@ function TherapistProfileModal({ show, handleClose, therapistProfile }) {
           </div>
         </div>
 
-        <Row>
-          <Col md={6}>
-            <Card className="mb-3">
-              <Card.Header as="h5">기본 정보</Card.Header>
-              <ListGroup variant="flush">
-                <ListGroup.Item>
-                  <strong>생년월일:</strong> {formatDate(therapistProfile.birthDate)}
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  <strong>총 경력:</strong> {therapistProfile.careerYears}년
-                </ListGroup.Item>
-              </ListGroup>
-            </Card>
-          </Col>
-
-          <Col md={6}>
-            <Card className="mb-3">
-              <Card.Header as="h5">주소</Card.Header>
-              <ListGroup variant="flush">
-                <ListGroup.Item>
-                  {therapistProfile.address
-                    ? `${therapistProfile.address.sido} ${therapistProfile.address.gugun}`
-                    : '주소 정보 없음'}
-                </ListGroup.Item>
-              </ListGroup>
-            </Card>
-          </Col>
-        </Row>
-
+        {/* ✅ 경력 정보만 표시 */}
         <Card>
           <Card.Header as="h5">경력 정보</Card.Header>
           <ListGroup variant="flush">
@@ -140,9 +105,10 @@ function TherapistProfileModal({ show, handleClose, therapistProfile }) {
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>
+        {/* ✅ 커스텀 닫기 버튼 */}
+        <button type="button" className="tm-btn tm-btn-primary" onClick={handleClose}>
           닫기
-        </Button>
+        </button>
       </Modal.Footer>
     </Modal>
   );

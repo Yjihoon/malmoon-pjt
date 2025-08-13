@@ -313,7 +313,7 @@ function TherapistFeedbackPage() {
         <Container className="my-5 main-container">
             <h2 className="text-center mb-4">아동별 피드백 조회
                 <Link to="/therapist/mypage/matching" className="ms-3">
-                    <Button variant="outline-primary" size="sm">매칭 요청 보기</Button>
+                    <Button variant="outline-secondary" size="sm">매칭 요청 보기</Button>
                 </Link>
             </h2>
             <Row>

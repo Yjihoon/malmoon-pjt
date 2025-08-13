@@ -35,20 +35,20 @@ import UserSignUp from './pages/signup/UserSignUp';
 import TherapistSignUp from './pages/signup/TherapistSignUp';
 
 import char1 from "./logoimage/char1.png";
-import char5 from "./logoimage/char2.png";
-import char2 from "./logoimage/char3.png";
-import char3 from "./logoimage/char4.png";
-import char4 from "./logoimage/char5.png";
+import char2 from "./logoimage/char2.png";
+import char3 from "./logoimage/char3.png";
+import char4 from "./logoimage/char4.png";
+import char5 from "./logoimage/char5.png";
 import char6 from "./logoimage/char6.png";
 
 /** 캐릭터 메타(고정 id로 관리) */
 const characterData = [
-  { id: "bear",    src: char1, bgColor: "#f3eade" },
-  { id: "duck",    src: char5, bgColor: "#fff9c4" },
-  { id: "wolf",    src: char2, bgColor: "#eceff1" },
-  { id: "dog",     src: char3, bgColor: "#fffde7" },
-  { id: "parrot",  src: char4, bgColor: "#f1f8e9" },
-  { id: "penguin", src: char6, bgColor: "#e3f2fd" },
+  { id: "bear",    src: char1, bgColor: "#f3eade", buttonColors: { primaryBg: "#b38b6d", primaryText: "#ffffff", primaryHoverBg: "#8d6d53", secondaryBg: "#8d6d53", secondaryText: "#ffffff", secondaryHoverBg: "#5a463c", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#b38b6d" } },
+  { id: "duck",    src: char2, bgColor: "#fff9c4", buttonColors: { primaryBg: "#ffd600", primaryText: "#000000", primaryHoverBg: "#f9a825", secondaryBg: "#f9a825", secondaryText: "#ffffff", secondaryHoverBg: "#212121", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#ffd600" } },
+  { id: "wolf",    src: char3, bgColor: "#eceff1", buttonColors: { primaryBg: "#78909c", primaryText: "#ffffff", primaryHoverBg: "#455a64", secondaryBg: "#455a64", secondaryText: "#ffffff", secondaryHoverBg: "#263238", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#78909c" } },
+  { id: "dog",     src: char4, bgColor: "#fffde7", buttonColors: { primaryBg: "#a1887f", primaryText: "#ffffff", primaryHoverBg: "#795548", secondaryBg: "#795548", secondaryText: "#ffffff", secondaryHoverBg: "#4e342e", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#a1887f" } },
+  { id: "parrot",  src: char5, bgColor: "#f1f8e9", buttonColors: { primaryBg: "#aed581", primaryText: "#ffffff", primaryHoverBg: "#66bb6a", secondaryBg: "#66bb6a", secondaryText: "#ffffff", secondaryHoverBg: "#43a047", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#aed581" } },
+  { id: "penguin", src: char6, bgColor: "#e3f2fd", buttonColors: { primaryBg: "#64b5f6", primaryText: "#ffffff", primaryHoverBg: "#2196f3", secondaryBg: "#2196f3", secondaryText: "#ffffff", secondaryHoverBg: "#0d47a1", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#64b5f6" } },
 ];
 
 /** 백엔드의 프로필 숫자(id) ↔ 프론트 캐릭터 id 매핑 (순서와 무관) */
@@ -111,6 +111,22 @@ function App() {
       style={{
         "--app-bg-color": effectiveCharacter.bgColor,
         "--bg-character": `url(${effectiveCharacter.src})`,
+        "--btn-primary-bg": effectiveCharacter.buttonColors.primaryBg,
+        "--btn-primary-text": effectiveCharacter.buttonColors.primaryText,
+        "--btn-primary-hover-bg": effectiveCharacter.buttonColors.primaryHoverBg,
+        "--btn-secondary-bg": effectiveCharacter.buttonColors.secondaryBg,
+        "--btn-secondary-text": effectiveCharacter.buttonColors.secondaryText,
+        "--btn-secondary-hover-bg": effectiveCharacter.buttonColors.secondaryHoverBg,
+        "--btn-info-bg": effectiveCharacter.buttonColors.infoBg,
+        "--btn-info-text": effectiveCharacter.buttonColors.infoText,
+        "--btn-info-hover-bg": effectiveCharacter.buttonColors.infoHoverBg,
+        "--btn-success-bg": effectiveCharacter.buttonColors.successBg,
+        "--btn-success-text": effectiveCharacter.buttonColors.successText,
+        "--btn-success-hover-bg": effectiveCharacter.buttonColors.successHoverBg,
+        "--btn-danger-bg": effectiveCharacter.buttonColors.dangerBg,
+        "--btn-danger-text": effectiveCharacter.buttonColors.dangerText,
+        "--btn-danger-hover-bg": effectiveCharacter.buttonColors.dangerHoverBg,
+        "--calendar-selected-day-bg": effectiveCharacter.buttonColors.calendarSelectedDayBg,
       }}
     >
       <NavBar

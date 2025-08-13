@@ -28,10 +28,38 @@ function LoginPage() {
 
     setLoading(true);
     try {
+      // 1) 로그인
       const res = await api.post(`/auth/login`, { email, password });
-      const { accessToken, memberId, birthDate } = res.data;
+      const { accessToken, memberId, birthDate, role: roleFromLogin } = res.data;
+
+      // 2) 컨텍스트 저장
       await login({ userEmail: email, accessToken, memberId, birthDate });
-      navigate('/');
+
+      // 3) 역할 확인
+      let role = roleFromLogin;
+      if (!role) {
+        try {
+          const me = await api.get(`/members/me`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          role = me.data?.role ?? me.data?.memberType ?? me.data?.type;
+        } catch {
+          try {
+            const me2 = await api.get(`/members/${memberId}`, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            role = me2.data?.role ?? me2.data?.memberType ?? me2.data?.type;
+          } catch {}
+        }
+      }
+
+      // 4) 역할별 이동
+      const isUser = String(role || '').toLowerCase() === 'user';
+      const to = isUser
+        ? '/user/mypage/schedule'
+        : '/therapist/mypage/schedule';
+
+      navigate(to, { replace: true });
     } catch (err) {
       console.error(err);
       setError('이메일 또는 비밀번호가 올바르지 않습니다.');
@@ -39,6 +67,7 @@ function LoginPage() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="login-layout">

@@ -250,21 +250,39 @@ function UserAssessmentPage() {
       {!started ? (
         <div className="assessment-intro">
           <h1 className="intro-title">간이언어평가</h1>
-          <p className="intro-description">
-            의사소통장애(Communication disorder)는 발화, 인지의 문제로 인하여 의사소통에 어려움을 겪는 상태를 말합니다.
+          <p className="intro-kicker">
+            의사소통장애(Communication disorder)는 발화, 인지의 문제로 인하여
+            의사소통에 어려움을 겪는 상태를 말합니다.
           </p>
-          <p className="intro-description">
-            간이언어평가는 개인의 발화 능력과 언어적 이해 및 표현 능력의 발달 수준을 간략하게 평가하여<br />
-            언어 발달 지연이나 인지능력의 이상 여부를 신속히 식별하고 추가적인 정밀 평가나 치료 개입의 필요성을 판단하는 데 중점을 둔 검사입니다.
-          </p>
-          <p className="intro-subtext">
-            사용자의 나이에 해당되는 간이언어평가를 진행할 수 있습니다.
-          </p>
+
+          <div className="intro-card">
+            <h3 className="intro-card-title">무엇을 평가하나요?</h3>
+            <p className="intro-description">
+              간이언어평가는 개인의 발화 능력과 언어적 이해 및 표현 능력의 발달 수준을 간략하게 평가하여
+              언어 발달 지연이나 인지능력의 이상 여부를 신속히 식별하고, 추가적인 정밀 평가나 치료 개입의
+              필요성을 판단하는 데 중점을 둔 검사입니다.
+            </p>
+
+            <ul className="intro-list">
+              <li>발화 능력</li>
+              <li>언어적 이해</li>
+              <li>표현 능력</li>
+            </ul>
+
+            <div className="intro-pills">
+              <span className="pill">약 3–5분</span>
+              <span className="pill">마이크 필요</span>
+              <span className="pill">이미지 보고 말하기</span>
+            </div>
+          </div>
+
           {errorMsg && <p className="error-text">{errorMsg}</p>}
+
           <button className="btn-assessment btn-start" onClick={handleStart}>
             시작하기
           </button>
         </div>
+
       ) : (
         <div className="assessment-test">
           {words.length > 0 && currentIndex < words.length ? (
@@ -275,7 +293,7 @@ function UserAssessmentPage() {
                 className="assessment-image"
               />
 
-              {currentIndex < 10 && (
+              {currentIndex < 10 && getAgeGroup() === 'PRESCHOOL' && (
                 <button
                   className="speaker-button"
                   onClick={() => handlePlayWordAudio(words[currentIndex].filename)}

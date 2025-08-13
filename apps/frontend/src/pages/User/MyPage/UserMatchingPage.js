@@ -112,10 +112,11 @@ function UserMatchingPage() {
     setSelectedTherapist(null);
   };
 
-  // 안전: 객체 전체를 받아 내부에서 id 추출
+  // 상담 신청하기: '정식 이름'을 state로 함께 전달
   const handleApply = (itemOrId) => {
-    const id = typeof itemOrId === 'object'
-      ? (itemOrId?.therapistId ?? itemOrId?.id ?? itemOrId?.therapist?.therapistId)
+    const therapistObj = typeof itemOrId === 'object' ? itemOrId : null;
+    const id = therapistObj
+      ? (therapistObj?.therapistId ?? therapistObj?.id ?? therapistObj?.therapist?.therapistId)
       : itemOrId;
 
     if (!id) {
@@ -123,7 +124,12 @@ function UserMatchingPage() {
       console.error('No therapistId in item:', itemOrId);
       return;
     }
-    navigate(`/user/booking/${id}`);
+
+    const realName = (therapistObj?.name ?? therapistObj?.therapist?.name ?? '').toString().trim();
+
+    navigate(`/user/booking/${id}`, {
+      state: { therapistName: realName || undefined }, // 닉네임/ID 말고 '이름'만 전달
+    });
   };
 
   const handlePageChange = (p) => {

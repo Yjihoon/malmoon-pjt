@@ -48,6 +48,7 @@
   --border-radius-md: 12px;
   --border-radius-lg: 16px;
   --bs-card-border-color: var(--border-color);
+  --calendar-selected-day-bg: #e6f2ff; /* 캘린더 선택된 날짜 배경색 */
 }
 
 body {
@@ -132,54 +133,54 @@ p {
 }
 
 .btn-soft-primary {
-  background-color: #90EE90 !important; /* Light Green */
-  color: white !important; /* 글자색 */
+  background-color: var(--btn-primary-bg) !important;
+  color: var(--btn-primary-text) !important;
   border: 1px solid #e0e0e0 !important; /* 수업 예정 버튼과 동일한 테두리 색상 */
 }
 
 .btn-soft-primary:hover {
-  background-color: #7CCD7C; /* Darker Light Green */
+  background-color: var(--btn-primary-hover-bg);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn-soft-secondary {
-  background-color: #f0f0f0 !important; /* Light grey */
-  color: var(--primary-color) !important;
+  background-color: var(--btn-secondary-bg) !important;
+  color: var(--btn-secondary-text) !important;
   border: 1px solid #e0e0e0 !important;
 }
 
 .btn-soft-secondary:hover {
-  background-color: #e0e0e0;
+  background-color: var(--btn-secondary-hover-bg);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 
 .btn-soft-info {
-  background-color: #87CEEB; /* Sky Blue */
-  color: white;
+  background-color: var(--btn-info-bg);
+  color: var(--btn-info-text);
 }
 
 .btn-soft-info:hover {
-  background-color: #6CA6CD; /* Darker Sky Blue */
+  background-color: var(--btn-info-hover-bg);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn-soft-success {
-  background-color: #90EE90; /* Light Green */
-  color: white;
+  background-color: var(--btn-success-bg);
+  color: var(--btn-success-text);
 }
 
 .btn-soft-success:hover {
-  background-color: #7CCD7C; /* Darker Light Green */
+  background-color: var(--btn-success-hover-bg);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn-soft-danger {
-  background-color: #FF6347; /* Tomato */
-  color: white;
+  background-color: var(--btn-danger-bg);
+  color: var(--btn-danger-text);
 }
 
 .btn-soft-danger:hover {
-  background-color: #E5533D; /* Darker Tomato */
+  background-color: var(--btn-danger-hover-bg);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 

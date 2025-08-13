@@ -16,234 +16,198 @@ body {
   padding: 1rem 1rem 1.5rem;
   box-sizing: border-box;
   overflow-x: hidden;
+  margin-top: 30px;
 }
 
 /* === 카드 박스 === */
-.assessment-intro, .assessment-test {
+.assessment-intro,
+.assessment-test {
   background-color: #ffffffee;
   width: 100%;
-  max-width: 480px;
-  padding: 1.5rem;
-  margin-top: 1rem;
+  max-width: 520px;             /* 살짝 넓혀도, 내부 요소 정렬로 단정하게 */
+  padding: 20px 18px;
+  margin-top: 16px;
   border-radius: 20px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
   text-align: center;
-  animation: fadeIn 0.5s ease-in-out;
+  animation: fadeIn 0.4s ease-in-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* === 인트로 영역 텍스트 === */
+/* === 인트로 영역 === */
 .intro-title {
   font-size: 2rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
+  font-weight: 800;
+  margin: 0 0 .5rem;
+  color: #222;
+}
+
+.intro-kicker {
+  margin: 0 0 10px;
+  color: #556070;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.intro-card {
+  text-align: left;
+  background: #fff7ed;                /* 파스텔 피치 */
+  border: 1px solid #ffe3c7;
+  border-radius: 16px;
+  padding: 16px;
+  margin: 10px 0 16px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+}
+
+.intro-card-title {
+  margin: 0 0 8px;
+  font-size: 1.12rem;
+  font-weight: 800;
   color: #333;
 }
 
 .intro-description {
-  font-size: 1.1rem;
+  font-size: 1rem;
   line-height: 1.6;
-  margin-bottom: 1rem;
-  text-align: center;
+  margin: 0;
   color: #444;
 }
 
-.intro-subtext {
-  font-size: 1rem;
-  margin-bottom: 2rem;
-  font-style: italic;
-  color: #555;
+.intro-list {
+  list-style: none;
+  padding: 0; margin: 12px 0 0;
+  display: grid; gap: 8px;
+}
+.intro-list li {
+  position: relative;
+  padding-left: 22px;
+  color: #404b5a;
+  line-height: 1.5;
+}
+.intro-list li::before {
+  content: "✔";
+  position: absolute; left: 0; top: 0;
+  color: #16a34a; font-weight: 700;
 }
 
-/* === 질문 영역 === */
+.intro-pills {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-top: 14px;
+}
+.pill {
+  font-size: 12px; font-weight: 700;
+  padding: 6px 10px;
+  background: #eef6ff;
+  color: #1e429f;
+  border: 1px solid #d7e7ff;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* === 질문 영역(정돈된 수직 스택) === */
 .question-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.2rem;
-}
-
-.assessment-image-container {
-  width: 100%;
-  max-width: 260px;
-  height: 260px;
-  background: #f0f4ff;
-  border: 2px dashed #b3cfff;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.03);
+  gap: 12px;                     /* 간격 일정 */
 }
 
 .assessment-image {
-  max-width: 80%;
-  max-height: 80%;
+  width: 240px;                  /* 이미지 크기 통일 */
+  height: auto;
+  margin: 4px 0 2px;
   object-fit: contain;
 }
 
+.speaker-button {
+  font-size: 15px;
+  background-color: #ffb74d;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.speaker-button:hover { background-color: #ffa726; }
+
 .question-section p {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #444;
-  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #3a3a3a;
+  margin: 6px 0 0;
 }
 
-/* === 버튼 영역 === */
-.button-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  width: 100%;
-  max-width: 280px;
-}
-
+/* === 버튼 영역(정렬 고정) === */
+.assessment-button,
 .btn-assessment {
-  padding: 0.8rem 1.3rem;
-  font-size: 1rem;
-  font-weight: bold;
+  display: inline-block;
+  width: 100%;
+  max-width: 300px;              /* 버튼 폭 고정 → 덜 산만 */
+  padding: 12px 20px;
   border: none;
   border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: sans-serif;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  color: white;
+  transition: transform 0.15s ease, filter 0.15s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
-/* ✅ 동글동글한 시작 버튼 */
 .btn-start {
   background-color: #4caf50;
-  color: white;
-  font-size: 1.1rem;
-  padding: 0.9rem 2rem;
-  border-radius: 999px;
-  transition: all 0.25s ease;
 }
-
 .btn-start:hover {
-  background-color: #43a047;
-  transform: scale(1.05);
+  filter: brightness(0.96);
+  transform: translateY(-1px);
 }
 
-.btn-primary {
-  background-color: #4a90e2;
-  color: white;
-}
-.btn-primary:hover {
-  background-color: #357ac3;
-  transform: scale(1.05);
-}
+.start-recording-btn { background-color: #4CAF50; }
+.start-recording-btn:hover { filter: brightness(0.96); transform: translateY(-1px); }
 
-.btn-recording {
-  background-color: #e03a3e;
-  color: white;
-}
-.btn-recording:hover {
-  background-color: #c0262a;
-  transform: scale(1.05);
-}
+.stop-recording-btn { background-color: #e53935; }
+.stop-recording-btn:hover { filter: brightness(0.96); transform: translateY(-1px); }
 
-.btn-secondary {
-  background-color: #6c757d;
-  color: white;
-}
-.btn-secondary:hover {
-  background-color: #5a6268;
-  transform: scale(1.05);
-}
+.next-button { background-color: #2196F3; }
+.next-button:hover { filter: brightness(0.96); transform: translateY(-1px); }
 
-.btn-assessment:disabled {
-  background-color: #ccc;
-  color: #888;
+.assessment-button:disabled,
+.next-button:disabled {
+  background-color: #b0b0b0;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
-/* === 완료 메시지 === */
+/* 완료 메시지 */
 .assessment-test p {
-  font-size: 1.4rem;
-  font-weight: bold;
+  font-size: 1.25rem;
+  font-weight: 700;
   color: #333;
   text-align: center;
-  animation: fadeIn 0.5s ease-in-out;
-  margin: 1rem 0 0;
+  animation: fadeIn 0.4s ease-in-out;
+  margin: 8px 0 0;
 }
 
-/* 공통 버튼 스타일 */
-.assessment-button {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 30px; /* 동글동글 */
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  color: white;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+/* 에러 텍스트 */
+.error-text {
+  color: #c0262a;
+  font-weight: 700;
+  margin: 6px 0 0;
 }
 
-/* 녹음 시작 - 초록색 */
-.start-recording-btn {
-  background-color: #4CAF50;
-}
-.start-recording-btn:hover {
-  background-color: #45a049;
-}
+/* 불필요한 중복 제거 & 정돈을 위해 미사용 요소 제거
+   - .intro-hero / .hero-icon 삭제 (제목 옆 이모지 제거) */
 
-/* 녹음 중지 - 빨간색 */
-.stop-recording-btn {
-  background-color: #e53935;
-}
-.stop-recording-btn:hover {
-  background-color: #d32f2f;
-}
-
-/* 다음 문제 - 파란색 */
-.next-button {
-  background-color: #2196F3;
-}
-.next-button:hover {
-  background-color: #1976D2;
-}
-
-/* 비활성화 상태일 때 회색 처리 */
-.assessment-button:disabled,
-.next-button:disabled {
-  background-color: #b0b0b0;
-  cursor: not-allowed;
-}
-
-.image-with-audio {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.assessment-image {
-  width: 200px;
-  height: auto;
-  margin-bottom: 10px;
-}
-
-.speaker-button {
-  font-size: 18px;
-  background-color: #ffb74d;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 30px;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.speaker-button:hover {
-  background-color: #ffa726;
+/* 반응형 */
+@media (max-width: 768px) {
+  .assessment-intro, .assessment-test { padding: 16px; }
+  .assessment-image { width: 220px; }
+  .intro-title { font-size: 1.85rem; }
 }

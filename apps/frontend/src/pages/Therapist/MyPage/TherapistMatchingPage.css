@@ -19,19 +19,19 @@
 
 .matching-client-info h5 {
   font-size: 1.2rem;
-  color: var(--primary-color);
+  color: black;
   margin-bottom: 8px;
 }
 
 .matching-client-info p {
   font-size: 0.95rem;
-  color: var(--secondary-color);
+  color: black;
   margin-bottom: 5px;
 }
 
 .matching-client-info small {
   font-size: 0.85rem;
-  color: var(--secondary-color);
+  color: black;
 }
 
 .matching-client-actions {
