@@ -2,9 +2,9 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {createLocalTracks, Room, RoomEvent, Track} from 'livekit-client';
 import api from '../api/axios'; // axios 인스턴스, 기본 baseURL 세팅
 
-const LIVEKIT_URL = 'wss://www.malmoon.store';
+//const LIVEKIT_URL = 'wss://www.malmoon.store';
 
-//const LIVEKIT_URL = 'wss://i13c107.p.ssafy.io:7881';
+const LIVEKIT_URL = 'wss://i13c107.p.ssafy.io:8443';
 
 export function useLiveKitSession(user, navigate, clientId, onChatMessageReceived, onSentenceReceived) {
     const [isMuted, setIsMuted] = useState(false);
