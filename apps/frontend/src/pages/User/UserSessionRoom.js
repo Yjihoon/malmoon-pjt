@@ -78,9 +78,9 @@ function UserSessionRoom() {
             participant.on(RoomEvent.IsSpeakingChanged, setIsRemoteSpeaking);
 
             participant.on(RoomEvent.TrackUnsubscribed, (track) => {
-                if (track.kind === 'video') {
-                    setRemoteVideoTrack(null);
-                    setIsRemoteVideoOff(true);
+                if (track.kind === 'video' && remoteVideoTrack?.sid === track.sid) {
+                setRemoteVideoTrack(null);
+                setIsRemoteVideoOff(true);
                 } else if (track.kind === 'audio') {
                     setRemoteAudioTrack(null);
                 }

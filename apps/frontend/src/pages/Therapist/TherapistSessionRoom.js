@@ -4,7 +4,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import './TherapistSessionRoom.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { bootstrapCameraKit } from "@snap/camera-kit";
-import { LocalVideoTrack } from 'livekit-client';
+import { LocalVideoTrack, createLocalVideoTrack } from 'livekit-client';
 import api from '../../api/axios';
 
 import SessionRoomContent from '../../components/TherapistSession/SessionRoomContent';
@@ -57,80 +57,77 @@ function TherapistSessionRoom() {
   const [allAacs, setAllAacs] = useState([]); // 모든 개별 AAC 저장
   const [allFilters, setAllFilters] = useState([]); // 모든 개별 필터 저장
 
-  // 모든 정적 도구 데이터를 한 번만 불러오는 useEffect
   useEffect(() => {
-    const fetchAllStaticToolData = async () => {
+    const fetchAndResolveTools = async () => {
       if (!user || !user.accessToken) return;
 
-      if (allToolBundles.length > 0 && allAacs.length > 0 && allFilters.length > 0) {
-          return;
-      }
+      const tools = queryParams.get('tools');
+      if (!tools) return;
 
       try {
-        const toolBundlesResponse = await api.get('/tool-bundles/my', {
+        // Fetch tool bundle
+        const toolBundlesResponse = await api.get(`/tool-bundles/${tools}`, {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         });
-        setAllToolBundles(toolBundlesResponse.data || []);
+        const toolBundle = toolBundlesResponse.data;
+        setAllToolBundles(toolBundle ? [toolBundle] : []);
 
-        const aacResponse = await api.get('/aacs', {
-          headers: { Authorization: `Bearer ${user.accessToken}` },
-          params: { page: 0, size: 100 }
-        });
-        setAllAacs(aacResponse.data.content.map(item => ({ ...item, imageUrl: item.fileUrl })) || []);
+        let aacs = [];
+        if (toolBundle && toolBundle.aacSetId) {
+            const aacSetContentResponse = await api.get(`/aacs/sets/my/${toolBundle.aacSetId}`, {
+              headers: { Authorization: `Bearer ${user.accessToken}` },
+            });
+            const aacSet = aacSetContentResponse.data || [];
+            const aacIds = aacSet.map(item => item.id);
+
+            const aacPromises = aacIds.map(id =>
+              api.get(`/aacs/${id}`, {
+                headers: { Authorization: `Bearer ${user.accessToken}` },
+              })
+            );
+            const aacResponses = await Promise.all(aacPromises);
+            aacs = aacResponses.map(response => response.data);
+        }
+        
+
+
+        setAllAacs(aacs.map(item => ({ ...item, imageUrl: item.fileUrl })));
 
         const filterResponse = await api.get('/filters', {
           headers: { Authorization: `Bearer ${user.accessToken}` },
           params: { page: 0, size: 100 }
         });
-        setAllFilters(filterResponse.data.filters.map(item => ({ ...item, imageUrl: item.fileUrl })) || []);
+        const allFilters = filterResponse.data.filters.map(item => ({ ...item, imageUrl: item.fileUrl })) || [];
+        setAllFilters(allFilters);
 
-      } catch (error) {
-        console.error('Error fetching all static tool data:', error);
-      }
-    };
+        // Parse and resolve selected tools
+        const toolsParam = queryParams.get('tools');
+        const selectedToolIds = toolsParam ? toolsParam.split(',').map(id => id.trim()) : [];
 
-    fetchAllStaticToolData();
-  }, [user, allToolBundles.length, allAacs.length, allFilters.length]);
+        let initialAacIds = [];
+        let initialFilterIds = [];
 
-  // URL에서 도구 파싱 및 초기 선택 도구 결정 (정적 데이터 로드 후 실행)
-  useEffect(() => {
-    const parseAndResolveSelectedTools = async () => {
-      if (!user || !user.accessToken || allToolBundles.length === 0 || allAacs.length === 0 || allFilters.length === 0) {
-          return;
-      }
-
-      const toolsParam = queryParams.get('tools');
-      const selectedToolIds = toolsParam ? toolsParam.split(',').map(id => id.trim()) : [];
-
-      let initialAacIds = [];
-      let initialFilterIds = [];
-
-      try {
         for (const toolId of selectedToolIds) {
-          const bundle = allToolBundles.find(b => String(b.toolBundleId) === toolId);
+          const bundle = (toolBundle && String(toolBundle.toolBundleId) === toolId) ? toolBundle : null;
           if (bundle) {
-            const bundleDetailsResponse = await api.get(`/tool-bundles/${toolId}`, {
-              headers: { Authorization: `Bearer ${user.accessToken}` },
-            });
-            const bundleDetails = bundleDetailsResponse.data;
-
-            if (bundleDetails.aacSetId) {
-              const aacSetContentResponse = await api.get(`/aacs/sets/my/${bundleDetails.aacSetId}`, {
+            if (bundle.aacSetId) {
+              const aacSetContentResponse = await api.get(`/aacs/sets/my/${bundle.aacSetId}`, {
                 headers: { Authorization: `Bearer ${user.accessToken}` },
               });
               const aacsInSet = aacSetContentResponse.data;
               initialAacIds = [...new Set([...initialAacIds, ...aacsInSet.map(item => String(item.id))])];
             }
 
-            if (bundleDetails.filterSetId) {
-              const filterSetContentResponse = await api.get(`/filters/sets/my/${bundleDetails.filterSetId}`, {
+            if (bundle.filterSetId) {
+              const filterSetContentResponse = await api.get(`/filters/sets/my/${bundle.filterSetId}`, {
                 headers: { Authorization: `Bearer ${user.accessToken}` },
               });
               const filtersInSet = filterSetContentResponse.data;
               initialFilterIds = [...new Set([...initialFilterIds, ...filtersInSet.map(item => String(item.filterId))])];
             }
           } else {
-            if (allAacs.some(aac => String(aac.id) === toolId)) {
+            // This part is for individual tools, not bundles
+            if (aacs.some(aac => String(aac.id) === toolId)) {
               initialAacIds.push(toolId);
             }
             else if (allFilters.some(filter => String(filter.filterId) === toolId)) {
@@ -142,14 +139,14 @@ function TherapistSessionRoom() {
         setResolvedFilterIds(initialFilterIds);
 
       } catch (error) {
-        console.error('Error parsing or resolving initial tool data:', error);
+        console.error('Error fetching and resolving tool data:', error);
         setResolvedAacIds([]);
         setResolvedFilterIds([]);
       }
     };
 
-    parseAndResolveSelectedTools();
-  }, [location.search, user, queryParams, allToolBundles, allAacs, allFilters]);
+    fetchAndResolveTools();
+  }, [user, location.search, queryParams]);
 
   const {
     isMuted, setIsMuted, isVideoOff, setIsVideoOff, isRemoteVideoOff, setIsRemoteVideoOff,
@@ -407,13 +404,50 @@ function TherapistSessionRoom() {
           await unpublishAndHide(['canvas', 'camera-kit'], localVideoRef.current, outputCanvasRef.current, outputCKCanvasRef.current);
         }
       } else {
+        // 필터 제거 로직: 모든 비디오 트랙을 정리하고 원본 카메라 트랙을 새로 게시합니다.
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
         if (selfieSegmentationRef.current) {
             selfieSegmentationRef.current.close();
             selfieSegmentationRef.current = null;
         }
-        await unpublishAndHide(['canvas', 'camera-kit'], localVideoRef.current, outputCanvasRef.current, outputCKCanvasRef.current);
+
+        if (roomRef.current && roomRef.current.localParticipant) {
+          // 모든 기존 비디오 트랙(필터 및 원본) 발행 중단
+          const publications = Array.from(roomRef.current.localParticipant.videoTrackPublications.values());
+          const unpublishPromises = publications.map(pub => roomRef.current.localParticipant.unpublishTrack(pub.track, true).catch(e => console.error("Failed to unpublish track", e)));
+          await Promise.all(unpublishPromises);
+
+          // 비디오가 꺼져있지 않은 경우에만 새 트랙 생성 및 게시
+          if (!isVideoOff) {
+            try {
+              // 원본 비디오 트랙을 새로 생성
+              const newVideoTrack = await createLocalVideoTrack();
+              
+              // 로컬 비디오 요소에 연결
+              if (localVideoRef.current) {
+                // 이전 트랙이 있다면 분리
+                const oldTracks = localVideoRef.current.srcObject?.getVideoTracks();
+                if (oldTracks) {
+                  oldTracks.forEach(t => t.stop());
+                }
+                newVideoTrack.attach(localVideoRef.current);
+              }
+              
+              // 새 트랙을 게시
+              await roomRef.current.localParticipant.publishTrack(newVideoTrack);
+
+            } catch (error) {
+              console.error("필터 제거 후 새 비디오 트랙 생성에 실패했습니다:", error);
+              // 실패 시 비디오를 끈 것으로 상태 업데이트
+              setIsVideoOff(true);
+            }
+          }
+        }
+        // 캔버스 숨기고 비디오 보이기
+        if (localVideoRef.current) localVideoRef.current.style.visibility = 'visible';
+        if (outputCanvasRef.current) outputCanvasRef.current.style.visibility = 'hidden';
+        if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'hidden';
       }
     };
 
@@ -423,7 +457,7 @@ function TherapistSessionRoom() {
       isCleaningUp = true;
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
-      stopCameraKit();
+      // stopCameraKit() 호출을 useEffect 메인 로직으로 이동하여 레이스 컨디션 방지
       if (selfieSegmentationRef.current) {
           selfieSegmentationRef.current.close();
           selfieSegmentationRef.current = null;
