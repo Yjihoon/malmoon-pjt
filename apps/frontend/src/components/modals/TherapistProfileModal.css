@@ -140,6 +140,40 @@
   background: #fff;
 }
 
+/* === 커스텀 버튼 === */
+.tm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;            /* 알약 형태 */
+  font-weight: 700;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform .08s ease, filter .08s ease, background .12s ease, border-color .12s ease;
+}
+
+.tm-btn:active {
+  transform: translateY(1px);
+}
+
+.tm-btn-primary {
+  background: var(--tm-accent);
+  color: #fff;
+  border-color: rgba(0,0,0,0.02);
+  box-shadow: 0 6px 14px rgba(74,144,226,0.25);
+}
+
+.tm-btn-primary:hover {
+  filter: brightness(0.96);
+}
+
+.tm-btn-primary:focus {
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(74,144,226,0.18);
+}
+
 /* 반응형 */
 @media (max-width: 768px) {
   .therapist-profile-modal .profile-container {
