@@ -289,8 +289,8 @@ function TherapistToolsPage() {
                 <Tab eventKey="AAC_item" title="AAC 아이템 관리">
                     <Card className="p-3"><Card.Body>
                         <div className="d-flex justify-content-between align-items-center mb-3">
-                            <Card.Title className="mb-0">AAC 아이템 목록</Card.Title>
-                            <Button variant="primary" onClick={() => openModal('AAC_item')}>새 AAC 아이템 추가</Button>
+                            <h4 className="page-section-title">AAC 아이템 목록</h4>
+                            <Button className="btn-soft-primary no-hover-btn page-header-btn" onClick={() => openModal('AAC_item')}>새 AAC 아이템 추가</Button>
                         </div> <hr />
                         <AacItemList aacItems={aacItems} currentUser={currentUser} onEdit={(item) => openModal('AAC_item', item)} onDelete={handleDeleteAacItem} onViewDetails={handleViewDetails} />
                     </Card.Body></Card>
@@ -298,8 +298,8 @@ function TherapistToolsPage() {
                 <Tab eventKey="AAC_set" title="AAC 묶음 관리">
                     <Card className="p-3"><Card.Body>
                         <div className="d-flex justify-content-between align-items-center mb-3">
-                            <Card.Title className="mb-0">AAC 묶음 목록</Card.Title>
-                            <Button variant="primary" onClick={() => openModal('AAC_set')}>새 AAC 묶음 추가</Button>
+                            <h4 className="page-section-title">AAC 묶음 목록</h4>
+                            <Button className="btn-soft-primary no-hover-btn page-header-btn" onClick={() => openModal('AAC_set')}>새 AAC 묶음 추가</Button>
                         </div>
                         <AacSetList aacSets={aacSets} onEdit={(set) => openModal('AAC_set', set)} onDelete={handleDeleteAacSet} />
                     </Card.Body></Card>
@@ -307,17 +307,17 @@ function TherapistToolsPage() {
                 <Tab eventKey="Filter" title="필터 관리">
                     <Card className="p-3"><Card.Body>
                         <div className="d-flex justify-content-between align-items-center mb-3">
-                            <Card.Title className="mb-0">필터 목록</Card.Title>
-                            <Button variant="primary" onClick={() => openModal('filter')}>새 필터 추가</Button>
+                            <h4 className="page-section-title">필터 목록</h4>
+                            <Button className="btn-soft-primary no-hover-btn page-header-btn" onClick={() => openModal('filter')}>새 필터 추가</Button>
                         </div>
-                        <FilterList filters={filters} onEdit={(filter) => openModal('filter', filter)} onDelete={handleDeleteFilter} />
+                        <FilterList filters={filters} onDelete={handleDeleteFilter} />
                     </Card.Body></Card>
                 </Tab>
                 <Tab eventKey="Filter_set" title="필터 묶음 관리">
                     <Card className="p-3"><Card.Body>
                         <div className="d-flex justify-content-between align-items-center mb-3">
-                            <Card.Title className="mb-0">필터 묶음 목록</Card.Title>
-                            <Button variant="primary" onClick={() => openModal('Filter_set')}>새 필터 묶음 추가</Button>
+                            <h4 className="page-section-title">필터 묶음 목록</h4>
+                            <Button className="btn-soft-primary no-hover-btn page-header-btn" onClick={() => openModal('Filter_set')}>새 필터 묶음 추가</Button>
                         </div>
                         <FilterSetList filterSets={filterSets} onEdit={(set) => openModal('Filter_set', set)} onDelete={handleDeleteFilterSet} />
                     </Card.Body></Card>
@@ -325,8 +325,8 @@ function TherapistToolsPage() {
                 <Tab eventKey="tool_bundle" title="수업 세트 관리">
                      <Card className="p-3"><Card.Body>
                         <div className="d-flex justify-content-between align-items-center mb-3">
-                            <Card.Title className="mb-0">수업 세트 목록</Card.Title>
-                            <Button variant="primary" onClick={() => openModal('tool_bundle')}>새 수업 세트 추가</Button>
+                            <h4 className="page-section-title">수업 세트 목록</h4>
+                            <Button className="btn-soft-primary no-hover-btn page-header-btn" onClick={() => openModal('tool_bundle')}>새 수업 세트 추가</Button>
                         </div>
                         <ToolBundleList toolBundles={toolBundles} allAacSets={aacSets} allFilterSets={filterSets} onEdit={(bundle) => openModal('tool_bundle', bundle)} onDelete={handleDeleteToolBundle} />
                     </Card.Body></Card>

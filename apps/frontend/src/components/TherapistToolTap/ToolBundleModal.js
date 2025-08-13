@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, ListGroup } from 'react-bootstrap';
+import './ToolBundleModal.css'; // Import the new CSS file
 
 const ToolBundleModal = ({ show, onHide, onSave, bundleData, allAacSets, allFilterSets }) => {
     // 백엔드 DTO에 맞춰 aacSetId, filterSetId를 단일 값으로 관리
@@ -45,7 +46,7 @@ const ToolBundleModal = ({ show, onHide, onSave, bundleData, allAacSets, allFilt
     };
 
     return (
-        <Modal show={show} onHide={onHide} centered size="lg">
+        <Modal show={show} onHide={onHide} centered size="lg" className="tool-bundle-modal">
             <Modal.Header closeButton>
                 <Modal.Title>{bundleData ? '수업 세트 편집' : '새 수업 세트 추가'}</Modal.Title>
             </Modal.Header>
@@ -62,7 +63,7 @@ const ToolBundleModal = ({ show, onHide, onSave, bundleData, allAacSets, allFilt
                     <Col md={6}>
                         <Form.Group>
                             <Form.Label>포함할 AAC 묶음 (1개 선택)</Form.Label>
-                            <ListGroup style={{maxHeight: '200px', overflowY: 'auto'}}>
+                            <ListGroup className="list-group-selection">
                                 {allAacSets.map(set => (
                                     <ListGroup.Item key={set.id} action active={form.aacSetId === set.id} onClick={() => handleSelect('aacSetId', set.id)}>
                                         {set.name}
@@ -74,7 +75,7 @@ const ToolBundleModal = ({ show, onHide, onSave, bundleData, allAacSets, allFilt
                     <Col md={6}>
                         <Form.Group>
                             <Form.Label>포함할 필터 묶음 (1개 선택)</Form.Label>
-                            <ListGroup style={{maxHeight: '200px', overflowY: 'auto'}}>
+                            <ListGroup className="list-group-selection">
                                 {allFilterSets.map(set => (
                                     <ListGroup.Item key={set.filterSetId} action active={form.filterSetId === set.filterSetId} onClick={() => handleSelect('filterSetId', set.filterSetId)}>
                                         {set.name}
@@ -86,8 +87,8 @@ const ToolBundleModal = ({ show, onHide, onSave, bundleData, allAacSets, allFilt
                 </Row>
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="secondary" onClick={onHide}>취소</Button>
-                <Button variant="primary" onClick={handleSaveClick}>{bundleData ? '저장' : '추가'}</Button>
+                <Button className="btn-cancel" onClick={onHide}>취소</Button>
+                <Button className="btn-save-add" onClick={handleSaveClick}>{bundleData ? '저장' : '추가'}</Button>
             </Modal.Footer>
         </Modal>
     );

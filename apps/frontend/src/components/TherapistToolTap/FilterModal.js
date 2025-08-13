@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Image } from 'react-bootstrap';
+import './FilterModal.css'; // Import the new CSS file
 
 const FilterModal = ({ show, onHide, onSave, filterData }) => {
     // filterLensId 상태 제거
@@ -45,7 +46,7 @@ const FilterModal = ({ show, onHide, onSave, filterData }) => {
     };
 
     return (
-        <Modal show={show} onHide={onHide} centered>
+        <Modal show={show} onHide={onHide} centered className="filter-modal">
             <Modal.Header closeButton>
                 <Modal.Title>{filterData ? '필터 편집' : '새 필터 추가'}</Modal.Title>
             </Modal.Header>
@@ -58,15 +59,16 @@ const FilterModal = ({ show, onHide, onSave, filterData }) => {
                 <Form.Group className="mb-3">
                     <Form.Label>이미지</Form.Label>
                     <Form.Control type="file" accept="image/*" onChange={handleFileChange} />
-                    {imagePreview && <Image src={imagePreview} className="mt-2" fluid thumbnail />}
+                    {imagePreview && <Image src={imagePreview} className="image-preview" fluid thumbnail />}
                 </Form.Group>
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="secondary" onClick={onHide}>취소</Button>
-                <Button variant="primary" onClick={handleSaveClick}>{filterData ? '저장' : '추가'}</Button>
+                <Button className="btn-cancel" onClick={onHide}>취소</Button>
+                <Button className="btn-save-add" onClick={handleSaveClick}>{filterData ? '저장' : '추가'}</Button>
             </Modal.Footer>
         </Modal>
     );
 };
 
 export default FilterModal;
+
