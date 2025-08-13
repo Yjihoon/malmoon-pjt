@@ -25,6 +25,17 @@
     background-color: transparent; /* 연한 배경색 */
 }
 
+.therapist-schedule-page-container .count-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: .95rem;
+    background: #eef6ff;
+    border: 1px solid #d7e7ff;
+    color: #1e429f;
+}
+
 /* Row의 높이를 100%로 설정하여 Col들이 공간을 채우도록 함 */
 .therapist-schedule-page-container > .row {
     flex-grow: 1; /* 남은 공간을 모두 차지하도록 설정 */

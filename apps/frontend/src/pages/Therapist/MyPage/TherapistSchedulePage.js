@@ -309,9 +309,16 @@ function TherapistSchedulePage() {
                 <Col md={7} className="schedule-detail-panel p-4">
                     <Card className="shadow-sm p-3 card-base schedule-list-card flex-grow-1">
                         <Card.Body>
-                            <div className="selected-date-display mb-3">
-                                {selectedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}의 일정
-                            </div>
+                            <div className="selected-date-display mb-3 d-flex justify-content-between align-items-center">
+    <span>
+        {selectedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}의 일정
+    </span>
+    {schedules.length > 0 && (
+        <Badge className="count-badge">
+            총 {schedules.length}건
+        </Badge>
+    )}
+</div>
                             {dailyLoading ? (
                                 <p>일정을 불러오는 중...</p>
                             ) : dailyError ? (
