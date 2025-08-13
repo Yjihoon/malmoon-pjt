@@ -23,12 +23,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
 	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
 		resolvers.add(new CurrentMemberArgumentResolver(memberRepository));
 	}
-	 @Override
-	 public void addCorsMappings(CorsRegistry registry) {
-	     registry.addMapping("/**")
-	         .allowedOrigins("http://localhost:3000") // React 개발 서버 주소
-	         .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH")
-	         .allowedHeaders("*");
-	         //.allowCredentials(true);
-	 }
+	//  @Override
+	//  public void addCorsMappings(CorsRegistry registry) {
+	//      registry.addMapping("/**")
+	//          .allowedOrigins("http://localhost:3000") // React 개발 서버 주소
+	//          .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH")
+	//          .allowedHeaders("*");
+	//          //.allowCredentials(true);
+	//  }
 }
