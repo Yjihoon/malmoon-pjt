@@ -14,7 +14,7 @@ function ToolPanel({
   backgroundImages, selectedBackgroundImage, isFilterActive,
   applyBackgroundFilter, removeBackgroundFilter, applyLensById,
   initialSelectedAacIds, initialSelectedFilterIds,
-  allAacs, allFilters, onSendAac // Add onSendAac here
+  allAacs, allFilters, onSendAac, roomRef, availableAacs
 }) {
   return (
     <Card className="h-100 shadow-sm">
@@ -31,7 +31,9 @@ function ToolPanel({
           <AacTool
             initialSelectedAacIds={initialSelectedAacIds}
             allAacs={allAacs}
-            onSendAac={onSendAac} // Pass the onSendAac function
+            onSendAac={onSendAac}
+            roomRef={roomRef}
+            availableAacs={availableAacs} // availableAacs를 AacTool로 전달
           />
         )}
         {activeToolTab === 'chat' && (
@@ -40,8 +42,7 @@ function ToolPanel({
             chatInput={chatInput}
             setChatInput={setChatInput}
             sendChatMessage={sendChatMessage}
-          />
-        )}
+          />)}
         {activeToolTab === 'fairyTale' && fairyTaleInfo && (
           <FairyTaleTool
             fairyTaleInfo={fairyTaleInfo}

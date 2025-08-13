@@ -16,8 +16,8 @@ function SessionRoomContent({
   applyBackgroundFilter, removeBackgroundFilter, applyLensById,
   outputCanvasRef, outputCKCanvasRef, containerRef,
   initialSelectedAacIds, initialSelectedFilterIds,
-  allAacs, allFilters, onSendAac, // Add onSendAac here
-  finalChosenAacByClient // Add finalChosenAacByClient here
+  allAacs, allFilters, onSendAac,
+  finalChosenAacByClient, roomRef, availableAacs
 }) {
   switch (rtcStatus) {
     case 'disconnected':
@@ -120,7 +120,9 @@ function SessionRoomContent({
                   initialSelectedFilterIds={initialSelectedFilterIds}
                   allAacs={allAacs}
                   allFilters={allFilters}
-                  onSendAac={onSendAac} // Pass the onSendAac function
+                  onSendAac={onSendAac}
+                  roomRef={roomRef}
+                  availableAacs={availableAacs} // availableAacs를 ToolPanel로 전달
                 />
               </Col>
             )}

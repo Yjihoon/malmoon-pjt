@@ -1,89 +1,112 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ListGroup, Image, Alert, Button } from 'react-bootstrap';
+import React, { useState, useEffect, useCallback } from 'react';
+import { RoomEvent } from 'livekit-client';
+import { Button, Form, ListGroup } from 'react-bootstrap';
+import './AacTool.css';
 
-function AacTool({ initialSelectedAacIds, allAacs, onSendAac }) {
-  const [selectedAacs, setSelectedAacs] = useState([]);
-  const isInitialized = useRef(false);
+function AacTool({ roomRef, availableAacs }) {
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [question, setQuestion] = useState('이럴 땐 어떻게 말할까요?');
+  const [userSelection, setUserSelection] = useState(null); // { selectedId, aacName }
+
+  // 환자의 선택을 수신하는 리스너
+  const handleDataReceived = useCallback((payload) => {
+    const data = JSON.parse(new TextDecoder().decode(payload));
+    if (data.type === 'aac-selection') {
+      const selectedAac = availableAacs.find(aac => aac.id === data.selectedId);
+      setUserSelection({
+        selectedId: data.selectedId,
+        aacName: selectedAac ? selectedAac.name : '알 수 없는 선택'
+      });
+      // 3초 후에 피드백 메시지 사라지게 하기
+      setTimeout(() => setUserSelection(null), 3000);
+    }
+  }, [availableAacs]);
 
   useEffect(() => {
-    // 이 컴포넌트가 마운트되고 props(allAacs, initialSelectedAacIds)가
-    // 준비되었을 때 딱 한 번만 초기 선택 상태를 설정합니다.
-    if (!isInitialized.current && allAacs && initialSelectedAacIds) {
-      
-      // 디버깅을 위해 props 값을 확인해보세요.
-      // console.log('Initializing with:', { initialSelectedAacIds, allAacs });
-
-      // 부모로부터 받은 initialSelectedAacIds 배열에 포함된 id를 가진 aac 객체만 필터링합니다.
-      const initialSelection = allAacs.filter(aac =>
-        initialSelectedAacIds.includes(String(aac.id))
-      );
-
-      // *** 여기가 핵심입니다 ***
-      // 필터링된 결과인 'initialSelection'의 id 목록으로 상태를 설정해야 합니다.
-      // 'allAacs'를 사용하면 모든 항목이 선택됩니다.
-      setSelectedAacs(initialSelection.map(aac => String(aac.id)));
-      
-      // 초기화가 완료되었음을 표시합니다.
-      isInitialized.current = true;
+    const room = roomRef.current;
+    if (room) {
+      room.on(RoomEvent.DataReceived, handleDataReceived);
+      return () => {
+        room.off(RoomEvent.DataReceived, handleDataReceived);
+      };
     }
-  }, [initialSelectedAacIds, allAacs]);
+  }, [roomRef, handleDataReceived]);
 
-  const handleAacSelection = (aacId) => {
-    setSelectedAacs(prev => {
-      const isSelected = prev.includes(aacId);
-      let newState;
-
-      if (isSelected) {
-        newState = prev.filter(id => id !== aacId);
-      } else {
-        if (prev.length < 5) {
-          newState = [...prev, aacId];
-        } else {
-          alert('AAC 아이템은 최대 5개까지 선택할 수 있습니다.');
-          newState = prev;
-        }
-      }
-      return newState;
-    });
-  };
-
-  const handleSendAac = () => {
-    const aacsToSend = allAacs.filter(aac => selectedAacs.includes(String(aac.id)));
-    if (aacsToSend.length > 0) {
-      if (onSendAac) {
-        onSendAac(aacsToSend);
-      }
-      setSelectedAacs([]);
+  const handleSelectionChange = (id) => {
+    const newSelection = new Set(selectedIds);
+    if (newSelection.has(id)) {
+      newSelection.delete(id);
     } else {
-      alert('보낼 AAC 아이템을 선택해주세요.');
+      newSelection.add(id);
     }
+    setSelectedIds(newSelection);
   };
 
-  if (!allAacs || allAacs.length === 0) {
-    return <Alert variant="info">선택된 AAC 도구가 없습니다.</Alert>;
-  }
+  const handleSendClick = async () => {
+    if (selectedIds.size === 0) {
+      alert('보낼 AAC를 하나 이상 선택하세요.');
+      return;
+    }
+    if (!question.trim()) {
+      alert('질문을 입력하세요.');
+      return;
+    }
+
+    const room = roomRef.current;
+    if (room && room.localParticipant) {
+      const payload = JSON.stringify({
+        type: 'aac-question',
+        question: question,
+        imageIds: Array.from(selectedIds)
+      });
+      try {
+        await room.localParticipant.publishData(new TextEncoder().encode(payload), { reliable: true });
+        console.log('AAC 질문 전송 성공:', payload);
+      } catch (error) {
+        console.error('AAC 질문 전송 실패:', error);
+        alert('AAC 질문 전송에 실패했습니다.');
+      }
+    } else {
+      console.warn('LiveKit room 또는 localParticipant가 준비되지 않아 AAC 질문을 보낼 수 없습니다.');
+      alert('세션 연결 상태를 확인해주세요. AAC 질문을 보낼 수 없습니다.');
+    }
+  };
 
   return (
-    <>
-      <ListGroup>
-        {allAacs.map(aac => (
-          <ListGroup.Item
-            key={aac.id}
-            action
-            onClick={() => handleAacSelection(String(aac.id))}
-            active={selectedAacs.includes(String(aac.id))}
-          >
-            <Image src={aac.imageUrl} thumbnail className="me-2" style={{ width: '50px', height: '50px' }} />
-            {aac.name} - {aac.description}
-          </ListGroup.Item>
+    <div className="aac-tool-container">
+      <h5>AAC 교육 도구</h5>
+      <ul className="aac-list">
+        {availableAacs.map(aac => (
+          <li key={aac.id} className="aac-list-item">
+            <Form.Check 
+              type="checkbox"
+              checked={selectedIds.has(aac.id)}
+              onChange={() => handleSelectionChange(aac.id)}
+            />
+            <img src={aac.imageUrl} alt={aac.name} />
+            <span>{aac.name}</span>
+          </li>
         ))}
-      </ListGroup>
-      <div className="d-grid gap-2 mt-3">
-        <Button variant="primary" onClick={handleSendAac} disabled={selectedAacs.length === 0}>
-          선택된 AAC 보내기 ({selectedAacs.length}/5)
-        </Button>
-      </div>
-    </>
+      </ul>
+      <Form.Group className="question-input">
+        <Form.Label>질문 보내기</Form.Label>
+        <Form.Control 
+          type="text"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="예: 이럴 땐 어떻게 말할까요?"
+        />
+      </Form.Group>
+      <Button onClick={handleSendClick} disabled={selectedIds.size === 0}>
+        선택한 AAC 보내기
+      </Button>
+
+      {userSelection && (
+        <div className="user-selection-feedback">
+          대상자가 '{userSelection.selectedId}'을(를) 선택했습니다.
+        </div>
+      )}
+    </div>
   );
 }
 

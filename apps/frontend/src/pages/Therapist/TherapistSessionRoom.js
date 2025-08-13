@@ -513,8 +513,10 @@ function TherapistSessionRoom() {
         initialSelectedFilterIds={resolvedFilterIds}
         allAacs={filteredAacs}
         allFilters={filteredFilters}
+        availableAacs={allAacs} // 전체 AAC 목록을 전달
         onSendAac={handleSendAacToLiveKit}
         finalChosenAacByClient={finalChosenAacByClient}
+        roomRef={roomRef}
       />
     </Container>
   );
