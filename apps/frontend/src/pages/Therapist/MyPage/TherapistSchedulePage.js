@@ -310,81 +310,112 @@ function TherapistSchedulePage() {
 
     return (
         <Container fluid className="therapist-schedule-page-container">
-            <Row className="h-100">
-                <Col md={7} className="calendar-panel d-flex flex-column p-4">
-                    <div className="title-container mb-4 d-flex justify-content-between align-items-center">
-                        <h2 className="page-title">나의 치료 일정</h2>
-                        <Button variant="primary" onClick={() => navigate('/therapist/register-schedule')}> 
-                            치료 가능 시간 등록
-                        </Button>
-                    </div>
-                    {isSessionActive && (
-                        <Alert variant="success" className="mb-4">
-                            현재 수업이 진행 중입니다! 방 ID: {sessionRoomId}
-                        </Alert>
-                    )}
-                    <Card className="shadow-sm card-base calendar-card flex-grow-1">
-                        <Card.Body className="d-flex flex-column">
-                            <Calendar
-                                onChange={setSelectedDate}
-                                value={selectedDate}
-                                onActiveStartDateChange={({ activeStartDate }) => setActiveStartDate(activeStartDate)}
-                                activeStartDate={activeStartDate}
-                                tileContent={tileContent}
-                                className="react-calendar-custom"
-                                locale="ko-KR"
-                            />
-                        </Card.Body>
-                    </Card>
-                </Col>
+      <Row className="h-100">
+        <Col md={5} className="calendar-panel d-flex flex-column p-4">
+          {isSessionActive && (
+            <Alert variant="success" className="mb-4">
+              현재 수업이 진행 중입니다! 방 ID: {sessionRoomId}
+            </Alert>
+          )}
+          <Card className="shadow-sm card-base calendar-card flex-grow-1">
+            <Card.Body className="d-flex flex-column">
+              <div className="title-container mb-4 d-flex justify-content-between align-items-center">
+                <h2 className="page-title">치료 일정</h2>
+                <Button
+                  className="btn-soft-primary ms-auto"
+                  onClick={() => navigate("/therapist/register-schedule")}
+                >
+                  일정 등록
+                </Button>
+              </div>
+              <Calendar
+                onChange={setSelectedDate}
+                value={selectedDate}
+                onActiveStartDateChange={({ activeStartDate }) =>
+                  setActiveStartDate(activeStartDate)
+                }
+                activeStartDate={activeStartDate}
+                tileContent={tileContent}
+                className="react-calendar-custom"
+                locale="ko-KR"
+              />
+            </Card.Body>
+          </Card>
+        </Col>
 
-                <Col md={5} className="schedule-detail-panel p-4">
-                    <h2 className="mb-4 right-panel-title">일정</h2>
-                    <div className="selected-date-display mb-3">
-                        {selectedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}의 일정
-                    </div>
-                    <Card className="shadow-sm p-3 card-base schedule-list-card flex-grow-1">
-                        <Card.Body>
-                            {dailyLoading ? (
-                                <p>일정을 불러오는 중...</p>
-                            ) : dailyError ? (
-                                <Alert variant="danger">{dailyError}</Alert>
-                            ) : schedules.length === 0 ? (
-                                <Alert variant="info" className="text-center">등록된 일정이 없습니다.</Alert>
-                            ) : (
-                                <ListGroup variant="flush">
-                                    {schedules.sort((a, b) => a.time - b.time).map(schedule => (
-                                        <ListGroup.Item key={`${schedule.clientId}-${schedule.time}`} className="schedule-item-card mb-3">
-                                            <Row className="align-items-center">
-                                                <Col xs={8}>
-                                                    <div className="schedule-info">
-                                                        <div className="schedule-time">{`${String(schedule.time).padStart(2, '0')}:00`}</div>
-                                                        <div className="schedule-client-name">{schedule.name}</div>
-                                                    </div>
-                                                </Col>
-                                                <Col xs={4} className="text-end">
-                                                    <Button
-                                                        variant="primary"
-                                                        onClick={() => handleStartSessionClick(schedule)}
-                                                        disabled={isSessionActive}
-                                                        size="sm"
-                                                    >
-                                                        수업 시작
-                                                    </Button>
-                                                </Col>
-                                            </Row>
-                                        </ListGroup.Item>
-                                    ))}
-                                </ListGroup>
-                            )}
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
+        <Col md={7} className="schedule-detail-panel p-4">
+          <Card className="shadow-sm p-3 card-base schedule-list-card flex-grow-1">
+            <Card.Body>
+              <div className="selected-date-display mb-3 d-flex justify-content-between align-items-center">
+                <span>
+                  {selectedDate.toLocaleDateString("ko-KR", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    weekday: "short",
+                  })}
+                  의 일정
+                </span>
+                {schedules.length > 0 && (
+                  <Badge className="count-badge">총 {schedules.length}건</Badge>
+                )}
+              </div>
+              {dailyLoading ? (
+                <p>일정을 불러오는 중...</p>
+              ) : dailyError ? (
+                <Alert variant="danger">{dailyError}</Alert>
+              ) : schedules.length === 0 ? (
+                <Alert variant="info" className="text-center">
+                  등록된 일정이 없습니다.
+                </Alert>
+              ) : (
+                <ListGroup variant="flush">
+                  {schedules
+                    .sort((a, b) => a.time - b.time)
+                    .map((schedule) => {
+                      return (
+                        <ListGroup.Item
+                          key={`${schedule.clientId}-${schedule.time}`}
+                          className="schedule-item-card mb-3"
+                        >
+                          <Row className="align-items-center">
+                            <Col xs={8}>
+                              <div className="schedule-info">
+                                <div className="schedule-time">{`${
+                                  schedule.memberName
+                                } - ${String(schedule.time).padStart(
+                                  2,
+                                  "0"
+                                )}:00`}</div>
+                              </div>
+                            </Col>
+                            <Col xs={4} className="text-end">
+                              <Button
+                                className="btn-soft-primary"
+                                onClick={() =>
+                                  handleStartSessionClick(schedule)
+                                }
+                                disabled={isSessionActive}
+                                size="sm"
+                              >
+                                수업 시작
+                              </Button>
+                            </Col>
+                          </Row>
+                        </ListGroup.Item>
+                      );
+                    })}
+                </ListGroup>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
 
             <Modal show={showToolSelectionModal} onHide={() => setShowToolSelectionModal(false)} centered size="lg">
                 <Modal.Header closeButton>
-                    <Modal.Title>{currentSessionSchedule ? `'${currentSessionSchedule.name}'님과의 수업 도구 선택` : '수업에 사용할 도구 선택'}</Modal.Title>
+                    <Modal.Title>{currentSessionSchedule ? `'${currentSessionSchedule.memberName}'님과의 수업 도구 선택` : '수업에 사용할 도구 선택'}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <Tabs
