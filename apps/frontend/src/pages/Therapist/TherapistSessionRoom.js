@@ -8,7 +8,7 @@ import { LocalVideoTrack, createLocalVideoTrack } from 'livekit-client';
 import api from '../../api/axios';
 
 import SessionRoomContent from '../../components/TherapistSession/SessionRoomContent';
-
+import CentralAacDisplay from '../../components/common/CentralAacDisplay'
 import { useLiveKitSession } from '../../hooks/useLiveKitSession';
 import { useFairyTaleLogic } from '../../hooks/useFairyTaleLogic';
 import { useChatLogic } from '../../hooks/useChatLogic';
@@ -56,7 +56,7 @@ function TherapistSessionRoom() {
   const [allToolBundles, setAllToolBundles] = useState([]); // 모든 도구 묶음 저장
   const [allAacs, setAllAacs] = useState([]); // 모든 개별 AAC 저장
   const [allFilters, setAllFilters] = useState([]); // 모든 개별 필터 저장
-
+  const [centralImageUrl, setCentralImageUrl] = useState(null);
   useEffect(() => {
     const fetchAndResolveTools = async () => {
       if (!user || !user.accessToken) return;
@@ -161,6 +161,21 @@ function TherapistSessionRoom() {
     (sender, message) => setChatMessages(prevMessages => [...prevMessages, { sender, message }]),
     (sentence) => setSelectedSentence(sentence)
   );
+  useEffect(() => {
+    // finalChosenAacByClient 값이 있고, 전체 AAC 목록(allAacs)이 준비되었을 때 실행
+    if (finalChosenAacByClient && allAacs.length > 0) {
+      // 선택된 ID에 해당하는 AAC 정보를 전체 목록에서 찾음
+      const chosenAac = allAacs.find(aac => String(aac.id) === String(finalChosenAacByClient));
+      
+      if (chosenAac && chosenAac.imageUrl) {
+        setCentralImageUrl(chosenAac.imageUrl);
+        // 3초 후에 이미지를 사라지게 함
+        setTimeout(() => {
+          setCentralImageUrl(null);
+        }, 3000);
+      }
+    }
+  }, [finalChosenAacByClient, allAacs]);
 
   const handleSendAacToLiveKit = useCallback(async (aacs) => {
     if (!roomRef.current || !roomRef.current.localParticipant) {
@@ -473,11 +488,10 @@ function TherapistSessionRoom() {
 
   useEffect(() => {
     const fetchBackgroundImages = async () => {
-      const backendOrigin = 'http://localhost:8080';
       setBackgroundImages(allFilters.map(filter => ({
         id: filter.filterId,
         name: filter.name,
-        url: filter.imageUrl && !filter.imageUrl.startsWith('http') ? `${backendOrigin}${filter.imageUrl}` : filter.imageUrl,
+        url: filter.imageUrl && !filter.imageUrl.startsWith('http') ? `${filter.imageUrl}` : filter.imageUrl,
       })));
     };
     if (rtcStatus === 'connected' && allFilters.length > 0) fetchBackgroundImages();
@@ -551,6 +565,7 @@ function TherapistSessionRoom() {
         onSendAac={handleSendAacToLiveKit}
         finalChosenAacByClient={finalChosenAacByClient}
         roomRef={roomRef}
+        CentralAacDisplay imageUrl={centralImageUrl}
       />
     </Container>
   );

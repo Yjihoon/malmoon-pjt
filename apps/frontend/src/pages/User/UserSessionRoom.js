@@ -6,7 +6,7 @@ import axios from 'axios';
 import {createLocalTracks, Room, RoomEvent, Track} from 'livekit-client';
 import {useAuth} from '../../contexts/AuthContext';
 import AacDisplay from '../../pages/User/AacDisplay'; // ADDED: AacDisplay import
-
+import CentralAacDisplay from '../../components/common/CentralAacDisplay'
 //const LIVEKIT_URL = 'wss://www.malmoon.store';
 
 const LIVEKIT_URL = 'wss://i13c107.p.ssafy.io:8443';
@@ -28,7 +28,7 @@ function UserSessionRoom() {
     const [showChatPanel, setShowChatPanel] = useState(false);
     const [chatRoomId, setChatRoomId] = useState(null);
     const [receivedAacQuestion, setReceivedAacQuestion] = useState(null); // ADDED: State for AAC question
-
+    const [centralImageUrl, setCentralImageUrl] = useState(null);
     const [remoteVideoTrack, setRemoteVideoTrack] = useState(null);
     const [remoteAudioTrack, setRemoteAudioTrack] = useState(null);
 
@@ -189,6 +189,16 @@ function UserSessionRoom() {
         };
     }, [remoteAudioTrack]);
 
+    const handleAacSelectionForDisplay = (aacItem) => {
+    if (aacItem && aacItem.fileUrl) {
+      setCentralImageUrl(aacItem.fileUrl);
+      // 3초 후에 이미지를 사라지게 함
+      setTimeout(() => {
+        setCentralImageUrl(null);
+      }, 3000);
+    }
+    };
+
     const toggleMute = async () => {
         if (roomRef.current?.localParticipant) {
             const newMutedState = !isMuted;
@@ -246,7 +256,7 @@ function UserSessionRoom() {
             }
         }
     };
-
+    
     const renderContent = () => {
         switch (rtcStatus) {
             case 'disconnected':
@@ -310,8 +320,8 @@ function UserSessionRoom() {
                         )}
 
                         {/* Add AacDisplay here */}
-                        <AacDisplay roomRef={roomRef} receivedAacQuestion={receivedAacQuestion} />
-
+                        <AacDisplay roomRef={roomRef} receivedAacQuestion={receivedAacQuestion} onSelect={handleAacSelectionForDisplay}/>
+                        <CentralAacDisplay imageUrl={centralImageUrl} />
                         <div className="control-panel">
                             <div className="d-flex align-items-center justify-content-center h-100">
                                 <Button variant={isMuted ? "danger" : "light"} className="control-button me-3"
@@ -335,6 +345,7 @@ function UserSessionRoom() {
                                 </Button>
                             </div>
                         </div>
+                        
 
 
                     </>

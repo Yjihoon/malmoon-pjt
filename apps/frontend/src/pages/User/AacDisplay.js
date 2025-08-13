@@ -3,7 +3,7 @@ import { RoomEvent } from 'livekit-client';
 import api from '../../api/axios'; // API 요청을 위한 axios 인스턴스
 import './AacDisplay.css'; // 방금 만든 CSS 파일
 
-function AacDisplay({ roomRef, receivedAacQuestion }) {
+function AacDisplay({ roomRef, receivedAacQuestion, onSelect }) {
   const [aacData, setAacData] = useState(null); // { question, imageIds }
   const [aacDetails, setAacDetails] = useState([]);
   const [selectedCardId, setSelectedCardId] = useState(null);
@@ -45,7 +45,11 @@ function AacDisplay({ roomRef, receivedAacQuestion }) {
     if (selectedCardId) return; // 이미 선택했다면 다시 선택 불가
 
     setSelectedCardId(id);
-
+    
+    const selectedItem = aacDetails.find(item => item.id === id);
+    if (onSelect && selectedItem) {
+      onSelect(selectedItem);
+    }
     // 선택 결과를 치료사에게 전송
     const room = roomRef.current;
     if (room && room.localParticipant) {
