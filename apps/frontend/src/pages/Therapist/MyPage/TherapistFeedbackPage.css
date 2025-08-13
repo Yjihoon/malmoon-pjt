@@ -20,7 +20,7 @@
 
 .matching-client-info h5 {
     font-size: 1.2rem;
-    color: var(--primary-color); /* global.css에 정의된 변수 사용 */
+    color: black; /* global.css에 정의된 변수 사용 */
     margin-bottom: 8px;
 }
 

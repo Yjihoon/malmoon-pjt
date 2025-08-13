@@ -35,10 +35,10 @@ import UserSignUp from './pages/signup/UserSignUp';
 import TherapistSignUp from './pages/signup/TherapistSignUp';
 
 import char1 from "./logoimage/char1.png";
-import char5 from "./logoimage/char2.png";
-import char2 from "./logoimage/char3.png";
-import char3 from "./logoimage/char4.png";
-import char4 from "./logoimage/char5.png";
+import char2 from "./logoimage/char2.png";
+import char3 from "./logoimage/char3.png";
+import char4 from "./logoimage/char4.png";
+import char5 from "./logoimage/char5.png";
 import char6 from "./logoimage/char6.png";
 
 /** 캐릭터 메타(고정 id로 관리) */
