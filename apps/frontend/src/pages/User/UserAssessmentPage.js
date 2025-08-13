@@ -249,16 +249,11 @@ function UserAssessmentPage() {
     <div className="assessment-page">
       {!started ? (
         <div className="assessment-intro">
-          <div className="intro-hero">
-            <div className="hero-icon" aria-hidden>🗣️</div>
-            <div className="hero-text">
-              <h1 className="intro-title">간이언어평가</h1>
-              <p className="intro-kicker">
-                의사소통장애(Communication disorder)는 발화, 인지의 문제로 인하여
-                의사소통에 어려움을 겪는 상태를 말합니다.
-              </p>
-            </div>
-          </div>
+          <h1 className="intro-title">간이언어평가</h1>
+          <p className="intro-kicker">
+            의사소통장애(Communication disorder)는 발화, 인지의 문제로 인하여
+            의사소통에 어려움을 겪는 상태를 말합니다.
+          </p>
 
           <div className="intro-card">
             <h3 className="intro-card-title">무엇을 평가하나요?</h3>

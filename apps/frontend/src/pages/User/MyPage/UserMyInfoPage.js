@@ -339,12 +339,23 @@ function UserMyInfoPage() {
         )}
       </div>
 
-      <Modal show={showProfileSelect} onHide={() => setShowProfileSelect(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>캐릭터 선택</Modal.Title>
-        </Modal.Header>
+      <Modal
+        show={showProfileSelect}
+        onHide={() => setShowProfileSelect(false)}
+        dialogClassName="therapist-profile-modal"
+      >
+        <Modal.Header closeButton><Modal.Title>캐릭터 선택</Modal.Title></Modal.Header>
         <Modal.Body>
-          <ProfileImageSelect value={formData.profile} onChange={handleProfileChange} />
+          {/* 내부 모달 없이 즉시 그리드 표시 */}
+          <ProfileImageSelect
+            value={formData.profile}
+            onChange={(id) => {
+              // 선택 즉시 서버 패치 + 알림 + 모달 닫기 (기존 로직 재사용)
+              handleProfileChange(id);
+              setShowProfileSelect(false);
+            }}
+            pickerOnly
+          />
         </Modal.Body>
       </Modal>
 
