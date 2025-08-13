@@ -183,7 +183,7 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
             </Modal.Body>
             <Modal.Footer>
                 <Button className="btn-cancel" onClick={onHide}>취소</Button>
-                <Button className="btn-soft-primary no-hover-btn" onClick={handleSaveClick}>
+                <Button className="btn-save-add" onClick={handleSaveClick}>
                     {itemData ? '저장' : '추가'}
                 </Button>
             </Modal.Footer>
