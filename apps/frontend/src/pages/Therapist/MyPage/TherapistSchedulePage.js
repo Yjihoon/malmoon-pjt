@@ -118,39 +118,6 @@ function TherapistSchedulePage() {
                 setAllToolSets([]);
             }
 
-            try {
-                // 개별 AAC 도구 불러오기
-                const aacResponse = await api.get('/aacs', {
-                    headers: { Authorization: `Bearer ${user.accessToken}` },
-                });
-                const aacTools = aacResponse.data.content.map(aac => ({
-                    id: aac.aacId,
-                    type: 'AAC',
-                    name: aac.name,
-                    description: aac.description,
-                    imageUrl: aac.imageUrl,
-                    // Add other relevant fields if necessary
-                }));
-                
-                // 개별 필터 도구 불러오기
-                const filterResponse = await api.get('/filters', {
-                    headers: { Authorization: `Bearer ${user.accessToken}` },
-                });
-                const filterTools = filterResponse.data.filters.map(filter => ({
-                    id: filter.filterId,
-                    type: 'Filter',
-                    name: filter.name,
-                    description: filter.description,
-                    imageUrl: filter.imageUrl,
-                    // Add other relevant fields if necessary
-                }));
-
-                setAllIndividualTools([...aacTools, ...filterTools]);
-            } catch (err) {
-                console.error('개별 도구 로딩 실패:', err);
-                setAllIndividualTools([]);
-            }
-
             // 동화책 장르 목록 불러오기
             try {
                 const response = await api.get('/storybooks/classifications', {
