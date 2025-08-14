@@ -341,33 +341,6 @@ function TherapistFeedbackPage() {
 
   const formatMonthYear = (locale, date) => `${date.getFullYear()}년, ${date.getMonth() + 1}월`;
 
-  const renderParsedFeedback = (text) => {
-    if (!text) return <p>피드백 내용이 없습니다.</p>;
-    const parts = text.split(/(오류자음\s*:|오류패턴\s*:|종합 언어능력 평가\s*:)/).filter((p) => p && p.trim());
-    if (parts.length <= 1) return <p>{text}</p>;
-
-    const result = {};
-    for (let i = 0; i < parts.length; i += 2) {
-      const marker = parts[i].replace(':', '').trim();
-      const content = parts[i + 1];
-      if (marker && content) result[marker] = content.trim();
-    }
-
-    const order = ['오류자음', '오류패턴', '종합 언어능력 평가'];
-    const elements = order
-      .map((m) =>
-        result[m] ? (
-          <div className="feedback-sub-block" key={m}>
-            <strong>{m}</strong>
-            <p>{result[m]}</p>
-          </div>
-        ) : null
-      )
-      .filter(Boolean);
-
-    return elements.length > 0 ? elements : <p>{text}</p>;
-  };
-
   if (loading) {
     return (
       <Container className="my-5 text-center">
@@ -527,19 +500,31 @@ function TherapistFeedbackPage() {
                       <h5 className="mb-0">{selectedDate.toLocaleDateString('ko-KR')} 피드백</h5>
                     </div>
 
-                    <div className="feedback-block no-lift">
-                      <h6>동화책 제목</h6>
-                      <p>{feedbackContent.storybookTitle}</p>
-                    </div>
-
-                    <div className="feedback-block no-lift">
-                      <h6>정확도</h6>
-                      <p>{feedbackContent.accuracy}%</p>
-                    </div>
-
-                    <div className="feedback-block no-lift">
-                      <h6>피드백 내용</h6>
-                      {renderParsedFeedback(feedbackContent.feedbackText)}
+                    <div className="feedback-grid">
+                      <div className="feedback-card">
+                        <h4><i className="bi bi-book"></i> 동화책 제목</h4>
+                        <p>{feedbackContent.storybookTitle}</p>
+                      </div>
+                      <div className="feedback-card">
+                        <h4><i className="bi bi-bullseye"></i> 정확도</h4>
+                        <p>{feedbackContent.accuracy}%</p>
+                      </div>
+                      <div className="feedback-card grid-col-span-2">
+                        <h4><i className="bi bi-clipboard-check"></i> 종합 평가</h4>
+                        <p>{feedbackContent.evaluation}</p>
+                      </div>
+                      <div className="feedback-card grid-col-span-2">
+                        <h4><i className="bi bi-trophy"></i> 강점</h4>
+                        <p>{feedbackContent.strengths}</p>
+                      </div>
+                      <div className="feedback-card grid-col-span-2">
+                        <h4><i className="bi bi-graph-up-arrow"></i> 개선점</h4>
+                        <p>{feedbackContent.improvements}</p>
+                      </div>
+                      <div className="feedback-card grid-col-span-2">
+                        <h4><i className="bi bi-lightbulb"></i> 추천</h4>
+                        <p>{feedbackContent.recommendations}</p>
+                      </div>
                     </div>
                   </>
                 ) : (
