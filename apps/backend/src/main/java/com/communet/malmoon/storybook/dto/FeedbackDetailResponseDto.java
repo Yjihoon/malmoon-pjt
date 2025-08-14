@@ -8,10 +8,13 @@ import lombok.Builder;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
 @Builder
 public class FeedbackDetailResponseDto {
     private String storybookTitle;
     private double accuracy;
-    private String feedbackText;
+
+    private String evaluation;
+    private String strengths;
+    private String improvements;
+    private String recommendations;
 }

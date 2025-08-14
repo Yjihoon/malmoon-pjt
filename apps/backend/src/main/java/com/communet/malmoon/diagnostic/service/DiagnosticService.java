@@ -68,15 +68,13 @@ public class DiagnosticService {
         List<InitialTestItem> items = itemRepo.findByAttempt_AttemptIdOrderByItemIndex(attemptId);
         if (items.size() < 10) throw new IllegalStateException("10문항이 모두 제출되지 않았습니다.");
 
-        FeedbackEvalRequestDto req = FeedbackEvalRequestDto.builder()
-                .words(items.stream().map(it ->
-                        FeedbackEvalRequestDto.WordsPair.builder()
-                                .itemIndex(it.getItemIndex())
-                                .targetText(it.getTargetText())
-                                .sttText(it.getSttText())
-                                .build()
-                ).collect(Collectors.toList()))
-                .build();
+        List<WordsPair> req = items.stream()
+                .map(it -> WordsPair.builder()
+                        .targetText(it.getTargetText())
+                        .sttText(it.getSttText())
+                        .build()
+                )
+                .toList();
 
         FeedbackEvalResponseDto rsp = fastApiClient.evaluateFeedback(req, 3);
 
