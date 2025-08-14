@@ -1,7 +1,7 @@
 from api.v1.feedback.feedback_schema import SentencePair, FeedbackSections, WordsPair
 from typing import List
 from fastapi import APIRouter
-from feedback_service import (
+from .feedback_service import (
     generate_feedback_response_sections,
     generate_initial_feedback_response_sections,
 )
