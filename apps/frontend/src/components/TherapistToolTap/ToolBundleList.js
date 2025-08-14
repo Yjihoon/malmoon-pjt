@@ -1,9 +1,15 @@
 import React from 'react';
 import { ListGroup, Button, Badge } from 'react-bootstrap';
+import './ToolBundleList.css'; // Import the new CSS file
 
 const ToolBundleList = ({ toolBundles, allAacSets, allFilterSets, onEdit, onDelete }) => {
     if (!toolBundles || toolBundles.length === 0) {
-        return <p className="text-muted text-center">생성된 수업 세트가 없습니다.</p>;
+        return (
+            <div className="empty-list-placeholder">
+                <h5>아직 수업 세트가 없어요</h5>
+                <p>새로운 수업 세트를 추가하여 관리해보세요.</p>
+            </div>
+        );
     }
 
     // ID를 기반으로 이름 찾기 위한 헬퍼 함수
@@ -13,44 +19,44 @@ const ToolBundleList = ({ toolBundles, allAacSets, allFilterSets, onEdit, onDele
     };
 
     return (
-        <ListGroup>
-            {toolBundles.map(bundle => (
-                <ListGroup.Item key={bundle.toolBundleId}>
-                    <div className="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h5>{bundle.name}</h5>
-                            <p className="text-muted">{bundle.description}</p>
-                            
-                            {bundle.aacSetId && (
-                                <>
-                                    <strong>포함된 AAC 묶음:</strong>
-                                    <div className="mb-2">
-                                        <Badge bg="primary" className="me-1">
-                                            {findNameById(allAacSets, bundle.aacSetId, 'id', 'name')}
-                                        </Badge>
-                                    </div>
-                                </>
-                            )}
+        <div className="tool-bundle-list-container">
+            <ListGroup className="tool-bundle-list-group">
+                {toolBundles.map(bundle => (
+                    <ListGroup.Item key={bundle.toolBundleId} className="tool-bundle-list-item">
+                    <div className="tool-bundle-text-content"> {/* New class for text content */}
+                        <h5 className="tool-bundle-item-title">{bundle.name}</h5>
+                        <p className="tool-bundle-item-description">{bundle.description}</p>
+                        
+                        {bundle.aacSetId && (
+                            <>
+                                <strong>포함된 AAC 묶음:</strong>
+                                <div className="mb-2">
+                                    <Badge className="tool-bundle-badge">
+                                        {findNameById(allAacSets, bundle.aacSetId, 'id', 'name')}
+                                    </Badge>
+                                </div>
+                            </>
+                        )}
 
-                            {bundle.filterSetId && (
-                                <>
-                                    <strong>포함된 필터 묶음:</strong>
-                                    <div>
-                                        <Badge bg="success" className="me-1">
-                                            {findNameById(allFilterSets, bundle.filterSetId, 'filterSetId', 'name')}
-                                        </Badge>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                        <div className="ms-3">
-                            <Button variant="outline-secondary" size="sm" className="me-2" onClick={() => onEdit(bundle)}>편집</Button>
-                            <Button variant="outline-danger" size="sm" onClick={() => onDelete(bundle.toolBundleId)}>삭제</Button>
-                        </div>
+                        {bundle.filterSetId && (
+                            <>
+                                <strong>포함된 필터 묶음:</strong>
+                                <div>
+                                    <Badge className="tool-bundle-badge">
+                                        {findNameById(allFilterSets, bundle.filterSetId, 'filterSetId', 'name')}
+                                    </Badge>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                    <div className="tool-bundle-actions">
+                        <Button className="tool-bundle-edit-btn" onClick={() => onEdit(bundle)}>편집</Button>
+                        <Button className="tool-bundle-delete-btn" onClick={() => onDelete(bundle.toolBundleId)}>삭제</Button>
                     </div>
                 </ListGroup.Item>
-            ))}
-        </ListGroup>
+                ))}
+            </ListGroup>
+        </div>
     );
 };
 

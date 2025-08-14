@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import FilterSelector from './FilterSelector'; // 새로 만든 필터 선택기
+import './FilterSetModal.css'; // Import the new CSS file
 
 /**
  * 필터 묶음을 생성하거나 편집하는 모달 컴포넌트입니다.
@@ -79,13 +80,16 @@ const FilterSetModal = ({ show, onHide, onSave, initialData, allFilters, getAuth
     };
 
     return (
-        <Modal show={show} onHide={onHide} centered size="xl">
+        <Modal show={show} onHide={onHide} centered size="xl" className="filter-set-modal">
             <Modal.Header closeButton>
                 <Modal.Title>{initialData ? '필터 묶음 편집' : '새 필터 묶음 추가'}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {loadingDetails ? (
-                    <div className="text-center"><Spinner animation="border" /> <p>묶음 정보를 불러오는 중...</p></div>
+                    <div className="text-center">
+                        <Spinner animation="border" className="spinner-border" />
+                        <p className="loading-text">묶음 정보를 불러오는 중...</p>
+                    </div>
                 ) : (
                     <>
                         <Form.Group className="mb-3">
@@ -97,7 +101,7 @@ const FilterSetModal = ({ show, onHide, onSave, initialData, allFilters, getAuth
                             <Form.Control as="textarea" name="description" value={form.description || ''} onChange={handleFormChange} />
                         </Form.Group>
                         <hr />
-                        <h5 className="mb-3">필터 선택 ({(form.filterIds || []).length}개 선택됨)</h5>
+                        <h5 className="filter-selection-title">필터 선택 ({(form.filterIds || []).length}개 선택됨)</h5>
                         <FilterSelector
                             allFilters={allFilters}
                             selectedFilterIds={form.filterIds || []}
@@ -107,11 +111,12 @@ const FilterSetModal = ({ show, onHide, onSave, initialData, allFilters, getAuth
                 )}
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="secondary" onClick={onHide}>취소</Button>
-                <Button variant="primary" onClick={handleSaveClick}>{initialData ? '저장' : '추가'}</Button>
+                <Button className="btn-cancel" onClick={onHide}>취소</Button>
+                <Button className="btn-save-add" onClick={handleSaveClick}>{initialData ? '저장' : '추가'}</Button>
             </Modal.Footer>
         </Modal>
     );
 };
 
 export default FilterSetModal;
+

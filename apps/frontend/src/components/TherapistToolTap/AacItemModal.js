@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, Spinner, Card, Image } from 'react-bootstrap';
+import './AacItemModal.css'; // Import the new CSS file
 
 const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
     const [form, setForm] = useState({ name: '', description: '', situation: '', action: '', emotion: '', status: 'PUBLIC' });
@@ -102,7 +103,7 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
     };
 
     return (
-        <Modal show={show} onHide={onHide} centered size="lg">
+        <Modal show={show} onHide={onHide} centered size="lg" className="aac-item-modal">
             <Modal.Header closeButton>
                 <Modal.Title>{itemData ? 'AAC 아이템 편집' : '새 AAC 아이템 추가'}</Modal.Title>
             </Modal.Header>
@@ -121,7 +122,7 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
                     {creationMethod === 'ai' && !itemData ? (
                         <>
                             <Row>
-                                <Col md={8}>
+                                <Col md={7}>
                                     <Form.Group className="mb-3">
                                         <Form.Label>핵심 설명</Form.Label>
                                         <Form.Control 
@@ -134,21 +135,21 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
                                         />
                                     </Form.Group>
                                     <Row>
-                                        <Col><Form.Group className="mb-3"><Form.Label>상황</Form.Label><Form.Control type="text" name="situation" placeholder="예: 학교" value={form.situation || ''} onChange={handleFormChange} /></Form.Group></Col>
-                                        <Col><Form.Group className="mb-3"><Form.Label>행동</Form.Label><Form.Control type="text" name="action" placeholder="예: 친구와 놀기" value={form.action || ''} onChange={handleFormChange} /></Form.Group></Col>
-                                        <Col><Form.Group className="mb-3"><Form.Label>감정</Form.Label><Form.Control type="text" name="emotion" placeholder="예: 즐거움" value={form.emotion || ''} onChange={handleFormChange} /></Form.Group></Col>
+                                        <Col md={7}><Form.Group className="mb-3"><Form.Label>상황</Form.Label><Form.Control type="text" name="situation" placeholder="예: 학교" value={form.situation || ''} onChange={handleFormChange} /></Form.Group></Col>
+                                        <Col md={7}><Form.Group className="mb-3"><Form.Label>행동</Form.Label><Form.Control type="text" name="action" placeholder="예: 친구와 놀기" value={form.action || ''} onChange={handleFormChange} /></Form.Group></Col>
+                                        <Col md={7}><Form.Group className="mb-3"><Form.Label>감정</Form.Label><Form.Control type="text" name="emotion" placeholder="예: 즐거움" value={form.emotion || ''} onChange={handleFormChange} /></Form.Group></Col>
                                     </Row>
-                                    <Button variant="info" onClick={handleAiGenerate} disabled={isGenerating}>
+                                    <Button className="btn-ai-generate" onClick={handleAiGenerate} disabled={isGenerating}>
                                         {isGenerating ? <><Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> 생성 중...</> : 'AI 이미지 생성'}
                                     </Button>
                                 </Col>
-                                <Col md={4}>
+                                <Col md={5}>
                                     <Form.Label>생성된 이미지</Form.Label>
-                                    <Card className="h-100 d-flex align-items-center justify-content-center" style={{ minHeight: '150px', backgroundColor: '#f8f9fa' }}>
+                                    <Card className="image-preview-card">
                                         {isGenerating ? (
                                             <Spinner animation="border" />
                                         ) : (
-                                            imagePreview ? <Image src={imagePreview} fluid thumbnail /> : <div className="text-muted">AI가 이미지를 생성합니다.</div> // aiGeneratedImage 대신 imagePreview 사용
+                                            imagePreview ? <Image src={imagePreview} fluid thumbnail /> : <div className="text-muted"> 생성된 AI 이미지 </div> // aiGeneratedImage 대신 imagePreview 사용
                                         )}
                                     </Card>
                                 </Col>
@@ -159,17 +160,17 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
                         </>
                     ) : (
                         <Row>
-                            <Col md={8}>
+                            <Col md={7}>
                                 <Form.Group className="mb-3"><Form.Label>이름</Form.Label><Form.Control type="text" name="name" placeholder="예: 물 마시기" value={form.name || ''} onChange={handleFormChange} /></Form.Group>
                                 <Form.Group className="mb-3"><Form.Label>설명</Form.Label><Form.Control as="textarea" name="description" rows={2} placeholder="이 아이템에 대한 간단한 설명" value={form.description || ''} onChange={handleFormChange} /></Form.Group>
                                 <Row>
-                                    <Col><Form.Group className="mb-3"><Form.Label>상황 (대분류)</Form.Label><Form.Control type="text" name="situation" placeholder="예: 집, 학교" value={form.situation || ''} onChange={handleFormChange} /></Form.Group></Col>
-                                    <Col><Form.Group className="mb-3"><Form.Label>행동</Form.Label><Form.Control type="text" name="action" placeholder="예: 친구와 놀기" value={form.action || ''} onChange={handleFormChange} /></Form.Group></Col>
-                                    <Col><Form.Group className="mb-3"><Form.Label>감정</Form.Label><Form.Control type="text" name="emotion" placeholder="예: 기쁨" value={form.emotion || ''} onChange={handleFormChange} /></Form.Group></Col>
+                                    <Col md={7}><Form.Group className="mb-3"><Form.Label>상황 (대분류)</Form.Label><Form.Control type="text" name="situation" placeholder="예: 집, 학교" value={form.situation || ''} onChange={handleFormChange} /></Form.Group></Col>
+                                    <Col md={7}><Form.Group className="mb-3"><Form.Label>행동</Form.Label><Form.Control type="text" name="action" placeholder="예: 친구와 놀기" value={form.action || ''} onChange={handleFormChange} /></Form.Group></Col>
+                                    <Col md={7}><Form.Group className="mb-3"><Form.Label>감정</Form.Label><Form.Control type="text" name="emotion" placeholder="예: 기쁨" value={form.emotion || ''} onChange={handleFormChange} /></Form.Group></Col>
                                 </Row>
                                 <Form.Group className="mb-3"><Form.Label>상태</Form.Label><Form.Select name="status" value={form.status || 'PUBLIC'} onChange={handleFormChange}><option value="PUBLIC">공개</option><option value="PRIVATE">비공개</option></Form.Select></Form.Group>
                             </Col>
-                            <Col md={4}>
+                            <Col md={7}>
                                 <Form.Group className="mb-3">
                                     <Form.Label>이미지</Form.Label>
                                     <Form.Control type="file" accept="image/*" onChange={handleFileChange} />
@@ -181,8 +182,8 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
                 </Form>
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="secondary" onClick={onHide}>취소</Button>
-                <Button variant="primary" onClick={handleSaveClick}>
+                <Button className="btn-cancel" onClick={onHide}>취소</Button>
+                <Button className="btn-save-add" onClick={handleSaveClick}>
                     {itemData ? '저장' : '추가'}
                 </Button>
             </Modal.Footer>
