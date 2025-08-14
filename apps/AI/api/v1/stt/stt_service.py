@@ -17,9 +17,14 @@ async def transcribe_to_text(file: UploadFile, language: str) -> TranscribeOut:
     }
     data = {
         "model": "whisper-1",
-        "language": language,
-        "response_format": "json"
-    }
+            "response_format": "verbose_json",
+            "language": language,
+            "timestamp_granularities": '["word"]',
+            # 아래는 '지원하면' 효과 볼 수 있는 옵션(모든 서버가 지원하진 않습니다)
+            "temperature": "0",                       # 디코딩 온도 낮춰서 LM 영향 줄이기
+            "condition_on_previous_text": "false",   # 이전 컨텍스트 영향 끄기 (지원 시)
+            "prompt": "Transcribe exactly as spoken. Do not correct words or grammar.",  # 초기 지시(지원 시)
+        }
     headers = {"Authorization": f"Bearer {GMS_API_KEY}"}
 
     try:
