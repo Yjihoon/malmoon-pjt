@@ -52,6 +52,26 @@ function UserAssessmentPage() {
   // 마이크 스트림 참조(정리용)
   const streamRef = useRef(null);
 
+  // ===== 결과 정규화 유틸 =====
+  const normalizeResult = (data = {}) => {
+    const toList = (txt) => {
+      if (!txt) return [];
+      return String(txt)
+        .split('\n')
+        .map((s) => s.trim().replace(/^-+\s*/, ''))
+        .filter(Boolean);
+    };
+    return {
+      attemptId: data.attemptId ?? null,
+      accuracy: data.accuracy ?? null,
+      evaluation: data.evaluation ?? data.feedbackText ?? '',
+      strengths: Array.isArray(data.strengths) ? data.strengths : toList(data.strengths),
+      improvements: Array.isArray(data.improvements) ? data.improvements : toList(data.improvements),
+      recommendations: data.recommendations ?? '',
+      items: Array.isArray(data.items) ? data.items : [],
+    };
+  };
+
   useEffect(() => {
     if (!user || !user.birthDate) return;
     const age = calculateAge(user.birthDate);
@@ -83,7 +103,7 @@ function UserAssessmentPage() {
     try {
       // 초기진단 시작
       const payload = {
-        childId: user?.memberId ?? user?.id ?? 0, // 프로젝트 상황에 맞게 조정
+        childId: user?.memberId ?? user?.id ?? 0,
         ageGroup: getAgeGroup(),
       };
       const res = await api.post('/diagnostic/attempts/start', payload);
@@ -110,7 +130,7 @@ function UserAssessmentPage() {
         setAudioBlob(blob);
         setRecorded(true);
 
-        // 스트림 정리 (마이크 빨간불 꺼지도록)
+        // 스트림 정리
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
       };
@@ -145,25 +165,17 @@ function UserAssessmentPage() {
       const targetText = words?.[currentIndex]?.label;
       if (!targetText) { setErrorMsg('현재 문항의 targetText가 없습니다.'); setSubmitting(false); return false; }
 
-      // 파일 준비
       const mime = audioBlob.type || 'audio/webm';
       const ext = mime.includes('webm') ? 'webm'
-                : (mime.includes('mp4') || mime.includes('mpeg')) ? 'mp4'
-                : 'webm';
+        : (mime.includes('mp4') || mime.includes('mpeg')) ? 'mp4'
+          : 'webm';
       const file = new File([audioBlob], `item-${itemIndex}.${ext}`, { type: mime });
 
-      // ✅ 컨트롤러가 MultipartFile "file" 로 받으므로 오직 'file' 만!
       const form = new FormData();
       form.append('file', file);
-      form.append('itemIndex', itemIndex);    // 숫자 그대로 넣어도 스프링이 변환
+      form.append('itemIndex', itemIndex);
       form.append('targetText', targetText);
 
-      // 디버그 로그
-      for (const [k, v] of form.entries()) {
-        console.log('FD', k, v instanceof File ? `${v.name} (${v.type}, ${v.size}B)` : v);
-      }
-
-      // URL에 쿼리스트링 붙이지 말기 (바디로만 보냄)
       await api.post(`/diagnostic/attempts/${attemptId}/items`, form);
 
       setSubmitting(false);
@@ -179,13 +191,10 @@ function UserAssessmentPage() {
     }
   };
 
-
   const finishAttempt = async () => {
     try {
-      // ⚠️ 서버 경로가 오탈자(attemtps)라면 아래 줄을 교체:
-      // const res = await api.post(`/diagnostic/attemtps/${attemptId}/finish`);
       const res = await api.post(`/diagnostic/attempts/${attemptId}/finish`);
-      setFinishedData(res.data);
+      setFinishedData(normalizeResult(res.data)); // ✅ 정규화 후 저장
     } catch (err) {
       console.error(err);
       setErrorMsg('진단 종료에 실패했습니다. 잠시 후 다시 시도해주세요.');
@@ -223,28 +232,86 @@ function UserAssessmentPage() {
     });
   };
 
-  // 결과 화면 렌더
+  // ===== 결과 화면 =====
   if (finishedData) {
     return (
       <div className="assessment-page">
-        <div className="assessment-result">
-          <h1 className="intro-title">진단 결과</h1>
-          <p className="intro-description">
-            총 정확도: <b>{finishedData.accuracy}%</b>
-          </p>
-          <div className="result-feedback">
-            <h3>피드백</h3>
-            <p>{finishedData.feedbackText}</p>
+        <div className="assessment-result result-card">
+          <div className="result-header">
+            <div className="result-badge">진단 결과</div>
           </div>
 
-          <button className="btn-assessment" onClick={() => navigate('/')}>
-            홈으로
-          </button>
+          <div className="result-grid-vertical">
+            {/* 종합평가 */}
+            <section className="result-block result-evaluation">
+              <div className="result-title">
+                <span className="icon">📝</span>
+                <h3>종합평가</h3>
+              </div>
+              <p className="result-text">
+                {finishedData.evaluation || '평가 내용이 없습니다.'}
+              </p>
+            </section>
+
+            {/* 강점 */}
+            <section className="result-block result-strengths">
+              <div className="result-title">
+                <span className="icon">✅</span>
+                <h3>강점</h3>
+              </div>
+              {finishedData.strengths?.length ? (
+                <ul className="result-list">
+                  {finishedData.strengths.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="result-empty">강점 항목이 없습니다.</p>
+              )}
+            </section>
+
+            {/* 개선점 */}
+            <section className="result-block result-improvements">
+              <div className="result-title">
+                <span className="icon">🛠️</span>
+                <h3>개선점</h3>
+              </div>
+              {finishedData.improvements?.length ? (
+                <ul className="result-list">
+                  {finishedData.improvements.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="result-empty">개선점 항목이 없습니다.</p>
+              )}
+            </section>
+
+            {/* 추천 */}
+            <section className="result-block result-recommendations">
+              <div className="result-title">
+                <span className="icon">🎯</span>
+                <h3>추천</h3>
+              </div>
+              <p className="result-text">
+                {finishedData.recommendations || '추천 항목이 없습니다.'}
+              </p>
+            </section>
+          </div>
+
+          <div className="result-actions">
+            <button className="btn-assessment" onClick={() => navigate('/')}>
+              홈으로
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
+
+
+  // ===== 진행 화면 =====
   return (
     <div className="assessment-page">
       {!started ? (
