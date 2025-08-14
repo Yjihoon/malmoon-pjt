@@ -81,7 +81,10 @@ public class DiagnosticService {
         InitialTestResult result = InitialTestResult.builder()
                 .attempt(attempt)
                 .accuracy(BigDecimal.valueOf(rsp.getAccuracy()))
-                .feedbackText(rsp.getFeedbackText())
+                .evaluation(rsp.getEvaluation())
+                .strengths(rsp.getStrengths())
+                .improvements(rsp.getImprovements())
+                .recommendations(rsp.getRecommendations())
                 .build();
         resultRepo.save(result);
 
@@ -97,7 +100,10 @@ public class DiagnosticService {
         return FinishResponse.builder()
                 .attemptId(attemptId)
                 .accuracy(result.getAccuracy())
-                .feedbackText(result.getFeedbackText())
+                .evaluation(rsp.getEvaluation())
+                .strengths(rsp.getStrengths())
+                .improvements(rsp.getImprovements())
+                .recommendations(rsp.getRecommendations())
                 .items(itemDtos)
                 .build();
     }
@@ -125,7 +131,10 @@ public class DiagnosticService {
                 .ageGroup(attempt.getAgeGroup())
                 .createdAt(attempt.getCreatedAt())
                 .accuracy(result != null ? result.getAccuracy() : null)
-                .feedbackText(result != null ? result.getFeedbackText() : null)
+                .evaluation(result != null ? result.getEvaluation() : null)
+                .recommendations(result != null ? result.getRecommendations() : null)
+                .strengths(result != null ? result.getStrengths() : null)
+                .improvements(result != null ? result.getImprovements() : null)
                 .items(itemDtos)
                 .build();
     }

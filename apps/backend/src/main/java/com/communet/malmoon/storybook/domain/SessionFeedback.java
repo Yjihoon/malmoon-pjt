@@ -26,16 +26,16 @@ public class SessionFeedback {
 	private double accuracy;
 	private Integer lastPage;
 
-	@Lob @Column(columnDefinition = "TEXT")
+	@Column(columnDefinition = "TEXT")
 	private String evaluation;        // ✅ 문자열
 
-	@Lob @Column(columnDefinition = "TEXT")
+	@Column(columnDefinition = "TEXT")
 	private String strengths;         // ✅ 문자열 ("- ..\n- .." 포맷)
 
-	@Lob @Column(columnDefinition = "TEXT")
+	@Column(columnDefinition = "TEXT")
 	private String improvements;      // ✅ 문자열
 
-	@Lob @Column(columnDefinition = "TEXT")
+	@Column(columnDefinition = "TEXT")
 	private String recommendations;   // ✅ 문자열
 
 	@Column(nullable = false, updatable = false)

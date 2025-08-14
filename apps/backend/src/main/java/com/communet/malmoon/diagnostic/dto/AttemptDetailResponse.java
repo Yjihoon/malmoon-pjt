@@ -14,6 +14,9 @@ public class AttemptDetailResponse {
     private String ageGroup;
     private LocalDateTime createdAt;
     private BigDecimal accuracy;
-    private String feedbackText;
+    private String evaluation;
+    private String strengths;
+    private String improvements;
+    private String recommendations;
     private List<FinishResponse.ItemResult> items;
 }
