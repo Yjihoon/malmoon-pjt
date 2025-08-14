@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import AacItemSelector from './AacItemSelector';
+import './AacSetModal.css'; // Import the new CSS file
 
 const AacSetModal = ({ show, onHide, onSave, initialData, allAacItems, getAuthHeader }) => {
     const [form, setForm] = useState({ name: '', description: '', aac_item_ids: [] });
@@ -85,19 +86,28 @@ const AacSetModal = ({ show, onHide, onSave, initialData, allAacItems, getAuthHe
     };
 
     return (
-        <Modal show={show} onHide={onHide} centered size="xl">
+        <Modal show={show} onHide={onHide} centered size="xl" className="aac-set-modal">
             <Modal.Header closeButton>
                 <Modal.Title>{initialData ? 'AAC 묶음 편집' : '새 AAC 묶음 추가'}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {loadingDetails ? (
-                    <div className="text-center"><Spinner animation="border" /> <p>묶음 정보를 불러오는 중...</p></div>
+                    <div className="text-center">
+                        <Spinner animation="border" className="spinner-border" />
+                        <p className="loading-text">묶음 정보를 불러오는 중...</p>
+                    </div>
                 ) : (
                     <>
-                        <Form.Group className="mb-3"><Form.Label>묶음 이름</Form.Label><Form.Control type="text" name="name" value={form.name || ''} onChange={handleFormChange} /></Form.Group>
-                        <Form.Group className="mb-3"><Form.Label>설명</Form.Label><Form.Control as="textarea" name="description" value={form.description || ''} onChange={handleFormChange} /></Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>묶음 이름</Form.Label>
+                            <Form.Control type="text" name="name" value={form.name || ''} onChange={handleFormChange} />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>설명</Form.Label>
+                            <Form.Control as="textarea" name="description" value={form.description || ''} onChange={handleFormChange} />
+                        </Form.Group>
                         <hr />
-                        <h5 className="mb-3">AAC 아이템 선택 ({(form.aac_item_ids || []).length}개 선택됨)</h5>
+                        <h5 className="aac-item-selection-title">AAC 아이템 선택 ({(form.aac_item_ids || []).length}개 선택됨)</h5>
                         <AacItemSelector
                             aacItems={allAacItems}
                             selectedItemIds={form.aac_item_ids || []}
@@ -107,11 +117,12 @@ const AacSetModal = ({ show, onHide, onSave, initialData, allAacItems, getAuthHe
                 )}
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="secondary" onClick={onHide}>취소</Button>
-                <Button variant="primary" onClick={handleSaveClick}>{initialData ? '저장' : '추가'}</Button>
+                <Button className="btn-cancel" onClick={onHide}>취소</Button>
+                <Button className="btn-save-add" onClick={handleSaveClick}>{initialData ? '저장' : '추가'}</Button>
             </Modal.Footer>
         </Modal>
     );
 };
 
 export default AacSetModal;
+
