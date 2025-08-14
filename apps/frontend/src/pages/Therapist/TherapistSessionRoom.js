@@ -4,7 +4,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import './TherapistSessionRoom.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { bootstrapCameraKit } from "@snap/camera-kit";
-import { LocalVideoTrack, createLocalVideoTrack } from 'livekit-client';
+import { LocalVideoTrack, createLocalVideoTrack, RoomEvent } from 'livekit-client';
 import api from '../../api/axios';
 
 import SessionRoomContent from '../../components/TherapistSession/SessionRoomContent';
@@ -32,6 +32,7 @@ function TherapistSessionRoom() {
   const [resolvedFilterIds, setResolvedFilterIds] = useState([]); // Resolved individual Filter IDs
   const [selectedSentence, setSelectedSentence] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
+  const [sentAacs, setSentAacs] = useState([]); // 방금 유저에게 보낸 AAC 목록을 저장할 상태
 
   // 필터 관련 상태 및 Ref
   const [isFilterActive, setIsFilterActive] = useState(false);
@@ -161,21 +162,45 @@ function TherapistSessionRoom() {
     (sender, message) => setChatMessages(prevMessages => [...prevMessages, { sender, message }]),
     (sentence) => setSelectedSentence(sentence)
   );
+  
+
+  // 사용자가 선택한 AAC를 수신하여 화면 중앙에 표시하는 로직
   useEffect(() => {
-    // finalChosenAacByClient 값이 있고, 전체 AAC 목록(allAacs)이 준비되었을 때 실행
-    if (finalChosenAacByClient && allAacs.length > 0) {
-      // 선택된 ID에 해당하는 AAC 정보를 전체 목록에서 찾음
-      const chosenAac = allAacs.find(aac => String(aac.id) === String(finalChosenAacByClient));
-      
-      if (chosenAac && chosenAac.imageUrl) {
-        setCentralImageUrl(chosenAac.imageUrl);
-        // 3초 후에 이미지를 사라지게 함
-        setTimeout(() => {
-          setCentralImageUrl(null);
-        }, 3000);
+    const room = roomRef.current;
+    if (!room) return; // room이 없으면 아무것도 하지 않음
+
+    // LiveKit 데이터 수신 리스너
+    const handleAacSelection = (payload) => {
+      try {
+        const data = JSON.parse(new TextDecoder().decode(payload));
+        // 사용자가 보낸 데이터 타입이 'aac-selection'인지 확인
+        if (data.type === 'aac-selection') {
+          // 전체 AAC 목록에서 사용자가 선택한 ID를 기반으로 AAC 정보를 찾음
+          const chosenAac = allAacs.find(aac => String(aac.id) === String(data.selectedId));
+          
+          if (chosenAac && chosenAac.imageUrl) {
+            // 중앙에 이미지 표시
+            setTimeout(() => {
+            setCentralImageUrl(chosenAac.imageUrl);
+            // 3초 후에 이미지 숨김
+            setTimeout(() => {
+              setCentralImageUrl(null);
+            }, 3000);
+          }, 1500);
+          }
+        }
+      } catch (error) {
+        // JSON 파싱 오류 등은 무시
       }
-    }
-  }, [finalChosenAacByClient, allAacs]);
+    };
+
+    room.on(RoomEvent.DataReceived, handleAacSelection);
+
+    // 컴포넌트가 언마운트될 때 리스너 정리
+    return () => {
+      room.off(RoomEvent.DataReceived, handleAacSelection);
+    };
+  }, [roomRef, allAacs, setCentralImageUrl]); // room, aac 목록, 상태변경 함수가 준비되면 리스너 설정
 
   const handleSendAacToLiveKit = useCallback(async (aacs) => {
     if (!roomRef.current || !roomRef.current.localParticipant) {
@@ -565,8 +590,8 @@ function TherapistSessionRoom() {
         onSendAac={handleSendAacToLiveKit}
         finalChosenAacByClient={finalChosenAacByClient}
         roomRef={roomRef}
-        CentralAacDisplay imageUrl={centralImageUrl}
       />
+      <CentralAacDisplay imageUrl={centralImageUrl} />
     </Container>
   );
 }

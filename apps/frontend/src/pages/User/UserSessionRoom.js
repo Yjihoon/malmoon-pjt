@@ -190,13 +190,17 @@ function UserSessionRoom() {
     }, [remoteAudioTrack]);
 
     const handleAacSelectionForDisplay = (aacItem) => {
-    if (aacItem && aacItem.fileUrl) {
-      setCentralImageUrl(aacItem.fileUrl);
-      // 3초 후에 이미지를 사라지게 함
-      setTimeout(() => {
-        setCentralImageUrl(null);
-      }, 3000);
-    }
+        if (aacItem && aacItem.fileUrl) {
+            // 2초 뒤에 이미지를 표시합니다.
+            setTimeout(() => {
+                setCentralImageUrl(aacItem.fileUrl);
+
+                // 이미지가 표시된 후 3초 뒤에 이미지를 숨깁니다.
+                setTimeout(() => {
+                    setCentralImageUrl(null);
+                }, 3000);
+            }, 1500);
+        }
     };
 
     const toggleMute = async () => {
