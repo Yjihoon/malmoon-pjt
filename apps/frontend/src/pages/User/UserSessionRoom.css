@@ -14,14 +14,19 @@
 }
 
 .join-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+ display: flex;
+ flex-direction: column;
+ justify-content: center;
+ align-items: center;
+ height: 100%;
+ /* 기존 배경색 대신 아래 코드를 사용 */
+  background-image: url('../../logoimage/back.png');
+  background-size: contain; /* 이미지가 컨테이너를 꽉 채우도록 설정 */
+  background-position: center; /* 이미지를 중앙에 배치 */
+  background-repeat: no-repeat; /* 이미지 반복 방지 */
+ border-radius: 8px;
+ box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+ position: relative; /* 자식 요소의 absolute 위치 기준이 됨 */
 }
 
 .main-video-area {
@@ -201,4 +206,24 @@
 .main-video-container.speaking {
   border: 5px solid #007bff; /* Blue border when speaking */
   box-shadow: 0 0 15px rgba(0, 123, 255, 0.8);
+}
+
+.join-button {
+  background-color: #B0C4B1 !important; /* 원하는 배경색 */
+  border-color: #6c757d !important; /* 테두리색 */
+  color: black !important; /* 글자색 */
+}
+
+/* 호버(마우스를 올렸을 때) 상태 스타일도 함께 지정하면 좋습니다. */
+.join-button:hover {
+  background-color: #5a6268 !important;
+  border-color: #545b62 !important;
+}
+
+.button-container {
+  position: absolute;
+  bottom: 20px; /* 아래로부터 20px 띄우기 */
+  right: 20px; /* 오른쪽으로부터 20px 띄우기 */
+  display: flex; /* 버튼을 가로로 정렬하기 위해 flexbox 사용 */
+  gap: 10px; /* 버튼 사이 간격 */
 }

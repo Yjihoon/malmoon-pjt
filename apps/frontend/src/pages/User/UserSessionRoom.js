@@ -301,10 +301,23 @@ function UserSessionRoom() {
       case "disconnected":
         return (
           <div className="join-container">
-            <h2 className="mb-4">세션에 참여할 준비가 되셨나요?</h2>
-            <Button variant="primary" size="lg" onClick={connectToLiveKit}>
-              <i className="bi bi-box-arrow-in-right me-2"></i>세션 입장하기
-            </Button>
+            <div className="button-container">
+              <Button
+                size="lg"
+                onClick={connectToLiveKit}
+                className="join-button"
+              >
+                <i className="bi bi-box-arrow-in-right me-2"></i>수업 입장하기
+              </Button>
+              <Button
+                size="lg"
+                className="back-button" // 클래스 추가
+                variant="secondary" // 부트스트랩 버튼 색상 변경
+                onClick={() => navigate("/")}
+              >
+                <i className="bi bi-arrow-left me-2"></i>돌아가기
+              </Button>
+            </div>
           </div>
         );
       case "connecting":
