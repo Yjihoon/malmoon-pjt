@@ -3,15 +3,15 @@ import { Button } from 'react-bootstrap';
 
 function ChatTool({ chatMessages, chatInput, setChatInput, sendChatMessage }) {
   return (
-    <div className="chat-panel d-flex flex-column h-100">
-      <div className="chat-messages flex-grow-1 overflow-auto p-2">
+    <div className="chat-panel">
+      <div className="chat-messages">
         {chatMessages.map((msg, index) => (
           <div key={index} className={`chat-message ${msg.sender === '나' ? 'my-message' : 'other-message'}`}>
             <strong>{msg.sender}:</strong> {msg.message}
           </div>
         ))}
       </div>
-      <div className="chat-input-area p-2 border-top">
+      <div className="chat-input-area">
         <div className="input-group">
           <input
             type="text"

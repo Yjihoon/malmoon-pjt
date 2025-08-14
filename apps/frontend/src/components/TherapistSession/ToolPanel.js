@@ -14,7 +14,7 @@ function ToolPanel({
   backgroundImages, selectedBackgroundImage, isFilterActive,
   applyBackgroundFilter, removeBackgroundFilter, applyLensById,
   initialSelectedAacIds, initialSelectedFilterIds,
-  allAacs, allFilters, onSendAac, roomRef, availableAacs
+  allAacs, allFilters, onSendAac, roomRef, availableAacs, handleClearSentence
 }) {
   return (
     <Card className="h-100 shadow-sm">
@@ -55,6 +55,7 @@ function ToolPanel({
             isRecording={isRecording}
             startRecording={startRecording}
             stopRecording={stopRecording}
+            handleClearSentence={handleClearSentence}
           />
         )}
         {activeToolTab === 'filter' && (

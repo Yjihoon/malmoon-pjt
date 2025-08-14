@@ -131,10 +131,34 @@ export function useFairyTaleLogic(location, user, childId, selectedSentence, roo
     }
   }, [roomRef, selectedSentence]);
 
+  const clearSentence = useCallback(async () => {
+    if (roomRef.current) {
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(JSON.stringify({ type: 'clearSentence' }));
+            await roomRef.current.localParticipant.publishData(data, { reliable: true });
+            console.log('문장 지우기 명령을 전송했습니다.');
+        } catch (error) {
+            console.error('Failed to send clear command:', error);
+            alert('문장 지우기 명령 전송에 실패했습니다.');
+        }
+    }
+  }, [roomRef]);
+
   return {
-    fairyTaleInfo, setFairyTaleInfo, fairyTaleContent, setFairyTaleContent,
-    currentFairyTalePage, setCurrentFairyTalePage, isFetchingSentences,
-    isRecording, setIsRecording, 
-    handlePageChange, sendSentence, startRecording, stopRecording
+    fairyTaleInfo,
+    setFairyTaleInfo,
+    fairyTaleContent,
+    setFairyTaleContent,
+    currentFairyTalePage,
+    setCurrentFairyTalePage,
+    isFetchingSentences,
+    isRecording,
+    setIsRecording,
+    handlePageChange,
+    sendSentence,
+    startRecording,
+    stopRecording,
+    clearSentence, // clearSentence 함수를 반환 객체에 추가
   };
 }
