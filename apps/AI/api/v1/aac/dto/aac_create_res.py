@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, AnyUrl
 
 class AacImageResponse(BaseModel):
-    preview_url: str
+    previewUrl: AnyUrl
+    preview_url: AnyUrl
