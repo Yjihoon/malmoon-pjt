@@ -4,11 +4,11 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import './TherapistSessionRoom.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { bootstrapCameraKit } from "@snap/camera-kit";
-import { LocalVideoTrack, createLocalVideoTrack } from 'livekit-client';
+import { LocalVideoTrack, createLocalVideoTrack, RoomEvent } from 'livekit-client';
 import api from '../../api/axios';
 
 import SessionRoomContent from '../../components/TherapistSession/SessionRoomContent';
-
+import CentralAacDisplay from '../../components/common/CentralAacDisplay'
 import { useLiveKitSession } from '../../hooks/useLiveKitSession';
 import { useFairyTaleLogic } from '../../hooks/useFairyTaleLogic';
 import { useChatLogic } from '../../hooks/useChatLogic';
@@ -32,6 +32,7 @@ function TherapistSessionRoom() {
   const [resolvedFilterIds, setResolvedFilterIds] = useState([]); // Resolved individual Filter IDs
   const [selectedSentence, setSelectedSentence] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
+  const [sentAacs, setSentAacs] = useState([]); // 방금 유저에게 보낸 AAC 목록을 저장할 상태
 
   // 필터 관련 상태 및 Ref
   const [isFilterActive, setIsFilterActive] = useState(false);
@@ -56,7 +57,7 @@ function TherapistSessionRoom() {
   const [allToolBundles, setAllToolBundles] = useState([]); // 모든 도구 묶음 저장
   const [allAacs, setAllAacs] = useState([]); // 모든 개별 AAC 저장
   const [allFilters, setAllFilters] = useState([]); // 모든 개별 필터 저장
-
+  const [centralImageUrl, setCentralImageUrl] = useState(null);
   useEffect(() => {
     const fetchAndResolveTools = async () => {
       if (!user || !user.accessToken) return;
@@ -161,6 +162,45 @@ function TherapistSessionRoom() {
     (sender, message) => setChatMessages(prevMessages => [...prevMessages, { sender, message }]),
     (sentence) => setSelectedSentence(sentence)
   );
+  
+
+  // 사용자가 선택한 AAC를 수신하여 화면 중앙에 표시하는 로직
+  useEffect(() => {
+    const room = roomRef.current;
+    if (!room) return; // room이 없으면 아무것도 하지 않음
+
+    // LiveKit 데이터 수신 리스너
+    const handleAacSelection = (payload) => {
+      try {
+        const data = JSON.parse(new TextDecoder().decode(payload));
+        // 사용자가 보낸 데이터 타입이 'aac-selection'인지 확인
+        if (data.type === 'aac-selection') {
+          // 전체 AAC 목록에서 사용자가 선택한 ID를 기반으로 AAC 정보를 찾음
+          const chosenAac = allAacs.find(aac => String(aac.id) === String(data.selectedId));
+          
+          if (chosenAac && chosenAac.imageUrl) {
+            // 중앙에 이미지 표시
+            setTimeout(() => {
+            setCentralImageUrl(chosenAac.imageUrl);
+            // 3초 후에 이미지 숨김
+            setTimeout(() => {
+              setCentralImageUrl(null);
+            }, 3000);
+          }, 1500);
+          }
+        }
+      } catch (error) {
+        // JSON 파싱 오류 등은 무시
+      }
+    };
+
+    room.on(RoomEvent.DataReceived, handleAacSelection);
+
+    // 컴포넌트가 언마운트될 때 리스너 정리
+    return () => {
+      room.off(RoomEvent.DataReceived, handleAacSelection);
+    };
+  }, [roomRef, allAacs, setCentralImageUrl]); // room, aac 목록, 상태변경 함수가 준비되면 리스너 설정
 
   const handleSendAacToLiveKit = useCallback(async (aacs) => {
     if (!roomRef.current || !roomRef.current.localParticipant) {
@@ -473,11 +513,10 @@ function TherapistSessionRoom() {
 
   useEffect(() => {
     const fetchBackgroundImages = async () => {
-      const backendOrigin = 'http://localhost:8080';
       setBackgroundImages(allFilters.map(filter => ({
         id: filter.filterId,
         name: filter.name,
-        url: filter.imageUrl && !filter.imageUrl.startsWith('http') ? `${backendOrigin}${filter.imageUrl}` : filter.imageUrl,
+        url: filter.imageUrl && !filter.imageUrl.startsWith('http') ? `${filter.imageUrl}` : filter.imageUrl,
       })));
     };
     if (rtcStatus === 'connected' && allFilters.length > 0) fetchBackgroundImages();
@@ -552,6 +591,7 @@ function TherapistSessionRoom() {
         finalChosenAacByClient={finalChosenAacByClient}
         roomRef={roomRef}
       />
+      <CentralAacDisplay imageUrl={centralImageUrl} />
     </Container>
   );
 }
