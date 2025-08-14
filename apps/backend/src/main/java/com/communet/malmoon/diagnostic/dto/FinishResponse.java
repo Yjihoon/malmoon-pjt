@@ -10,7 +10,10 @@ import java.util.UUID;
 public class FinishResponse {
     private UUID attemptId;
     private BigDecimal accuracy;
-    private String feedbackText;
+    private String evaluation;
+    private String strengths;
+    private String recommendations;
+    private String improvements;
     private List<ItemResult> items;
 
     @Getter @Setter @AllArgsConstructor @NoArgsConstructor @Builder

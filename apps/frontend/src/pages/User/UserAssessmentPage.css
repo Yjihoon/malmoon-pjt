@@ -202,12 +202,118 @@ body {
   margin: 6px 0 0;
 }
 
-/* 불필요한 중복 제거 & 정돈을 위해 미사용 요소 제거
-   - .intro-hero / .hero-icon 삭제 (제목 옆 이모지 제거) */
-
-/* 반응형 */
-@media (max-width: 768px) {
-  .assessment-intro, .assessment-test { padding: 16px; }
-  .assessment-image { width: 220px; }
-  .intro-title { font-size: 1.85rem; }
+/* 결과 카드 전체 */
+.result-card {
+  background-color: #ffffffee;
+  width: 100%;
+  max-width: 640px;             /* 🔹 폭 줄임 (기존 720 → 640) */
+  padding: 26px 22px;           /* 여유 패딩 */
+  margin-top: 20px;
+  border-radius: 20px;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.07);
+  animation: fadeIn 0.4s ease-in-out;
 }
+
+/* 헤더 영역 */
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;     /* 🔹 중앙 정렬 */
+  margin-bottom: 20px;         /* 🔹 아래 여백 늘림 */
+}
+
+.result-badge {
+  display: inline-block;
+  padding: 10px 18px;          /* 🔹 크기 키움 */
+  border-radius: 999px;
+  font-weight: 900;            /* 🔹 더 굵게 */
+  font-size: 1.2rem;           /* 🔹 글자 크게 */
+  letter-spacing: .02em;
+  background: #4a90e2;         /* 🔹 눈에 띄는 파랑 배경 */
+  color: #fff;
+  border: none;
+  box-shadow: 0 3px 8px rgba(74, 144, 226, 0.25);
+}
+
+/* 세로 4칸 레이아웃 */
+.result-grid-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 18px; /* 🔹 항목 간 간격 늘림 (기존 12px → 18px) */
+}
+
+/* 개별 블록 */
+.result-block {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 16px;
+  padding: 16px 18px;          /* 🔹 여유 패딩 */
+  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+}
+
+/* 섹션별 구분선 색 */
+.result-evaluation { border-left: 4px solid #93c5fd; }
+.result-strengths { border-left: 4px solid #86efac; }
+.result-improvements { border-left: 4px solid #fca5a5; }
+.result-recommendations { border-left: 4px solid #fcd34d; }
+
+/* 타이틀 */
+.result-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;                  /* 🔹 아이콘과 제목 간 간격 */
+  margin-bottom: 8px;
+}
+
+.result-title .icon {
+  display: inline-flex;
+  width: 30px;                /* 🔹 살짝 확대 */
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #f5f7fb;
+  font-size: 16px;
+}
+
+.result-title h3 {
+  font-size: 1.15rem;         /* 🔹 제목 크기 살짝 키움 */
+  font-weight: 800;
+  margin: 0;
+}
+
+/* 본문 텍스트/리스트 */
+.result-text {
+  margin: 0;
+  color: #3b4655;
+  line-height: 1.65;
+}
+
+.result-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #3b4655;
+  line-height: 1.65;
+}
+
+.result-empty {
+  margin: 0;
+  color: #7a8699;
+  font-style: italic;
+}
+
+/* 하단 버튼 영역 */
+.result-actions {
+  margin-top: 24px;           /* 🔹 버튼 위 여백 늘림 */
+  display: flex;
+  justify-content: center;
+}
+
+
+/* 모바일 최적화 */
+@media (max-width: 768px) {
+  .result-grid {
+    grid-template-columns: 1fr; /* 1열로 전환 */
+  }
+}
+

@@ -21,7 +21,7 @@ import com.communet.malmoon.storybook.domain.SessionFeedback;
 import com.communet.malmoon.storybook.domain.SpeechResult;
 import com.communet.malmoon.storybook.domain.Storybook;
 import com.communet.malmoon.storybook.dto.FeedbackDetailResponseDto;
-import com.communet.malmoon.storybook.dto.FeedbackEvalRequestDto;
+import com.communet.malmoon.storybook.dto.SentencePairDto;
 import com.communet.malmoon.storybook.dto.FeedbackEvalResponseDto;
 import com.communet.malmoon.storybook.dto.SessionFeedbackRequestDto;
 import com.communet.malmoon.storybook.repository.SessionFeedbackRepository;
@@ -65,7 +65,7 @@ public class SessionFeedbackService {
 
 		//1.  STT 결과 + 원문 문장 조회
 		List<SpeechResult> results =
-			speechResultRepository.findWithSentenceByChildIdAndCreatedAtBetween(childId, start, end);
+				speechResultRepository.findWithSentenceByChildIdAndCreatedAtBetween(childId, start, end);
 
 		if (results.isEmpty()) {
 			System.out.println("❌ 해당 날짜의 STT 결과가 없습니다.");
@@ -80,82 +80,65 @@ public class SessionFeedbackService {
 		});
 
 		//2. FastAPI 요청 dto 구성
-		FeedbackEvalRequestDto requestBody = new FeedbackEvalRequestDto();
-		requestBody.setChildId(childId);
-		requestBody.setDate(requestDto.getDate());
-
-		List<FeedbackEvalRequestDto.SentencePair> sentencePairs = new ArrayList<>();
+		List<SentencePairDto> sentencePairs = new ArrayList<>();
 		for (SpeechResult result : results) {
-			FeedbackEvalRequestDto.SentencePair pair = new FeedbackEvalRequestDto.SentencePair();
+			SentencePairDto pair = new SentencePairDto();  // ✅ DTO 통일
 			pair.setSentenceId(result.getSentence().getId());
 			pair.setOriginal(result.getSentence().getSentence());
+
 			String sttValue = result.getSttText();
-			System.out.println("🎤 STT 원본 값: " + sttValue);
+			log.debug("🎤 STT 원본 값: {}", sttValue);
+			pair.setStt(safeExtractText(sttValue));        // JSON/문자열 혼용 보정
 
-			// sttText 로그 찍어보기
-			if (sttValue != null && sttValue.trim().startsWith("{") && sttValue.trim().endsWith("}")) {
-				System.out.println("⚠ stt_text가 JSON 문자열처럼 보입니다. 변환 필요!");
-				// 예: {"text":"..."} 형태면 파싱해서 텍스트만 꺼내기
-				try {
-					ObjectMapper mapper = new ObjectMapper();
-					JsonNode node = mapper.readTree(sttValue);
-					if (node.has("text")) {
-						sttValue = node.get("text").asText();
-						System.out.println("➡ 변환 후 STT 값: " + sttValue);
-					}
-				} catch (Exception e) {
-					System.out.println("❌ stt_text JSON 파싱 실패: " + e.getMessage());
-				}
-			} else {
-				System.out.println("✅ 순수 텍스트 형식");
-			}
-
-			//pair.setStt(result.getSttText());
-			pair.setStt(sttValue);
 			sentencePairs.add(pair);
 		}
-		requestBody.setSentences(sentencePairs);
 
-		//3. FastAPI로 전송
+
+		// 3) FastAPI로 전송 (본문 = 배열)
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		HttpEntity<FeedbackEvalRequestDto> httpEntity = new HttpEntity<>(requestBody, headers);
+		HttpEntity<List<SentencePairDto>> httpEntity = new HttpEntity<>(sentencePairs, headers);
 
 		ResponseEntity<FeedbackEvalResponseDto> response = restTemplate.postForEntity(
-			fastApiBaseUrl + "/api/v1/feedback/eval",
-			httpEntity,
-			FeedbackEvalResponseDto.class
+				fastApiBaseUrl + "/api/v1/feedback/eval",
+				httpEntity,
+				FeedbackEvalResponseDto.class
 		);
 
 		if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
-			System.out.println("FastAPI 응답 실패 또는 본문 없음");
+			log.error("FastAPI 응답 실패 또는 본문 없음. status={}", response.getStatusCode());
 			return;
 		}
 
 		FeedbackEvalResponseDto res = response.getBody();
 
-		// 4. DB 저장
+		// 4) DB 저장
 		Member child = memberRepository.findById(childId)
-			.orElseThrow(() -> new IllegalArgumentException("아동이 존재하지 않습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("아동이 존재하지 않습니다."));
 
-		String title = java.text.Normalizer.normalize(requestDto.getStorybookTitle().trim(),
-			java.text.Normalizer.Form.NFC);
+		String title = java.text.Normalizer.normalize(
+				requestDto.getStorybookTitle().trim(),
+				java.text.Normalizer.Form.NFC
+		);
 
 		Storybook storybook = storybookRepository.findByTitleIgnoreCase(title)
-			.orElseThrow(() -> new RuntimeException("제목으로 동화책을 찾을 수 없습니다: " + title));
+				.orElseThrow(() -> new RuntimeException("제목으로 동화책을 찾을 수 없습니다: " + title));
 
 		SessionFeedback feedback = SessionFeedback.builder()
-			.child(child)
-			.storybook(storybook)
-			.date(requestDto.getDate())
-			.accuracy(res.getAccuracy())
-			.feedbackText(res.getFeedbackText())
-			.lastPage(requestDto.getLastPage())
-			.createdAt(LocalDateTime.now())
-			.build();
+				.child(child)
+				.storybook(storybook)
+				.date(requestDto.getDate())
+				.lastPage(requestDto.getLastPage())
+				.evaluation(res.getEvaluation())
+				.accuracy(res.getAccuracy())
+				.strengths(res.getStrengths())
+				.improvements(res.getImprovements())
+				.recommendations(res.getRecommendations())
+				.createdAt(LocalDateTime.now())
+				.build();
 
 		sessionFeedbackRepository.save(feedback);
-		System.out.println("✅ SessionFeedback 저장 완료");
+		log.info("✅ SessionFeedback 저장 완료 childId={}, date={}", childId, requestDto.getDate());
 	}
 
 	// 관리 영역 (피드백 열람)
@@ -167,13 +150,29 @@ public class SessionFeedbackService {
 	// 2. 해당 날짜의 상세 피드백 조회
 	public FeedbackDetailResponseDto getFeedbackDetail(Long childId, LocalDate date) {
 		SessionFeedback feedback = feedbackRepository
-			.findByChild_MemberIdAndDate(childId, date)
-			.orElseThrow(() -> new RuntimeException("해당 날짜의 피드백이 존재하지 않습니다."));
+				.findByChild_MemberIdAndDate(childId, date)
+				.orElseThrow(() -> new RuntimeException("해당 날짜의 피드백이 존재하지 않습니다."));
 
 		return FeedbackDetailResponseDto.builder()
-			.storybookTitle(feedback.getStorybook().getTitle())
-			.accuracy(feedback.getAccuracy())
-			.feedbackText(feedback.getFeedbackText())
-			.build();
+				.storybookTitle(feedback.getStorybook().getTitle())
+				.accuracy(feedback.getAccuracy())
+				.evaluation(feedback.getEvaluation())
+				.accuracy(feedback.getAccuracy())
+				.strengths(feedback.getStrengths())
+				.improvements(feedback.getImprovements())
+				.recommendations(feedback.getRecommendations())
+				.build();
+	}
+	// STT 결과가 {"text":"..."} 같은 JSON 문자열일 수도 있는 경우 안전 추출
+	private String safeExtractText(String raw) {
+		if (raw == null) return "";
+		String s = raw.trim();
+		try {
+			JsonNode node = new ObjectMapper().readTree(s);
+			if (node.has("text")) return node.get("text").asText("");
+		} catch (Exception ignore) {
+			// JSON이 아니면 그대로 사용
+		}
+		return s;
 	}
 }
