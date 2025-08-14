@@ -68,22 +68,23 @@ public class DiagnosticService {
         List<InitialTestItem> items = itemRepo.findByAttempt_AttemptIdOrderByItemIndex(attemptId);
         if (items.size() < 10) throw new IllegalStateException("10문항이 모두 제출되지 않았습니다.");
 
-        FeedbackEvalRequestDto req = FeedbackEvalRequestDto.builder()
-                .words(items.stream().map(it ->
-                        FeedbackEvalRequestDto.WordsPair.builder()
-                                .itemIndex(it.getItemIndex())
-                                .targetText(it.getTargetText())
-                                .sttText(it.getSttText())
-                                .build()
-                ).collect(Collectors.toList()))
-                .build();
+        List<WordsPair> req = items.stream()
+                .map(it -> WordsPair.builder()
+                        .targetText(it.getTargetText())
+                        .sttText(it.getSttText())
+                        .build()
+                )
+                .toList();
 
         FeedbackEvalResponseDto rsp = fastApiClient.evaluateFeedback(req, 3);
 
         InitialTestResult result = InitialTestResult.builder()
                 .attempt(attempt)
                 .accuracy(BigDecimal.valueOf(rsp.getAccuracy()))
-                .feedbackText(rsp.getFeedbackText())
+                .evaluation(rsp.getEvaluation())
+                .strengths(rsp.getStrengths())
+                .improvements(rsp.getImprovements())
+                .recommendations(rsp.getRecommendations())
                 .build();
         resultRepo.save(result);
 
@@ -99,7 +100,10 @@ public class DiagnosticService {
         return FinishResponse.builder()
                 .attemptId(attemptId)
                 .accuracy(result.getAccuracy())
-                .feedbackText(result.getFeedbackText())
+                .evaluation(rsp.getEvaluation())
+                .strengths(rsp.getStrengths())
+                .improvements(rsp.getImprovements())
+                .recommendations(rsp.getRecommendations())
                 .items(itemDtos)
                 .build();
     }
@@ -127,7 +131,10 @@ public class DiagnosticService {
                 .ageGroup(attempt.getAgeGroup())
                 .createdAt(attempt.getCreatedAt())
                 .accuracy(result != null ? result.getAccuracy() : null)
-                .feedbackText(result != null ? result.getFeedbackText() : null)
+                .evaluation(result != null ? result.getEvaluation() : null)
+                .recommendations(result != null ? result.getRecommendations() : null)
+                .strengths(result != null ? result.getStrengths() : null)
+                .improvements(result != null ? result.getImprovements() : null)
                 .items(itemDtos)
                 .build();
     }

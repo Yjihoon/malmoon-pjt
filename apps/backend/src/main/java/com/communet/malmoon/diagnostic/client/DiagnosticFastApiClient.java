@@ -13,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
-
+import java.util.List;
 /**
  * FastAPI 연동: STT, LLM 평가
  */
@@ -46,8 +46,8 @@ public class DiagnosticFastApiClient {
     }
 
     /** LLM 평가 호출 (JSON) + 지수 백오프 재시도 */
-    public FeedbackEvalResponseDto evaluateFeedback(FeedbackEvalRequestDto dto, int maxRetry) {
-        final String url = baseUrl + "/api/v1/feedback/initialeval";
+    public FeedbackEvalResponseDto evaluateFeedback(List<WordsPair> dto, int maxRetry) {
+        final String url = baseUrl + "/api/v1/feedback/initial-eval";
         return executeWithRetry(() -> {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
