@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import api from '../api/axios';
 import './HomePage.css';
 
 import penguin from '../logoimage/penguin.png';
@@ -27,9 +30,8 @@ const ImageSlider = () => {
   };
 
   useEffect(() => {
-    const slideInterval = setInterval(nextSlide, 10000); // ✅ 10초로 느리게
+    const slideInterval = setInterval(nextSlide, 10000);
     return () => clearInterval(slideInterval);
-    // eslint-disable-next-line
   }, []);
 
   return (
@@ -76,7 +78,53 @@ const CharacterCard = ({ name, image, desc }) => {
   );
 };
 
-function HomePage() {
+function HomePage({ setStartSessionCallback }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [startSession, setStartSession] = useState(null);
+
+  useEffect(() => {
+    if (!user || !user.accessToken) {
+      setStartSessionCallback(null);
+      setStartSession(null);
+      return;
+    }
+
+    const fetchSchedules = async () => {
+      try {
+        const res = await api.get('/schedule/me/today', {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        });
+
+        const todaySchedules = res.data || [];
+        if (todaySchedules.length > 0) {
+          const firstSchedule = todaySchedules[0];
+          const bookingId = firstSchedule.id;
+
+          const sessionFunc = () => {
+            navigate('/user/session', { state: { bookingId } });
+          };
+
+          setStartSession(() => sessionFunc);
+          setStartSessionCallback(() => sessionFunc);
+        } else {
+          setStartSession(null);
+          setStartSessionCallback(null);
+        }
+      } catch (err) {
+        console.error('Failed to fetch today schedules:', err);
+        setStartSession(null);
+        setStartSessionCallback(null);
+      }
+    };
+
+    fetchSchedules();
+    return () => {
+      setStartSession(null);
+      setStartSessionCallback(null);
+    };
+  }, [user, setStartSessionCallback, navigate]);
+
   return (
     <div className="home-page main-container">
       <div className="logo-header">
@@ -93,6 +141,13 @@ function HomePage() {
       </div>
 
       <ImageSlider />
+
+      {/* ✅ 캐릭터 말풍선 버튼 */}
+      {startSession && (
+        <div className="character-overlay clickable" onClick={startSession}>
+          <div className="character-bubble">수업 바로가기!</div>
+        </div>
+      )}
 
       <section className="about-section">
         <h2 className="section-title">우리는 무엇을 하나요?</h2>

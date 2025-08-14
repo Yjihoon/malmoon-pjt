@@ -115,7 +115,7 @@
 .about-section {
   padding: calc(var(--spacing-lg) - 8px) var(--spacing-sm);
   text-align: center;
-  background: var(--accent-pastel);                 /* ✅ 파스텔 배경 */
+  background: var(--accent-pastel);          /* ✅ 파스텔 배경 */
   border-top: 2px solid var(--accent-pastel-border);/* ✅ 상단 선 */
   border-bottom: 2px solid var(--accent-pastel-border);/* ✅ 하단 선 */
   box-shadow: 0 10px 20px rgba(0,0,0,0.04), 0 -6px 16px rgba(0,0,0,0.03); /* 살짝 층감 */
@@ -198,6 +198,19 @@
   line-height: 1.7;
   margin: 0;
 }
+
+/* ✅ 캐릭터 오버레이 스타일 추가 */
+.character-overlay.clickable {
+  cursor: pointer;
+  opacity: 0.95;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.character-overlay.clickable:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
 
 /* ====== 반응형 ====== */
 @media screen and (max-width: 992px) {
