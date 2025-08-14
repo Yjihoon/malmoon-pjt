@@ -1,8 +1,6 @@
 .App {
   text-align: center;
-  /* App.js에서 받은 배경색 변수를 사용 (기본값도 지정) */
   background-color: var(--app-bg-color, var(--default-bg-color));
-  /* 배경색 전환 효과 */
   transition: background-color 0.5s ease-in-out;
   min-height: 100vh;
   display: flex;
@@ -16,25 +14,32 @@
   position: relative;
   z-index: 1;
   box-sizing: border-box;
-  flex-grow: 1; /* 남은 공간 채우기 */
+  flex-grow: 1;
 }
+
+/* ✅ 화상채팅 페이지에서 적용될 스타일 */
+.content.full-screen {
+  padding-top: 0;
+  min-height: 100vh;
+  height: 100vh; 
+}
+
 
 /* ✅ 어디서든 맨 앞에 뜨는 캐릭터 오버레이 */
 .character-overlay {
   position: fixed;
   right: 20px;
   bottom: 20px;
-  width: 160px;   /* 200px → 160px */
-  height: 160px;  /* 200px → 160px */
+  width: 160px;
+  height: 160px;
   background-image: var(--bg-character);
   background-size: contain;
   background-repeat: no-repeat;
-  opacity: 0.55;  /* 0.9 → 0.55 (더 투명) */
+  opacity: 0.55;
   z-index: 2147483647;
   pointer-events: none;
   transition: opacity 0.3s, transform 0.3s;
 }
-
 
 /* --- 반응형 디자인 (모바일) --- */
 @media screen and (max-width: 768px) {

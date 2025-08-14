@@ -6,7 +6,7 @@ import api from '../api/axios'; // axios 인스턴스, 기본 baseURL 세팅
 
 const LIVEKIT_URL = 'wss://i13c107.p.ssafy.io:8443';
 
-export function useLiveKitSession(user, navigate, clientId, onChatMessageReceived, onSentenceReceived) {
+export function useLiveKitSession(user, navigate, clientId, onChatMessageReceived, onSentenceReceived, onAacSelectionReceived) {
     const [isMuted, setIsMuted] = useState(false);
     const [isVideoOff, setIsVideoOff] = useState(false);
     const [isRemoteVideoOff, setIsRemoteVideoOff] = useState(true);
@@ -71,6 +71,8 @@ export function useLiveKitSession(user, navigate, clientId, onChatMessageReceive
                 onChatMessageReceived?.(participant.identity, data.payload);
             } else if (data.type === 'sentence') {
                 onSentenceReceived?.({sentence: data.payload, sentenceId: null});
+            } else if (data.type === 'aac-selection') {
+                onAacSelectionReceived?.({aacId: data.selectedId})
             }
         });
 

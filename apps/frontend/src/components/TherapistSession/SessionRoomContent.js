@@ -1,26 +1,62 @@
-import React from 'react';
-import { Container, Row, Col, Button, Alert } from 'react-bootstrap';
-import VideoCallArea from './VideoCallArea';
-import SessionControlPanel from './SessionControlPanel';
-import ToolPanel from './ToolPanel';
+import React from "react";
+import { Container, Row, Col, Button, Alert } from "react-bootstrap";
+import VideoCallArea from "./VideoCallArea";
+import SessionControlPanel from "./SessionControlPanel";
+import ToolPanel from "./ToolPanel";
 
 function SessionRoomContent({
-  rtcStatus, connectToLiveKit, setRtcStatus,
-  localVideoRef, remoteVideoRef, remoteAudioRef, isRemoteVideoOff, isVideoOff, remoteAudioTrack,
+  rtcStatus,
+  connectToLiveKit,
+  setRtcStatus,
+  localVideoRef,
+  remoteVideoRef,
+  remoteAudioRef,
+  isRemoteVideoOff,
+  isVideoOff,
+  remoteAudioTrack,
   selectedSentence,
-  isMuted, toggleMute, toggleVideo, activeToolTab, toggleToolPanel, fairyTaleInfo, endSession,
-  showToolPanel, setShowToolPanel,
-  chatMessages, chatInput, setChatInput, sendChatMessage,
-  fairyTaleContent, currentFairyTalePage, setSelectedSentence, handlePageChange, sendSentence, isRecording, startRecording, stopRecording,
-  backgroundImages, selectedBackgroundImage, isFilterActive,
-  applyBackgroundFilter, removeBackgroundFilter, applyLensById,
-  outputCanvasRef, outputCKCanvasRef, containerRef,
-  initialSelectedAacIds, initialSelectedFilterIds,
-  allAacs, allFilters, onSendAac,
-  finalChosenAacByClient, roomRef, availableAacs
+  isMuted,
+  toggleMute,
+  toggleVideo,
+  activeToolTab,
+  toggleToolPanel,
+  fairyTaleInfo,
+  endSession,
+  showToolPanel,
+  setShowToolPanel,
+  chatMessages,
+  chatInput,
+  setChatInput,
+  sendChatMessage,
+  fairyTaleContent,
+  currentFairyTalePage,
+  setSelectedSentence,
+  handlePageChange,
+  sendSentence,
+  isRecording,
+  startRecording,
+  stopRecording,
+  backgroundImages,
+  selectedBackgroundImage,
+  isFilterActive,
+  applyBackgroundFilter,
+  removeBackgroundFilter,
+  applyLensById,
+  outputCanvasRef,
+  outputCKCanvasRef,
+  containerRef,
+  initialSelectedAacIds,
+  initialSelectedFilterIds,
+  allAacs,
+  allFilters,
+  onSendAac,
+  finalChosenAacByClient,
+  roomRef,
+  availableAacs,
+  handleClearSentence,
 }) {
   switch (rtcStatus) {
-    case 'disconnected':
+    case "disconnected":
       return (
         <div className="join-container">
           <h2 className="mb-4">수업을 시작할 준비가 되셨나요?</h2>
@@ -29,30 +65,40 @@ function SessionRoomContent({
           </Button>
         </div>
       );
-    case 'connecting':
+    case "connecting":
       return (
         <div className="join-container">
           <h2 className="mb-4">수업 세션에 연결 중입니다...</h2>
           <p>잠시만 기다려주세요.</p>
         </div>
       );
-    case 'error':
+    case "error":
       return (
         <div className="join-container">
           <Alert variant="danger">
             <Alert.Heading>연결 오류</Alert.Heading>
-            <p>세션에 연결하지 못했습니다. 네트워크 상태를 확인하시거나 잠시 후 다시 시도해주세요.</p>
+            <p>
+              세션에 연결하지 못했습니다. 네트워크 상태를 확인하시거나 잠시 후
+              다시 시도해주세요.
+            </p>
           </Alert>
-          <Button variant="primary" onClick={() => setRtcStatus('disconnected')}>
+          <Button
+            variant="primary"
+            onClick={() => setRtcStatus("disconnected")}
+          >
             다시 시도
           </Button>
         </div>
       );
-    case 'connected':
+    case "connected":
       return (
         <>
           <Row className="h-100 flex-nowrap">
-            <Col className={`session-main-content ${showToolPanel ? 'col-md-9' : 'col-md-12'} p-0`}>
+            <Col
+              className={`session-main-content ${
+                showToolPanel ? "col-md-9" : "col-md-12"
+              } p-0`}
+            >
               <VideoCallArea
                 localVideoRef={localVideoRef}
                 remoteVideoRef={remoteVideoRef}
@@ -74,8 +120,14 @@ function SessionRoomContent({
               {/* 중앙에 최종 선택된 AAC 표시 */}
               {finalChosenAacByClient && (
                 <div className="final-chosen-aac-display">
-                  <img src={finalChosenAacByClient.imageUrl} alt={finalChosenAacByClient.name} className="final-aac-image" />
-                  <p className="final-aac-text">{finalChosenAacByClient.name}</p>
+                  <img
+                    src={finalChosenAacByClient.imageUrl}
+                    alt={finalChosenAacByClient.name}
+                    className="final-aac-image"
+                  />
+                  <p className="final-aac-text">
+                    {finalChosenAacByClient.name}
+                  </p>
                 </div>
               )}
 
@@ -123,6 +175,7 @@ function SessionRoomContent({
                   onSendAac={onSendAac}
                   roomRef={roomRef}
                   availableAacs={availableAacs} // availableAacs를 ToolPanel로 전달
+                  handleClearSentence={handleClearSentence}
                 />
               </Col>
             )}

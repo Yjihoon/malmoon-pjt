@@ -31,9 +31,9 @@
     border-radius: 999px;
     font-weight: 800;
     font-size: .95rem;
-    background: #eef6ff;
+    background-color:var(--calendar-selected-day-bg) !important;
     border: 1px solid #d7e7ff;
-    color: #1e429f;
+    color: white;
 }
 
 /* Row의 높이를 100%로 설정하여 Col들이 공간을 채우도록 함 */
@@ -323,4 +323,170 @@
     .schedule-list-card {
         max-height: 400px; /* 모바일에서 스크롤 높이 조정 */
     }
+}
+
+/* --- 모달 스타일 (추가/수정) --- */
+
+/* 모달 컨테이너 */
+.modal-content {
+    border-radius: 15px;
+    border: none;
+}
+
+/* 모달 헤더 */
+.modal-header {
+    border-bottom: 1px solid #e9ecef;
+    padding: 1.5rem;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+.modal-title {
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+/* 모달 바디 */
+.modal-body {
+    padding: 2rem;
+    background-color: #f8f9fa; /* 모달 배경색을 연하게 */
+}
+
+/* 탭 스타일 */
+.modal-body .nav-tabs {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-body .nav-tabs .nav-link {
+    font-weight: 600;
+    color: #6c757d;
+    border: none;
+    border-bottom: 3px solid transparent; /* 비활성 탭 하단 라인 */
+    transition: all 0.3s ease;
+}
+
+.modal-body .nav-tabs .nav-link:hover {
+    color: var(--calendar-selected-day-bg);
+}
+
+.modal-body .nav-tabs .nav-link.active {
+    color: var(--btn-primary-bg); /* 활성 탭 텍스트 색상 */
+    background-color: transparent;
+    border-color: var(--calendar-selected-day-bg); /* 활성 탭 하단 라인 색상 */
+    font-weight: 700;
+}
+
+/* 리스트 그룹 (도구 목록, 동화 제목 목록) */
+.modal-body .list-group-item {
+    cursor: pointer;
+    border-left: none;
+    border-right: none;
+    transition: background-color 0.2s ease;
+    border-radius: 0;
+}
+
+.modal-body .list-group-item:first-child {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-top: 1px solid #dee2e6;
+}
+
+.modal-body .list-group-item:last-child {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.modal-body .list-group-item:hover {
+    background-color: #e9ecef;
+}
+
+.modal-body .list-group-item.active {
+    background-color: var(--calendar-selected-day-bg);
+    border-color: var(--calendar-selected-day-bg);
+    color: black;
+}
+
+/* 선택된 도구 및 동화 표시 영역 */
+.selected-items-container {
+    padding: 1.5rem;
+    border-top: 1px solid #dee2e6;
+}
+
+/* 배지 스타일 */
+.selected-items-container .badge {
+    font-size: 0.9em;
+    padding: 0.6em 1em;
+    border-radius: 50px; /* pill 형태 */
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+.selected-items-container .badge .btn-link {
+    color: white;
+    font-size: 1.1em;
+    line-height: 1;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+.selected-items-container .badge .btn-link:hover {
+    opacity: 0.8;
+}
+
+/* 동화책 제목 목록 페이징 버튼 */
+.fairy-tale-title-list-container .pagination-btn-group .btn {
+    border: none;
+    background-color: transparent;
+    color: #6c757d;
+}
+
+.fairy-tale-title-list-container .pagination-btn-group .btn:hover:not(:disabled) {
+    background-color: #e9ecef;
+}
+
+/* 모달 푸터 */
+.modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid #e9ecef;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}
+
+.modal-footer .btn-primary {
+    background-color: var(--calendar-selected-day-bg); /* primary 버튼 색상 */
+    border-color: var(--calendar-selected-day-bg);
+}
+
+.modal-footer .btn-primary:hover {
+    background-color: #6c757d;
+    border-color: var(--btn-primary-hover-bg);
+}
+
+.modal-footer .btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.modal-footer .btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #5a6268;
+}
+
+/* 셀렉트 닫혀 있을 때 */
+.custom-select {
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-bg);
+  border: 1px solid #c0aaff;
+}
+
+/* 드롭다운 펼쳤을 때 각 옵션 스타일 */
+.custom-select option {
+  background-color: #f5f0ff; /* 옵션 배경색 */
+  color: #4a148c;           /* 옵션 글자색 */
+}
+
+/* 선택된 옵션 hover/focus 시 */
+.custom-select option:checked,
+.custom-select option:hover {
+  background-color: #d1c4e9; /* hover/선택 색 */
+  color: #000;
 }

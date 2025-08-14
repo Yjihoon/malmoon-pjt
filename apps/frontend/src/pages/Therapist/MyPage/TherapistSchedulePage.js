@@ -313,7 +313,7 @@ function TherapistSchedulePage() {
         <Col md={7} className="schedule-detail-panel p-4">
           <Card className="shadow-sm p-3 card-base schedule-list-card flex-grow-1">
             <Card.Body>
-              <div className="selected-date-display mb-3 d-flex justify-content-between align-items-center">
+              <div className="selected-date-display mb-3 position-relative text-center">
                 <span>
                   {selectedDate.toLocaleDateString("ko-KR", {
                     year: "numeric",

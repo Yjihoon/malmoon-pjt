@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { useAuth } from './contexts/AuthContext';
 
 import './App.css';
@@ -43,11 +43,11 @@ import char6 from "./logoimage/char6.png";
 
 /** 캐릭터 메타(고정 id로 관리) */
 const characterData = [
-  { id: "bear",    src: char1, bgColor: "#f3eade", buttonColors: { primaryBg: "#b38b6d", primaryText: "#ffffff", primaryHoverBg: "#8d6d53", secondaryBg: "#8d6d53", secondaryText: "#ffffff", secondaryHoverBg: "#5a463c", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#b38b6d" } },
-  { id: "duck",    src: char2, bgColor: "#fff9c4", buttonColors: { primaryBg: "#ffd600", primaryText: "#000000", primaryHoverBg: "#f9a825", secondaryBg: "#f9a825", secondaryText: "#ffffff", secondaryHoverBg: "#212121", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#ffd600" } },
-  { id: "wolf",    src: char3, bgColor: "#eceff1", buttonColors: { primaryBg: "#78909c", primaryText: "#ffffff", primaryHoverBg: "#455a64", secondaryBg: "#455a64", secondaryText: "#ffffff", secondaryHoverBg: "#263238", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#78909c" } },
-  { id: "dog",     src: char4, bgColor: "#fffde7", buttonColors: { primaryBg: "#a1887f", primaryText: "#ffffff", primaryHoverBg: "#795548", secondaryBg: "#795548", secondaryText: "#ffffff", secondaryHoverBg: "#4e342e", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#a1887f" } },
-  { id: "parrot",  src: char5, bgColor: "#f1f8e9", buttonColors: { primaryBg: "#aed581", primaryText: "#ffffff", primaryHoverBg: "#66bb6a", secondaryBg: "#66bb6a", secondaryText: "#ffffff", secondaryHoverBg: "#43a047", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#aed581" } },
+  { id: "bear", src: char1, bgColor: "#f3eade", buttonColors: { primaryBg: "#b38b6d", primaryText: "#ffffff", primaryHoverBg: "#8d6d53", secondaryBg: "#8d6d53", secondaryText: "#ffffff", secondaryHoverBg: "#5a463c", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#b38b6d" } },
+  { id: "duck", src: char2, bgColor: "#fff9c4", buttonColors: { primaryBg: "#ffd600", primaryText: "#000000", primaryHoverBg: "#f9a825", secondaryBg: "#f9a825", secondaryText: "#ffffff", secondaryHoverBg: "#212121", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#ffd600" } },
+  { id: "wolf", src: char3, bgColor: "#eceff1", buttonColors: { primaryBg: "#78909c", primaryText: "#ffffff", primaryHoverBg: "#455a64", secondaryBg: "#455a64", secondaryText: "#ffffff", secondaryHoverBg: "#263238", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#78909c" } },
+  { id: "dog", src: char4, bgColor: "#fffde7", buttonColors: { primaryBg: "#a1887f", primaryText: "#ffffff", primaryHoverBg: "#795548", secondaryBg: "#795548", secondaryText: "#ffffff", secondaryHoverBg: "#4e342e", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#a1887f" } },
+  { id: "parrot", src: char5, bgColor: "#f1f8e9", buttonColors: { primaryBg: "#aed581", primaryText: "#ffffff", primaryHoverBg: "#66bb6a", secondaryBg: "#66bb6a", secondaryText: "#ffffff", secondaryHoverBg: "#43a047", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#aed581" } },
   { id: "penguin", src: char6, bgColor: "#e3f2fd", buttonColors: { primaryBg: "#64b5f6", primaryText: "#ffffff", primaryHoverBg: "#2196f3", secondaryBg: "#2196f3", secondaryText: "#ffffff", secondaryHoverBg: "#0d47a1", infoBg: "#87CEEB", infoText: "#ffffff", infoHoverBg: "#6CA6CD", successBg: "#90EE90", successText: "#ffffff", successHoverBg: "#7CCD7C", dangerBg: "#FF6347", dangerText: "#ffffff", dangerHoverBg: "#E5533D", calendarSelectedDayBg: "#64b5f6" } },
 ];
 
@@ -77,16 +77,15 @@ const getCharacterByProfile = (profileNumber) => {
 
 function App() {
   const { isAuthReady, user } = useAuth();
+  const location = useLocation();
 
   const [showChatModal, setShowChatModal] = useState(false);
-  // 비로그인(게스트) 전용 랜덤 캐릭터 상태
   const [guestCharacter, setGuestCharacter] = useState(() => getRandomCharacter());
 
   const isLoggedIn = !!(user && user.accessToken);
 
-  /** 게스트 전용 setter: 로그인 시에는 무시 (NavBar에서 호출해도 로그인 중엔 영향 없음) */
   const setCharacterIfGuest = (updater) => {
-    if (isLoggedIn) return; // 로그인 시에는 배경 고정
+    if (isLoggedIn) return;
     setGuestCharacter(prev =>
       typeof updater === 'function' ? updater(prev) : updater
     );
@@ -97,13 +96,14 @@ function App() {
 
   if (!isAuthReady) return null;
 
-  /** 최종 캐릭터 결정:
-   *  - 로그인: user.profile 기반으로 항상 고정
-   *  - 비로그인: guestCharacter(랜덤)
-   */
   const effectiveCharacter = isLoggedIn
     ? getCharacterByProfile(user.profile)
     : guestCharacter;
+
+  // 화상 채팅 페이지에서는 padding-top과 캐릭터 오버레이가 필요 없으므로 true
+  const isVideoChatPage = location.pathname.startsWith('/session/') || location.pathname === '/user/session';
+
+  const contentClassName = isVideoChatPage ? 'content full-screen' : 'content';
 
   return (
     <div
@@ -129,13 +129,15 @@ function App() {
         "--calendar-selected-day-bg": effectiveCharacter.buttonColors.calendarSelectedDayBg,
       }}
     >
-      <NavBar
-        setCurrentCharacter={setCharacterIfGuest}
-        getRandomCharacter={getRandomCharacter}
-        onShowChat={handleShowChatModal}
-      />
+      { !isVideoChatPage && (
+        <NavBar
+          setCurrentCharacter={setCharacterIfGuest}
+          getRandomCharacter={getRandomCharacter}
+          onShowChat={handleShowChatModal}
+        />
+      )}
 
-      <main className="content">
+      <main className={contentClassName}>
         <Routes>
           {/* 공개 라우트 */}
           <Route path="/" element={<HomePage />} />
@@ -178,11 +180,11 @@ function App() {
         </Routes>
       </main>
 
-      <Footer />
+      { !isVideoChatPage && <Footer /> }
       <ChatModal show={showChatModal} handleClose={handleCloseChatModal} />
 
-      {/* ✅ 항상 맨 앞에 보이는 캐릭터 오버레이 (클릭 방해 없음) */}
-      <div className="character-overlay" aria-hidden="true" />
+      {/* ✅ 화상 채팅 페이지가 아닐 때만 캐릭터 오버레이를 렌더링합니다. */}
+      { !isVideoChatPage && <div className="character-overlay" aria-hidden="true" /> }
     </div>
   );
 }
