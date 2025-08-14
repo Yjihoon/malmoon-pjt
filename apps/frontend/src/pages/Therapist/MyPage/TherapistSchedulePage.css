@@ -457,7 +457,7 @@
 }
 
 .modal-footer .btn-primary:hover {
-    background-color: var(--btn-primary-hover-bg);
+    background-color: #6c757d;
     border-color: var(--btn-primary-hover-bg);
 }
 
@@ -469,4 +469,24 @@
 .modal-footer .btn-secondary:hover {
     background-color: #5a6268;
     border-color: #5a6268;
+}
+
+/* 셀렉트 닫혀 있을 때 */
+.custom-select {
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-bg);
+  border: 1px solid #c0aaff;
+}
+
+/* 드롭다운 펼쳤을 때 각 옵션 스타일 */
+.custom-select option {
+  background-color: #f5f0ff; /* 옵션 배경색 */
+  color: #4a148c;           /* 옵션 글자색 */
+}
+
+/* 선택된 옵션 hover/focus 시 */
+.custom-select option:checked,
+.custom-select option:hover {
+  background-color: #d1c4e9; /* hover/선택 색 */
+  color: #000;
 }
