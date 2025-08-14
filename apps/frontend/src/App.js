@@ -82,6 +82,9 @@ function App() {
   const [showChatModal, setShowChatModal] = useState(false);
   const [guestCharacter, setGuestCharacter] = useState(() => getRandomCharacter());
 
+  // ✅ 오늘의 수업 시작을 위한 상태 추가
+  const [startSessionCallback, setStartSessionCallback] = useState(null);
+
   const isLoggedIn = !!(user && user.accessToken);
 
   const setCharacterIfGuest = (updater) => {
@@ -94,14 +97,24 @@ function App() {
   const handleShowChatModal = () => setShowChatModal(true);
   const handleCloseChatModal = () => setShowChatModal(false);
 
+  // ✅ 캐릭터 오버레이 클릭 핸들러
+  const handleOverlayClick = () => {
+    if (startSessionCallback) {
+      startSessionCallback();
+    }
+  };
+
   if (!isAuthReady) return null;
 
   const effectiveCharacter = isLoggedIn
     ? getCharacterByProfile(user.profile)
     : guestCharacter;
 
-  // 화상 채팅 페이지에서는 padding-top과 캐릭터 오버레이가 필요 없으므로 true
   const isVideoChatPage = location.pathname.startsWith('/session/') || location.pathname === '/user/session';
+  const isHomePage = location.pathname === '/';
+
+  // ✅ 홈페이지이고 수업이 있을 때만 클릭 가능하도록 class 추가
+  const overlayClassName = `character-overlay ${isHomePage && startSessionCallback ? 'clickable' : ''}`;
 
   const contentClassName = isVideoChatPage ? 'content full-screen' : 'content';
 
@@ -139,8 +152,8 @@ function App() {
 
       <main className={contentClassName}>
         <Routes>
-          {/* 공개 라우트 */}
-          <Route path="/" element={<HomePage />} />
+          {/* ✅ HomePage에 수업 시작 콜백 함수를 전달 */}
+          <Route path="/" element={<HomePage setStartSessionCallback={setStartSessionCallback} />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/info" element={<h1>안내</h1>} />
@@ -183,8 +196,15 @@ function App() {
       { !isVideoChatPage && <Footer /> }
       <ChatModal show={showChatModal} handleClose={handleCloseChatModal} />
 
-      {/* ✅ 화상 채팅 페이지가 아닐 때만 캐릭터 오버레이를 렌더링합니다. */}
-      { !isVideoChatPage && <div className="character-overlay" aria-hidden="true" /> }
+      { !isVideoChatPage && (
+        <div
+          className={overlayClassName}
+          aria-hidden="true"
+          // ✅ 클릭 핸들러 추가
+          onClick={handleOverlayClick}
+          role={isHomePage && startSessionCallback ? "button" : "presentation"}
+        />
+      )}
     </div>
   );
 }
