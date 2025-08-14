@@ -28,8 +28,17 @@ public class InitialTestResult {
     @Column(precision = 5, scale = 2)
     private BigDecimal accuracy;        // 0~100, 소수점 두 자리까지
 
-    @Column(columnDefinition = "text")
-    private String feedbackText;               // GPT 생성 피드백
+    @Column(columnDefinition = "TEXT")
+    private String evaluation;        // ✅ 문자열
+
+    @Column(columnDefinition = "TEXT")
+    private String strengths;         // ✅ 문자열 ("- ..\n- .." 포맷)
+
+    @Column(columnDefinition = "TEXT")
+    private String improvements;      // ✅ 문자열
+
+    @Column(columnDefinition = "TEXT")
+    private String recommendations;   // ✅ 문자열
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

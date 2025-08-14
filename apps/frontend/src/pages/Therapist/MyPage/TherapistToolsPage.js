@@ -14,6 +14,8 @@ import FilterSetModal from '../../../components/TherapistToolTap/FilterSetModal'
 import ToolBundleModal from '../../../components/TherapistToolTap/ToolBundleModal';
 import AacItemDetailModal from '../../../components/TherapistToolTap/AacItemDetailModal';
 
+import api from '../../../api/axios'
+
 // CSS 임포트
 import './TherapistToolsPage.css';
 
@@ -198,13 +200,23 @@ function TherapistToolsPage() {
     };
     
     const handleGenerateAacImage = async (promptData) => {
-        const AI_SERVER_URL = 'http://localhost:8000';
+        //const AI_SERVER_URL = 'http://localhost:8000';
         try {
-            const response = await apiRequest('/api/v1/aacs/generate', 'POST', promptData);
-            const result = await response.json();
-            return AI_SERVER_URL + result.previewUrl;
+            //const response = await apiRequest('/api/v1/aacs/generate', 'POST', promptData);
+            //const response2 = await api.post('/aacs/generate', promptData);
+            const { data } = await api.post('/aacs/generate', promptData); // baseURL: '/api/v1' 가정
+            const url =
+            (data && (data.previewUrl || data.preview_url)) ??
+            (typeof data === 'string' ? data : null);
+
+            if (!url) throw new Error('미리보기 URL이 응답에 없습니다.');
+            return url.startsWith('http') ? url : new URL(url, window.location.origin).toString();
+            
+            //const result = await response.json();
+            //return AI_SERVER_URL + result.previewUrl;
         } catch (error) {
-            throw error;
+            const msg = error?.response?.data?.message || error.message || '이미지 생성 실패';
+            throw new Error(msg);
         }
     };
 

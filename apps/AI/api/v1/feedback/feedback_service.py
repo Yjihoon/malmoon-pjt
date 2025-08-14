@@ -1,7 +1,7 @@
 import os, re, json
-from typing import List, Tuple, Dict, Any
+from typing import List, Dict, Any
 import requests
-from api.v1.feedback.feedback_schema import SentencePair, WordsPair
+from api.v1.feedback.feedback_schema import SentencePair, WordsPair, FeedbackSections
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -50,11 +50,11 @@ def _call_llm(messages) -> str:
                 "schema": {
                     "type": "object",
                     "properties": {
-                        "accuracy": {"type": "number"},                                     # 0~100
-                        "evaluation": {"type": "string"},                                   # 1. 언어능력 평가
-                        "strengths": {"type": "array", "items": {"type": "string"}},        # 2. 강점
-                        "improvements": {"type": "array", "items": {"type": "string"}},     # 3. 개선 필요 영역
-                        "recommendations": {"type": "array", "items": {"type": "string"}},  # 4. 제안사항
+                        "accuracy": {"type": "number"}, # 발음정확도
+                        "evaluation": {"type": "string"}, # 종합평가
+                        "strengths": {"type": "string"},    # 강점
+                        "improvements": {"type": "string"}, # 개선점
+                        "recommendations": {"type": "string"}, # 개선방안
                     },
                       "required": ["accuracy", "evaluation", "strengths", "improvements", "recommendations"],
                     "additionalProperties": False,
@@ -65,16 +65,6 @@ def _call_llm(messages) -> str:
         },
         "max_tokens": 900,
     }
-
-    # ⚠️ 만약 GMS가 json_schema를 지원하지 않으면 위 block을 아래로 교체하세요:
-    # data = {
-    #     "model": MODEL,
-    #     "temperature": 0.2,
-    #     "top_p": 0.1,
-    #     "messages": messages,
-    #     "response_format": {"type": "json_object"},
-    #     "max_tokens": 500,
-    # }
 
     r = requests.post(GMS_ENDPOINT, headers=headers, json=data, timeout=120)
     r.raise_for_status()
@@ -88,65 +78,17 @@ def _parse_feedback_report(content: str) -> Dict[str, Any]:
         content = re.sub(r"```[a-zA-Z]*\n?", "", content).rstrip("`").strip()
 
     # 1) JSON 시도
-    try:
-        obj = json.loads(content)
-        # 필수 키 검증 및 정규화
-        acc = _clamp_accuracy(float(obj["accuracy"]))
-        evaluation = str(obj.get("evaluation", "")).strip()
-        strengths = [str(x).strip() for x in obj.get("strengths", []) if str(x).strip()]
-        improvements = [str(x).strip() for x in obj.get("improvements", []) if str(x).strip()]
-        recommendations = [str(x).strip() for x in obj.get("recommendations", []) if str(x).strip()]
-
-        return {
-            "accuracy": acc,
-            "evaluation": evaluation,
-            "strengths": strengths,
-            "improvements": improvements,
-            "recommendations": recommendations,
-        }
-    except Exception:
-        pass
-
-    # 2) (최후수단) 레거시 포맷 정규식 파싱
-    # - 정확도: "정확도: 87.5"
-    # - 본문: '언어능력 평가/강점/개선 필요 영역/제안사항'은 없다면 통째로 feedback로 간주
-    #   👉 이 경우 기존 인터페이스 유지 위해 strengths/improvements/recommendations는 빈 리스트
-    m_acc = re.search(r"정확도\s*[:：]\s*([0-9]+(?:\.[0-9]+)?)\s*%?", content)
-    acc = _clamp_accuracy(float(m_acc.group(1))) if m_acc else 0.0
-    body = re.sub(r"^.*?피드백\s*[:：]\s*", "", content, flags=re.S) if "피드백" in content else content
-    body = body.strip()
+    obj = json.loads(content)
 
     return {
-        "accuracy": acc,
-        "evaluation": body,  # 섹션을 못 나눴을 때 전체를 평가문으로 둠
-        "strengths": [],
-        "improvements": [],
-        "recommendations": [],
-    }
+    "accuracy": float(obj["accuracy"]),
+    "evaluation": str(obj.get("evaluation","")).strip(),
+    "strengths": str(obj.get("strengths","")).strip(),
+    "improvements": str(obj.get("improvements","")).strip(),
+    "recommendations": str(obj.get("recommendations","")).strip(),
+}
 
-def _compose_report_text(report: Dict[str, Any]) -> str:
-    """
-    보고서 dict -> 단일 문자열. (기존 Tuple[float, str] 인터페이스 유지용)
-    """
-    evaluation = report.get("evaluation", "").strip()
-
-    def _bullets(items):
-        return "\n".join(f"- {it}" for it in items) if items else "- (자료 부족)"
-
-    strengths = _bullets(report.get("strengths", []))
-    improvements = _bullets(report.get("improvements", []))
-    recommendations = _bullets(report.get("recommendations", []))
-
-    return (
-        "1. 언어능력 평가\n\n"
-        f"{evaluation}\n\n"
-        "2. 강점\n\n"
-        f"{strengths}\n\n"
-        "3. 개선 필요 영역\n\n"
-        f"{improvements}\n\n"
-        "4. 제안사항\n\n"
-        f"{recommendations}"
-    )
+   
 
 def _clamp_accuracy(x: float) -> float:
     if x < 0: return 0.0
@@ -177,10 +119,10 @@ def _prompt_for_sentences(sentences: List[SentencePair], extra_context: str = ""
         "[출력 형식(JSON)]\n"
         '{'
         '"accuracy": <number>, '
-        '"evaluation": "<string>", '
-        '"strengths": ["<string>", "..."], '
-        '"improvements": ["<string>", "..."], '
-        '"recommendations": ["<string>", "..."]'
+        '"evaluation": <string> '
+        '"strengths": <string> '
+        '"improvements": <string> '
+        '"recommendations": <string>'
         '}\n\n'
         "[데이터]\n"
     )
@@ -222,10 +164,10 @@ def _prompt_for_words(words: List[WordsPair], extra_context: str = "") -> str:
         "[출력 형식(JSON)]\n"
         '{'
         '"accuracy": <number>, '
-        '"evaluation": "<string>", '
-        '"strengths": ["<string>", "..."], '
-        '"improvements": ["<string>", "..."], '
-        '"recommendations": ["<string>", "..."]'
+        '"evaluation": <string> '
+        '"strengths": <string> '
+        '"improvements": <string> '
+        '"recommendations": <string>'
         '}\n\n'
         "[데이터]\n"
     )
@@ -245,51 +187,43 @@ def _prompt_for_words(words: List[WordsPair], extra_context: str = "") -> str:
 
 
 # -------- 실제 서비스 함수 --------
-# (기존 인터페이스 유지: Tuple[float, str])
-
-def generate_feedback_response(sentences: List[SentencePair]) -> Tuple[float, str]:
-    """
-    동화책 문장 기반 수업 피드백
-    - 반환: (정확도, 보고서 본문 문자열)
-    """
+# (인터페이스: FeedbackSections(섹션별로))
+def generate_feedback_response_sections(sentences: List[SentencePair]) -> FeedbackSections:
     prompt = _prompt_for_sentences(
         sentences,
-        # 필요시 설문 요약/나이 등 추가 문맥 전달 가능
-        extra_context=(
-            "설문 결과 요약 예: 수용언어는 또래 수준, 표현언어에서 어미 표현과 단어 인출이 어려움으로 보고됨."
-        ),
+        extra_context="설문 요약 예: 수용언어는 또래 수준, 표현언어에서 어말 정확도와 단어 인출 어려움.",
     )
     messages = _build_messages(prompt)
     content = _call_llm(messages)
-
     try:
         report = _parse_feedback_report(content)
-        accuracy = float(report["accuracy"])
-        feedback_text = _compose_report_text(report)  # 4섹션을 단일 문자열로 합치기
-        return accuracy, feedback_text
+        return FeedbackSections(
+            accuracy=float(report["accuracy"]),
+            evaluation=report["evaluation"],
+            strengths=report["strengths"],
+            improvements=report["improvements"],
+            recommendations=report["recommendations"],
+        )
     except Exception as e:
         snippet = content[:200].replace("\n", "\\n")
         raise ValueError(f"LLM_PARSE_ERROR: {e} | content_snippet='{snippet}'")
 
-def generate_initial_feedback_response(words: List[WordsPair]) -> Tuple[float, str]:
-    """
-    초기진단(단어 기반) 피드백
-    - 반환: (정확도, 보고서 본문 문자열)
-    """
+def generate_initial_feedback_response_sections(words: List[WordsPair]) -> FeedbackSections:
     prompt = _prompt_for_words(
         words,
-        extra_context=(
-            "초기진단 문항은 10개이며, 단어 인출·음운 오류·오류패턴 관찰에 중점을 둔다."
-        ),
+        extra_context="초기진단은 10문항으로, 단어 인출·음운 오류·오류패턴 관찰에 중점.",
     )
     messages = _build_messages(prompt)
     content = _call_llm(messages)
-
     try:
         report = _parse_feedback_report(content)
-        accuracy = float(report["accuracy"])
-        feedback_text = _compose_report_text(report)
-        return accuracy, feedback_text
+        return FeedbackSections(
+            accuracy=float(report["accuracy"]),
+            evaluation=report["evaluation"],
+            strengths=report["strengths"],
+            improvements=report["improvements"],
+            recommendations=report["recommendations"],
+        )
     except Exception as e:
         snippet = content[:200].replace("\n", "\\n")
         raise ValueError(f"LLM_PARSE_ERROR: {e} | content_snippet='{snippet}'")

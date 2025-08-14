@@ -10,5 +10,8 @@ import lombok.Data;
 @Data
 public class FeedbackEvalResponseDto {
     private double accuracy;
-    private String feedbackText;
+    private String evaluation;
+    private String strengths;        // ✅ 문자열
+    private String improvements;     // ✅ 문자열
+    private String recommendations;  // ✅ 문자열
 }

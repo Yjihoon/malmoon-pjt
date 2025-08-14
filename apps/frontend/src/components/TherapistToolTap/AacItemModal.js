@@ -82,24 +82,57 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
         }
         setIsGenerating(true);
         try {
-            const generatedUrl = await onGenerate({ situation, action, emotion, description });
-            setAiGeneratedImage(generatedUrl); // AI 생성 이미지 URL 저장 (미리보기용)
+            // const generatedUrl = await onGenerate({ situation, action, emotion, description });
+            // setAiGeneratedImage(generatedUrl); // AI 생성 이미지 URL 저장 (미리보기용)
 
-            // AI 생성 이미지를 Blob으로 가져와 File 객체로 변환
-            const response = await fetch(generatedUrl);
-            const blob = await response.blob();
-            const filename = generatedUrl.substring(generatedUrl.lastIndexOf('/') + 1);
-            const aiImageFile = new File([blob], filename, { type: blob.type });
+            // // AI 생성 이미지를 Blob으로 가져와 File 객체로 변환
+            // const response = await fetch(generatedUrl);
+            // const blob = await response.blob();
+            // const filename = generatedUrl.substring(generatedUrl.lastIndexOf('/') + 1);
+            // const aiImageFile = new File([blob], filename, { type: blob.type });
             
-            setImageFile(aiImageFile); // File 객체를 imageFile 상태에 저장
-            setImagePreview(URL.createObjectURL(aiImageFile)); // 미리보기 업데이트
+            // setImageFile(aiImageFile); // File 객체를 imageFile 상태에 저장
+            // setImagePreview(URL.createObjectURL(aiImageFile)); // 미리보기 업데이트
 
-        } catch (error) { 
-            console.error("AI 이미지 생성 중 오류 발생:", error);
+            let generatedUrl = await onGenerate({ situation, action, emotion, description });
+
+            // 혹시라도 객체가 들어오면 보정
+            if (generatedUrl && typeof generatedUrl === 'object') {
+            generatedUrl = generatedUrl.previewUrl || generatedUrl.preview_url || '';
+            }
+            if (typeof generatedUrl !== 'string' || !generatedUrl) {
+            throw new Error('유효하지 않은 미리보기 URL입니다.');
+            }
+
+            // 절대 URL 보정 (상대경로로 오면 현재 오리진 기준으로 절대화)
+            const absoluteUrl = new URL(generatedUrl, window.location.origin).toString();
+            setAiGeneratedImage(absoluteUrl);
+
+            // 이미지 Blob 다운로드 → File 생성
+            const response = await fetch(absoluteUrl);
+            if (!response.ok) throw new Error('이미지 다운로드 실패');
+            const blob = await response.blob();
+
+            // 파일명 안전 추출
+            const pathname = new URL(absoluteUrl).pathname;
+            const fallbackName = `aac_preview_${Date.now()}.png`;
+            const filename = pathname.split('/').pop() || fallbackName;
+
+            const aiImageFile = new File([blob], filename, { type: blob.type || 'image/png' });
+            setImageFile(aiImageFile);
+            setImagePreview(URL.createObjectURL(aiImageFile));
+        } catch (error) {
+            console.error('AI 이미지 생성 중 오류 발생:', error);
             alert(error.message || 'AI 이미지 생성에 실패했습니다. 콘솔을 확인해주세요.');
         } finally {
             setIsGenerating(false);
         }
+        // } catch (error) { 
+        //     console.error("AI 이미지 생성 중 오류 발생:", error);
+        //     alert(error.message || 'AI 이미지 생성에 실패했습니다. 콘솔을 확인해주세요.');
+        // } finally {
+        //     setIsGenerating(false);
+        // }
     };
 
     return (
