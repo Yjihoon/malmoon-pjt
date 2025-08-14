@@ -321,7 +321,7 @@ function TherapistSchedulePage() {
                     day: "numeric",
                     weekday: "short",
                   })}
-                  의 일정
+                  요일 일정
                 </span>
                 {schedules.length > 0 && (
                   <Badge className="count-badge">총 {schedules.length}건</Badge>
