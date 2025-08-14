@@ -13,9 +13,14 @@ load_dotenv()
 GEMINI_IMAGE_API_URL = os.getenv("GEMINI_IMAGE_API_URL")
 GMS_API_KEY = os.getenv("GMS_API_KEY")
 
-# 📁 임시 저장 경로
-TEMP_IMAGE_DIR = Path("apps/AI/static/temp")
+# 📁 정적 저장 루트(도커 볼륨과 일치시켜야 함)
+STATIC_ROOT = os.getenv("STATIC_ROOT", "/apps/AI/static")
+TEMP_IMAGE_DIR = Path(STATIC_ROOT) / "temp"
 TEMP_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+
+# 🌐 공개 URL 구성 요소
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://www.malmoon.store")
+PUBLIC_STATIC_PREFIX = os.getenv("PUBLIC_STATIC_PREFIX", "/ai-static")
 
 
 def generate_preview_image(req: AacImageRequest) -> str:
@@ -35,7 +40,12 @@ def generate_preview_image(req: AacImageRequest) -> str:
         f.write(base64.b64decode(base64_data))
 
     print(f"✅ 생성된 임시 파일 경로: {temp_path}")
-    return f"/static/temp/{filename}"
+
+    # 🌐 프론트에서 접근 가능한 절대 URL 생성 (nginx alias와 매핑)
+    public_url = f"{PUBLIC_BASE_URL}{PUBLIC_STATIC_PREFIX}/temp/{filename}"
+
+    # 유틸 함수가 문자열(URL)만 반환
+    return public_url
 
 
 def build_prompt(req: AacImageRequest) -> str:

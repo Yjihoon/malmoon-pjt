@@ -7,5 +7,5 @@ router = APIRouter()
 
 @router.post("/generate", response_model=AacImageResponse)
 def generate_image(req: AacImageRequest):
-    preview_url = generate_preview_image(req)
-    return AacImageResponse(preview_url=preview_url)
+    url = generate_preview_image(req)
+    return AacImageResponse(previewUrl=url, preview_url=url)
