@@ -6,11 +6,10 @@
 }
 
 .page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  display: flex; /* 제목과 버튼을 한 줄에 배치합니다. */
+  align-items: center; /* 세로 중앙 정렬 */
+  justify-content: space-between; /* 양쪽 끝으로 배치합니다. */
+  margin-bottom: 2rem; /* 제목과 아래 콘텐츠 사이 간격 조정 */
 }
 
 .page-title {
@@ -272,4 +271,47 @@
   .feedback-card.grid-col-span-2 {
     grid-column: span 1; /* On small screens, everything is 1 column */
   }
+}
+
+/* TherapistFeedbackPage.css 파일에 아래 코드를 추가하거나 확인하세요. */
+
+/* 1. `page-header-actions` 스타일 추가 (버튼을 감싸는 div) */
+.page-header-actions {
+  position: relative; /* 뱃지의 위치 기준이 됩니다. */
+}
+
+/* 2. 뱃지 스타일 추가 */
+.badge.position-absolute {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+  z-index: 10;
+  min-width: 2em;
+  padding: 0.4em 0.5em;
+  font-size: 0.7em;
+  border-radius: 50%;
+}
+
+/* TherapistFeedbackPage.css */
+
+/* ... (기존 CSS 코드) ... */
+
+/* 버튼과 뱃지를 감싸는 div 스타일 */
+.page-header-actions {
+  position: relative; /* 뱃지가 이 요소를 기준으로 움직입니다. */
+  display: flex;
+  align-items: center;
+}
+
+/* 뱃지 스타일 */
+.badge.badge-custom {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+  padding: .4em .5em;
+  font-size: 0.7em;
+  border-radius: 100%;
+  min-width: 2em;
 }
