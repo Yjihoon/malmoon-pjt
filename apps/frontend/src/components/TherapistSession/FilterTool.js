@@ -8,10 +8,13 @@ function FilterTool({
   applyBackgroundFilter,   // 필터 적용 함수
   removeBackgroundFilter,  // 필터 제거 함수
   applyLensById,
-  allFilters
+  allFilters,
+  activeLensId, // 새로 추가된 prop: 현재 적용된 렌즈 필터의 ID
 }) {
   // 사용자가 선택했지만 아직 적용은 안 한 필터 (이 컴포넌트가 가져야 할 유일한 상태)
   const [stagedFilter, setStagedFilter] = useState(null);
+  // 렌즈 필터용 staged 상태
+  const [stagedLensId, setStagedLensId] = useState(null);
   // 알림 메시지 상태
   const [notification, setNotification] = useState('');
 
@@ -56,6 +59,12 @@ function FilterTool({
     showNotification('필터가 제거되었습니다.');
   };
 
+  // 렌즈 필터 클릭 핸들러
+  const handleLensClick = (lensId) => {
+    setStagedLensId(lensId);
+    applyLensById(lensId);
+  };
+
   // [필터 적용] 버튼 활성화 조건: 선택된(staged) 필터가 있고, 그 필터가 현재 적용된 필터와 다를 때
   const isApplyButtonEnabled = stagedFilter && stagedFilter.filterId !== appliedFilterId;
 
@@ -70,7 +79,7 @@ function FilterTool({
 
       <h6 className="text-center mb-3">배경 필터 선택</h6>
       <Row xs={2} className="g-2 text-center">
-        {allFilters.map(filter => {
+        {allFilters.filter(f => !f.filterLensId).map(filter => {
           const filterIdStr = String(filter.filterId);
           // "적용됨"과 "선택됨" 상태를 props와 state로부터 직접 판단
           const isApplied = appliedFilterId === filterIdStr;
@@ -107,11 +116,35 @@ function FilterTool({
       </div>
 
       <hr />
-      <h6 className="text-center mb-3">CameraKit 필터</h6>
-      <div className="d-grid gap-2">
-        <Button variant="info" onClick={() => applyLensById('80ea0b59-4a55-472f-bb63-2c679f9ad52c')}>렌즈 1</Button>
-        <Button variant="info" onClick={() => applyLensById('65d183b8-6c1c-4125-af82-875e6d36b656')}>렌즈 2</Button>
-      </div>
+      <h6 className="text-center mb-3">렌즈 필터</h6>
+      <Row xs={2} className="g-2 text-center">
+        {allFilters
+          .filter(filter => filter.filterLensId)
+          .map(filter => {
+            const isLensApplied = activeLensId && activeLensId === filter.filterLensId;
+            const isLensStaged = stagedLensId === filter.filterLensId;
+
+            let cardClass = 'filter-thumb-card';
+            if (isLensApplied) {
+              cardClass += ' active-applied';
+            } else if (isLensStaged) {
+              cardClass += ' active-staged';
+            }
+
+            return (
+              <Col key={filter.filterId}>
+                <Card
+                  onClick={() => handleLensClick(filter.filterLensId)}
+                  className={cardClass}
+                >
+                  <Card.Img variant="top" src={filter.imageUrl} style={{height: '80px', objectFit: 'cover'}} />
+                  <Card.Body className="p-1"><Card.Text>{filter.name}</Card.Text></Card.Body>
+                </Card>
+              </Col>
+            );
+          })
+        }
+      </Row>
     </div>
   );
 }
