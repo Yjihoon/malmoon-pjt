@@ -1,121 +1,168 @@
-/* AacSetList.css */
+/* AacSetList.css / FilterSetList.css / ToolBundleList.css */
 
-.aac-set-list-container {
-    padding: 1rem;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+.aac-set-list-container,
+.filter-set-list-container,
+.tool-bundle-list-container {
+  padding-top: 0.5rem;
 }
 
-.aac-set-list-group {
-    border: none; /* Remove default ListGroup border */
-    border-radius: 12px;
-    overflow: hidden; /* Ensures rounded corners apply to children */
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05); /* Subtle shadow for the whole group */
+.aac-set-list-group,
+.filter-set-list-group,
+.tool-bundle-list-group {
+  border: none;
+  box-shadow: none;
 }
 
-.aac-set-list-item {
-    background-color: #ffffff;
-    border: 1px solid #e9ecef; /* Light border for separation */
-    margin-bottom: 10px; /* Space between items */
-    border-radius: 10px; /* Rounded corners for each item */
-    padding: 15px 20px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    /* Add flex properties to control internal layout better */
-    display: flex;
-    justify-content: space-between;
-    align-items: center; /* Vertically align items */
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+.aac-set-list-item,
+.filter-set-list-item,
+.tool-bundle-list-item {
+  position: relative;
+  background-color: #ffffff;
+  border: 1px solid #e0e6f1;
+  margin-bottom: 16px;
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  padding: 0;
 }
 
-.aac-set-list-item:last-child {
-    margin-bottom: 0; /* No margin for the last item */
+/* ✅ [수정] 좌측 악센트 바 (그라데이션 추가) */
+.aac-set-list-item::before,
+.filter-set-list-item::before,
+.tool-bundle-list-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 6px;
+  background-image: var(--primary-gradient);
+  opacity: 0.6;
+  transition: all 0.3s ease;
 }
 
-.aac-set-list-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+.aac-set-list-item:hover,
+.filter-set-list-item:hover,
+.tool-bundle-list-item:hover {
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+  background-color: #fcfdff;
 }
 
-/* New class for the text content area */
-.aac-set-text-content {
-    flex-grow: 1; /* Allow it to grow */
-    flex-shrink: 1; /* Allow it to shrink */
-    min-width: 0; /* Allow content to shrink below its intrinsic size */
-    margin-right: 15px; /* Space between text and buttons */
+.aac-set-list-item:hover::before,
+.filter-set-list-item:hover::before,
+.tool-bundle-list-item:hover::before {
+  width: 8px;
+  opacity: 1;
 }
 
-.aac-set-item-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #343a40;
-    margin-bottom: 5px; /* Reduced margin */
-    white-space: nowrap; /* Prevent wrapping for title */
-    overflow: hidden; /* Hide overflow */
-    text-overflow: ellipsis; /* Add ellipsis for overflow */
+/* ✅ [수정] 카드 내부 구조 */
+.list-item-content {
+  padding: 20px 24px 20px 30px; /* 좌측 여백 확보 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.aac-set-item-description {
-    font-size: 0.9rem;
-    color: #6c757d;
-    margin-bottom: 0;
-    white-space: nowrap; /* Prevent wrapping for description */
-    overflow: hidden; /* Hide overflow */
-    text-overflow: ellipsis; /* Add ellipsis for overflow */
+.list-item-body {
+  flex-grow: 1;
+  padding-right: 120px; /* 버튼 공간 확보 */
 }
 
-.aac-set-actions {
-    display: flex;
-    gap: 8px; /* Space between buttons */
-    flex-shrink: 0; /* Prevent actions from shrinking */
+.item-title-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
-/* Custom button styles for edit/delete */
-.aac-set-edit-btn {
-    background-color: #f0f0f0; /* Light gray for edit */
-    color: #495057;
-    border: 1px solid #d0d0d0;
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+.item-title-icon {
+  color: var(--primary-color);
+  margin-right: 12px;
+  flex-shrink: 0;
 }
 
-.aac-set-edit-btn:hover {
-    background-color: #e0e0e0;
-    transform: translateY(-1px);
+.aac-set-item-title,
+.filter-set-item-title,
+.tool-bundle-item-title {
+  font-family: 'Jua', 'Gamja Flower', 'Gowun Dodum', sans-serif;
+  font-size: 1.3rem;
+  color: #343a40;
+  margin: 0;
 }
 
-.aac-set-delete-btn {
-    background-color: #f8d7da; /* Soft red for delete */
-    color: #dc3545;
-    border: 1px solid #f5c6cb;
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+.aac-set-item-description,
+.filter-set-item-description,
+.tool-bundle-item-description {
+  font-family: 'Gowun Dodum', sans-serif;
+  font-size: 0.95rem;
+  color: #868e96; /* 더 연하게 */
+  margin: 0;
+  padding-left: 36px;
+  line-height: 1.6;
 }
 
-.aac-set-delete-btn:hover {
-    background-color: #f5b0b5;
-    transform: translateY(-1px);
+/* ✅ [추가] ToolBundle의 Footer (태그 영역) */
+.list-item-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+  padding-left: 36px;
+}
+.bundle-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background-color: #f1f3f5;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+.bundle-tag svg {
+  margin-right: 6px;
+  color: #868e96;
 }
 
-/* Placeholder for empty list */
+
+/* 버튼 배치 및 인터랙션 (기존 코드 유지) */
+.aac-set-actions,
+.filter-set-actions,
+.tool-bundle-actions {
+  position: absolute;
+  top: 50%;
+  right: 28px;
+  transform: translateY(-50%) translateX(20px);
+  opacity: 0;
+  display: flex;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.aac-set-list-item:hover .aac-set-actions,
+.filter-set-list-item:hover .filter-set-actions,
+.tool-bundle-list-item:hover .tool-bundle-actions {
+  transform: translateY(-50%) translateX(0);
+  opacity: 1;
+}
+
+/* 빈 목록 플레이스홀더 (기존 코드 유지) */
 .empty-list-placeholder {
-    background-color: #fff;
-    border: 2px dashed #e0e0e0;
-    border-radius: 10px;
-    padding: 2rem;
-    text-align: center;
-    color: #6c757d;
-    margin-top: 20px;
+  background-color: rgba(255,255,255,0.6);
+  border: 2px dashed var(--accent-pastel-border);
+  border-radius: var(--border-radius-md);
+  padding: 2.5rem;
+  text-align: center;
+  color: #6c757d;
 }
-
 .empty-list-placeholder h5 {
-    font-weight: 600;
-    color: #495057;
+  font-family: 'Jua', 'Gamja Flower', 'Gowun Dodum', sans-serif;
+  font-weight: 600;
+  color: #495057;
+  font-size: 1.2rem;
 }
-
 .empty-list-placeholder p {
-    font-size: 0.9rem;
-    margin-bottom: 0;
+  font-family: 'Gowun Dodum', sans-serif;
+  font-size: 0.9rem;
+  margin-bottom: 0;
 }

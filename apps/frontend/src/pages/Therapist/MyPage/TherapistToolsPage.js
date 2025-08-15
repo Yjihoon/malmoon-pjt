@@ -293,58 +293,63 @@ function TherapistToolsPage() {
     if (loading) return <Container className="my-5 text-center"><Spinner animation="border" /> <p>데이터 로딩 중...</p></Container>;
 
     return (
-        <Container fluid className="my-5 px-4 tools-management-section">
-            <h2 className="text-center mb-4">수업 도구 관리</h2>
+        <Container fluid className="tools-management-section">
+            <h2>수업 도구 관리</h2>
             {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
+            
             <Tabs defaultActiveKey="AAC_item" id="therapist-tools-tabs" className="mb-3" justify>
                 <Tab eventKey="AAC_item" title="AAC 아이템 관리">
-                    <Card className="p-3"><Card.Body>
-                        <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div className="tools-section">
+                        <div className="tools-section-header">
                             <h4 className="page-section-title">AAC 아이템 목록</h4>
-                            <Button className="btn-soft-primary no-hover-btn page-header-btn" onClick={() => openModal('AAC_item')}>새 AAC 아이템 추가</Button>
-                        </div> <hr />
+                            <Button className="btn-tool-add" onClick={() => openModal('AAC_item')}>새 AAC 아이템 추가</Button>
+                        </div>
                         <AacItemList aacItems={aacItems} currentUser={currentUser} onEdit={(item) => openModal('AAC_item', item)} onDelete={handleDeleteAacItem} onViewDetails={handleViewDetails} />
-                    </Card.Body></Card>
+                    </div>
                 </Tab>
+
                 <Tab eventKey="AAC_set" title="AAC 묶음 관리">
-                    <Card className="p-3"><Card.Body>
-                        <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div className="tools-section">
+                        <div className="tools-section-header">
                             <h4 className="page-section-title">AAC 묶음 목록</h4>
-                            <Button className="btn-soft-primary no-hover-btn page-header-btn" onClick={() => openModal('AAC_set')}>새 AAC 묶음 추가</Button>
+                            <Button className="btn-tool-add" onClick={() => openModal('AAC_set')}>새 AAC 묶음 추가</Button>
                         </div>
                         <AacSetList aacSets={aacSets} onEdit={(set) => openModal('AAC_set', set)} onDelete={handleDeleteAacSet} />
-                    </Card.Body></Card>
+                    </div>
                 </Tab>
+
                 <Tab eventKey="Filter" title="필터 관리">
-                    <Card className="p-3"><Card.Body>
-                        <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div className="tools-section">
+                        <div className="tools-section-header">
                             <h4 className="page-section-title">필터 목록</h4>
-                            <Button className="btn-soft-primary no-hover-btn page-header-btn" onClick={() => openModal('filter')}>새 필터 추가</Button>
+                            <Button className="btn-tool-add" onClick={() => openModal('filter')}>새 필터 추가</Button>
                         </div>
                         <FilterList filters={filters} onDelete={handleDeleteFilter} />
-                    </Card.Body></Card>
+                    </div>
                 </Tab>
+
                 <Tab eventKey="Filter_set" title="필터 묶음 관리">
-                    <Card className="p-3"><Card.Body>
-                        <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div className="tools-section">
+                         <div className="tools-section-header">
                             <h4 className="page-section-title">필터 묶음 목록</h4>
-                            <Button className="btn-soft-primary no-hover-btn page-header-btn" onClick={() => openModal('Filter_set')}>새 필터 묶음 추가</Button>
+                            <Button className="btn-tool-add" onClick={() => openModal('Filter_set')}>새 필터 묶음 추가</Button>
                         </div>
                         <FilterSetList filterSets={filterSets} onEdit={(set) => openModal('Filter_set', set)} onDelete={handleDeleteFilterSet} />
-                    </Card.Body></Card>
+                    </div>
                 </Tab>
+
                 <Tab eventKey="tool_bundle" title="수업 세트 관리">
-                     <Card className="p-3"><Card.Body>
-                        <div className="d-flex justify-content-between align-items-center mb-3">
+                     <div className="tools-section">
+                        <div className="tools-section-header">
                             <h4 className="page-section-title">수업 세트 목록</h4>
-                            <Button className="btn-soft-primary no-hover-btn page-header-btn" onClick={() => openModal('tool_bundle')}>새 수업 세트 추가</Button>
+                            <Button className="btn-tool-add" onClick={() => openModal('tool_bundle')}>새 수업 세트 추가</Button>
                         </div>
                         <ToolBundleList toolBundles={toolBundles} allAacSets={aacSets} allFilterSets={filterSets} onEdit={(bundle) => openModal('tool_bundle', bundle)} onDelete={handleDeleteToolBundle} />
-                    </Card.Body></Card>
+                    </div>
                 </Tab>
             </Tabs>
             
-            {/* 모달 렌더링 */}
+            {/* 모달 렌더링 (이 부분은 수정 없음) */}
             <AacItemDetailModal show={modalState.type === 'AAC_item_detail'} onHide={closeModal} item={modalState.data} />
             <AacItemModal show={modalState.type === 'AAC_item'} onHide={closeModal} onSave={handleSaveAacItem} itemData={modalState.data} onGenerate={handleGenerateAacImage} />
             <AacSetModal show={modalState.type === 'AAC_set'} onHide={closeModal} onSave={handleSaveAacSet} initialData={modalState.data} allAacItems={aacItems} getAuthHeader={getAuthHeader} />
