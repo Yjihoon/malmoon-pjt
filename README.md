@@ -8,67 +8,36 @@
 
 ## 📑 목차
 
-* [프로젝트 개요](#-프로젝트-개요)
-  * [팀원 소개](#1️⃣-팀원-소개)
-  * [기획 배경](#2️⃣-기획-배경)
-* [서비스 소개](#-서비스-소개)
-  * [시연 영상](#1️⃣-시연-영상)
-  * [서비스 화면 및 기능](#2️⃣-서비스-화면-및-기능)
-* [개발 환경](#-개발-환경)
-* [프로젝트 구조](#-프로젝트-구조)
-* [협업 환경](#-협업-환경)
-* [프로젝트 일정](#-프로젝트-일정)
-* [프로젝트 산출물](#-프로젝트-산출물)
-  * [API 명세서](#1️⃣-api-명세서)
-  * [ERD](#2️⃣-erd)
+- [프로젝트 개요](#overview)
+  - [팀원 소개](#team)
+  - [기획 배경](#background)
+- [서비스 소개](#service)
+  - [시연 영상](#demo)
+  - [서비스 화면 및 기능](#screens)
+- [개발 환경](#env)
+- [프로젝트 구조](#structure)
+- [협업 환경](#collab)
+- [프로젝트 일정](#timeline)
+- [프로젝트 산출물](#deliverables)
+  - [API 명세서](#api)
+  - [ERD](#erd)
 
 ---
 
-## 📌 프로젝트 개요
+## 📌 프로젝트 개요 <a id="overview"></a>
 
-### 1️⃣ 팀원 소개
+### 1️⃣ 팀원 소개 <a id="team"></a>
 
-<table style="width:100%; border-collapse:separate; border-spacing:20px; text-align:center;">
-  <tr>
-    <td style="border:1px solid #ccc; border-radius:10px; padding:15px; width:33%; vertical-align:top; box-shadow:2px 2px 6px rgba(0,0,0,0.1);">
-      <h4>정수형</h4>
-      <img src="README_img/profile6.png" width="120"/><br/>
-      Leader,<br/>BackEnd,<br/>Deployment
-    </td>
-    <td style="border:1px solid #ccc; border-radius:10px; padding:15px; width:33%; vertical-align:top; box-shadow:2px 2px 6px rgba(0,0,0,0.1);">
-      <h4>임덕규</h4>
-      <img src="README_img/profile5.png" width="120"/><br/>
-      AI,<br/>BackEnd
-    </td>
-    <td style="border:1px solid #ccc; border-radius:10px; padding:15px; width:33%; vertical-align:top; box-shadow:2px 2px 6px rgba(0,0,0,0.1);">
-      <h4>황성헌</h4>
-      <img src="README_img/profile4.png" width="120"/><br/>
-      Security,<br/>BackEnd
-    </td>
-  </tr>
-  <tr>
-    <td style="border:1px solid #ccc; border-radius:10px; padding:15px; width:33%; vertical-align:top; box-shadow:2px 2px 6px rgba(0,0,0,0.1);">
-      <h4>윤지훈</h4>
-      <img src="README_img/profile2.png" width="120"/><br/>
-      FrontEnd
-    </td>
-    <td style="border:1px solid #ccc; border-radius:10px; padding:15px; width:33%; vertical-align:top; box-shadow:2px 2px 6px rgba(0,0,0,0.1);">
-      <h4>유영훈</h4>
-      <img src="README_img/profile1.png" width="120"/><br/>
-      FrontEnd
-    </td>
-    <td style="border:1px solid #ccc; border-radius:10px; padding:15px; width:33%; vertical-align:top; box-shadow:2px 2px 6px rgba(0,0,0,0.1);">
-      <h4>정형진</h4>
-      <img src="README_img/profile3.png" width="120"/><br/>
-      FrontEnd
-    </td>
-  </tr>
-</table>
+| 정수형 | 임덕규 | 황성헌 |
+|:-:|:-:|:-:|
+| ![](README_img/profile6.png) | ![](README_img/profile5.png) | ![](README_img/profile4.png) |
+| Leader, BackEnd, Deployment | AI, BackEnd | Security, BackEnd |
+| 윤지훈 | 유영훈 | 정형진 |
+| ![](README_img/profile2.png) | ![](README_img/profile1.png) | ![](README_img/profile3.png) |
+| FrontEnd | FrontEnd | FrontEnd |
 
 
-
-
-### 2️⃣ 기획 배경
+### 2️⃣ 기획 배경 <a id="background"></a>
 
 ***언어지연 및 학습 부진 아동의 치료 기회를 넓히기 위해서는 많은 장벽을 넘어야 합니다.***
 
@@ -82,10 +51,10 @@
 지역 간 인프라 격차와 높은 치료비용,
 그리고 이를 보조할 공적 제도의 부재로 인해 치료를 받기 어려운 상황입니다.
 
-malmoon은 이러한 구조적인 문제를 해결하고자 만들어졌습니다.
-언어치료를 <span style="color:red;">언제, 어디서나</span> 받을 수 있도록
-WebRTC 기반 <span style="color:red;">실시간 비대면 언어치료</span> 서비스를 제공하며,
-AI와 디지털 교구를 통해 치료의 효율성을 높입니다.
+malmoon은 이러한 구조적 문제를 해결하고자 만들어졌습니다.  
+언어치료를 **언제, 어디서나** 받을 수 있도록 WebRTC 기반 **실시간 비대면 언어치료** 서비스를 제공하며,  
+**AI**와 **디지털 교구**를 통해 치료의 효율성을 높입니다.
+
 
 저희는 이 서비스를 통해
 누구든, 어디서든, 말의 꽃을 피울 수 있도록
@@ -93,24 +62,35 @@ AI와 디지털 교구를 통해 치료의 효율성을 높입니다.
 
 ---
 
-## 🖥️ 서비스 소개
+## 🖥️ 서비스 소개 <a id="service"></a>
 
-### 1️⃣ 시연 영상
+### 1️⃣ 시연 영상 <a id="demo"></a>
 
 [🔗 시연 영상 바로가기]()
 
-### 2️⃣ 서비스 화면 및 기능
+> ⏳ 업로드 예정 (2025-08-18)
+
+### 2️⃣ 서비스 화면 및 기능 <a id="screens"></a>
 
 #### 1) 사이트 소개
 
 ---
 
-## 🛠️ 개발 환경
+## 🛠️ 개발 환경 <a id="env"></a>
+
+| **BackEnd** | ![Java](https://img.shields.io/badge/Java-17-orange) ![Spring Boot](https://img.shields.io/badge/SpringBoot-3.5.4-green) ![Spring Security](https://img.shields.io/badge/Security-SpringSecurity-brightgreen) ![JWT](https://img.shields.io/badge/Auth-JWT-blue) ![REST API](https://img.shields.io/badge/API-REST-blueviolet) ![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-316192) ![JPA](https://img.shields.io/badge/Persistence-JPA-red) ![Gradle](https://img.shields.io/badge/Build-Gradle-02303A) |
+|:-|:-|
+| **FrontEnd** | ![React](https://img.shields.io/badge/Frontend-React-61DAFB) ![React Router](https://img.shields.io/badge/Router-ReactRouter-CA4245) ![Axios](https://img.shields.io/badge/HTTP-Axios-5A29E4) ![Context API](https://img.shields.io/badge/State-ContextAPI-FFCA28) |
+| **AI** | ![Python](https://img.shields.io/badge/Python-3.10-3776AB) ![FastAPI](https://img.shields.io/badge/API-FastAPI-009688) ![Uvicorn](https://img.shields.io/badge/Server-Uvicorn-FFCA28) ![Gemini](https://img.shields.io/badge/AI-Gemini-4285F4) ![ChatGPT](https://img.shields.io/badge/AI-ChatGPT-10A37F) ![Whisper](https://img.shields.io/badge/STT-Whisper-FF6F00) |
+| **Infra** | ![Docker](https://img.shields.io/badge/Container-Docker-2496ED) ![Nginx](https://img.shields.io/badge/Proxy-Nginx-009639) ![AWS EC2](https://img.shields.io/badge/Cloud-AWS_EC2-FF9900) ![AWS S3](https://img.shields.io/badge/Storage-AWS_S3-569A31) ![Redis](https://img.shields.io/badge/Cache-Redis-DC382D) ![Let's Encrypt](https://img.shields.io/badge/SSL-Let'sEncrypt-003A70) |
+| **RTC** | ![LiveKit](https://img.shields.io/badge/WebRTC-LiveKit-FF4088) ![OpenVidu](https://img.shields.io/badge/WebRTC-OpenVidu-1D7EB7) |
+| **Test** | ![JUnit5](https://img.shields.io/badge/Test-JUnit5-25A162) ![Mockito](https://img.shields.io/badge/Mock-Mockito-4B8BBE) ![k6](https://img.shields.io/badge/Load-k6-7D64FF) ![JMeter](https://img.shields.io/badge/Load-JMeter-D22128) ![Grafana](https://img.shields.io/badge/Monitor-Grafana-F46800) |
+
 
 ---
 
 
-## 🗂️ 프로젝트 구조
+## 🗂️ 프로젝트 구조 <a id="structure"></a>
 
 #### 🗂️  Back
 
@@ -280,7 +260,7 @@ API 호출 모듈화로 백엔드·AI 서버와의 통신 로직 일관성을 �
 FastAPI의 라우팅 구조를 그대로 반영해 프론트엔드와 백엔드 간 API 명세의 일관성을 유지하였습니다.<br/>
 
 ---
-## 🗃️ 협업 환경
+## 🗃️ 협업 환경 <a id="collab"></a>
 
 #### 1) GitLab
 
@@ -324,23 +304,23 @@ develop 브랜치를 중심으로, UI 수정(style/*), 기능 개발(feature/*),
 
 ---
 
-## 🗓️ 프로젝트 일정
+## 🗓️ 프로젝트 일정 <a id="timeline"></a>
 
 | ![]() |
 |:-:|
 
 ---
 
-## 🧾 프로젝트 산출물
+## 🧾 프로젝트 산출물 <a id="deliverables"></a>
 
-### 1️⃣ API 명세서
+### 1️⃣ API 명세서 <a id="api"></a>
 
 |![]()|
 |:-:|
 
 ***
 
-### 2️⃣ ERD
+### 2️⃣ ERD <a id="erd"></a>
 
 |![]()|
 |:-:|
