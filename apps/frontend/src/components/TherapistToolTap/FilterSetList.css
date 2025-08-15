@@ -9,6 +9,10 @@
 .aac-set-list-group,
 .filter-set-list-group,
 .tool-bundle-list-group {
+  display: flex; /* Flexbox 레이아웃 활성화 */
+  flex-wrap: wrap; /* 항목들이 넘칠 경우 다음 줄로 넘어가도록 설정 */
+  gap: 16px; /* 항목들 사이의 간격 설정 */
+  justify-content: flex-start;
   border: none;
   box-shadow: none;
 }
@@ -16,15 +20,17 @@
 .aac-set-list-item,
 .filter-set-list-item,
 .tool-bundle-list-item {
+  flex: 1 1 calc(50% - 8px); /* 한 줄에 두 개씩 배치되도록 너비 설정 */
+  min-width: 300px; /* 아이템의 최소 너비 설정 (화면이 작아질 때 대비) */
   position: relative;
   background-color: #ffffff;
   border: 1px solid #e0e6f1;
-  margin-bottom: 16px;
   border-radius: var(--border-radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
   overflow: hidden;
   padding: 0;
+  margin-bottom: 0 !important; /* 원래 margin-bottom 제거 */
 }
 
 /* ✅ [수정] 좌측 악센트 바 (그라데이션 추가) */

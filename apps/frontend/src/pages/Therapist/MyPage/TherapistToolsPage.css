@@ -18,7 +18,7 @@
 
 /* --- 전체 페이지 레이아웃 --- */
 .tools-management-section {
-  background-color: var(--light-bg-color-3);
+  background-color: transparent;
   padding: var(--spacing-md) var(--spacing-sm);
   min-height: 100vh;
 }

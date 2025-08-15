@@ -28,9 +28,9 @@ const ToolBundleList = ({ toolBundles, allAacSets, allFilterSets, onEdit, onDele
 
     return (
         <div className="tool-bundle-list-container">
-            <ListGroup className="tool-bundle-list-group">
+            <div className="tool-bundle-list-group">
                 {toolBundles.map(bundle => (
-                    <ListGroup.Item key={bundle.toolBundleId} className="tool-bundle-list-item">
+                    <div key={bundle.toolBundleId} className="tool-bundle-list-item">
                         <div className="list-item-content">
                             <div className="tool-bundle-text-content">
                                 <div className="item-title-container">
@@ -68,9 +68,9 @@ const ToolBundleList = ({ toolBundles, allAacSets, allFilterSets, onEdit, onDele
                                 <Button className="btn-tool-delete" onClick={() => onDelete(bundle.toolBundleId)}>삭제</Button>
                             </div>
                         </div>
-                    </ListGroup.Item>
+                    </div>
                 ))}
-            </ListGroup>
+            </div>
         </div>
     );
 };

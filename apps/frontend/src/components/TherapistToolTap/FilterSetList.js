@@ -20,9 +20,9 @@ const FilterSetList = ({ filterSets, onEdit, onDelete }) => {
 
     return (
         <div className="filter-set-list-container">
-            <ListGroup className="filter-set-list-group">
+            <div className="filter-set-list-group">
                 {filterSets.map(set => (
-                    <ListGroup.Item key={set.filterSetId} className="filter-set-list-item">
+                    <div key={set.filterSetId} className="filter-set-list-item">
                         <div className="list-item-content">
                             <div className="filter-set-text-content">
                                 <div className="item-title-container">
@@ -36,9 +36,9 @@ const FilterSetList = ({ filterSets, onEdit, onDelete }) => {
                                 <Button className="btn-tool-delete" onClick={() => onDelete(set.filterSetId)}>삭제</Button>
                             </div>
                         </div>
-                    </ListGroup.Item>
+                    </div>
                 ))}
-            </ListGroup>
+            </div>
         </div>
     );
 };

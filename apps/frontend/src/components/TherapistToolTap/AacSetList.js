@@ -20,9 +20,9 @@ const AacSetList = ({ aacSets, onEdit, onDelete }) => {
 
     return (
         <div className="aac-set-list-container">
-            <ListGroup className="aac-set-list-group">
+            <div className="aac-set-list-group">
                 {aacSets.map(set => (
-                    <ListGroup.Item key={set.id} className="aac-set-list-item">
+                    <div key={set.id} className="aac-set-list-item">
                         <div className="list-item-content">
                             <div className="aac-set-text-content">
                                 <div className="item-title-container">
@@ -36,9 +36,9 @@ const AacSetList = ({ aacSets, onEdit, onDelete }) => {
                                 <Button className="btn-tool-delete" onClick={() => onDelete(set.id)}>삭제</Button>
                             </div>
                         </div>
-                    </ListGroup.Item>
+                    </div>
                 ))}
-            </ListGroup>
+            </div>
         </div>
     );
 };
