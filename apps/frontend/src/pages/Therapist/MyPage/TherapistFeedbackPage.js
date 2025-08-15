@@ -1,618 +1,585 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Container, Row, Col, Card, Alert, Button, Modal, Form, InputGroup, Badge } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../../contexts/AuthContext';
-import axios from '../../../api/axios';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-import './TherapistFeedbackPage.css';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Container } from 'react-bootstrap';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import './TherapistSessionRoom.css';
+import { useAuth } from '../../contexts/AuthContext';
+import { bootstrapCameraKit } from "@snap/camera-kit";
+import { LocalVideoTrack, createLocalVideoTrack, RoomEvent } from 'livekit-client';
+import api from '../../api/axios';
 
-/* === 캐릭터 이미지 매핑 === */
-import penguinImg from '../../../logoimage/penguin.png';
-import bearImg    from '../../../logoimage/bear.png';
-import duckImg    from '../../../logoimage/duck.png';
-import wolfImg    from '../../../logoimage/wolf.png';
-import puppyImg   from '../../../logoimage/puppy.png';
-import parrotImg  from '../../../logoimage/parrot.png';
-import defaultAvatar from '../../../assets/therapist.png'; // 없으면 기본 이미지
+import SessionRoomContent from '../../components/TherapistSession/SessionRoomContent';
+import CentralAacDisplay from '../../components/common/CentralAacDisplay'
+import { useLiveKitSession } from '../../hooks/useLiveKitSession';
+import { useFairyTaleLogic } from '../../hooks/useFairyTaleLogic';
+import { useChatLogic } from '../../hooks/useChatLogic';
 
-const CHARACTER_IMAGES = {
-  1: bearImg,    // 말곰이
-  2: wolfImg,    // 말랑이
-  3: puppyImg,   // 말뭉이
-  4: parrotImg,  // 말랭이
-  5: duckImg,    // 규덕
-  6: penguinImg, // 말펭이
-};
+const CAMERA_KIT_API_TOKEN = "eyJhbGciOiJIUzI1NiIsImtpZCI6IkNhbnZhc2MyU2hNQUNQcm9kIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjYW52YXMtY2FudmFzYXBpIiwiaXNzIjoiY2FudmFzLXMyc3Rva2VuIiwibmJmIjoxNzU0MDQ4MTI2LCJzdWIiOiJlODY4YTg3Ny1jYjVkLTQyMWEtOGE5Zi02MzlkZjExMDAyNTJ-U1RBR0lOR35hZGM0OWFjMy02NTU5LTRmNTctOWQ4Ny0yNTRjYzkwZjNhYzAifQ.EqNFYVSRYv7iEBCTBM-bxGvDEYOYernbf3ozbEhzB6g";
 
-/* 다양한 응답 필드/중첩을 커버 + 0/1-베이스 + 문자열명 보정 */
-const readFrom = (obj, keys) => {
-  for (const k of keys) {
-    const v = obj?.[k];
-    if (v !== undefined && v !== null) return v;
-  }
-  return undefined;
-};
+function TherapistSessionRoom() {
+  const { roomId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
-const resolveProfileId = (obj) => {
-  let raw = readFrom(obj, [
-    'profile',
-    'profileId',
-    'profile_id',
-    'profileImageId',
-    'profile_image_id',
-    'profile_image',
-    'characterId',
-    'character_id',
-    'childProfile',
-    'child_profile',
-    'childProfileId',
-    'avatarIndex',
-  ]);
+  // URL 쿼리 파라미터에서 clientId 추출 및 숫자로 변환
+  const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const clientId = parseInt(queryParams.get('clientId'), 10);
 
-  if (raw === undefined) {
-    const nests = [obj?.member, obj?.client, obj?.child, obj?.user];
-    for (const nest of nests) {
-      raw = readFrom(nest ?? {}, [
-        'profile',
-        'profileId',
-        'profile_id',
-        'profileImageId',
-        'profile_image_id',
-        'profile_image',
-        'characterId',
-        'character_id',
-        'childProfile',
-        'child_profile',
-        'childProfileId',
-        'avatarIndex',
-      ]);
-      if (raw !== undefined) break;
-    }
-  }
+  const [showToolPanel, setShowToolPanel] = useState(false);
+  const [activeToolTab, setActiveToolTab] = useState(null);
+  const [sessionTools, setSessionTools] = useState([]);
+  const [resolvedAacIds, setResolvedAacIds] = useState([]); // Resolved individual AAC IDs
+  const [resolvedFilterIds, setResolvedFilterIds] = useState([]); // Resolved individual Filter IDs
+  const [selectedSentence, setSelectedSentence] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [sentAacs, setSentAacs] = useState([]); // 방금 유저에게 보낸 AAC 목록을 저장할 상태
 
-  // 문자열 보정: "PENGUIN", "char-3", "profile:2" 등
-  if (typeof raw === 'string') {
-    const lower = raw.toLowerCase();
-    if (/\d+/.test(lower)) {
-      const m = lower.match(/\d+/);
-      const n = Number(m?.[0]);
-      if (Number.isFinite(n)) {
-        if (n >= 1 && n <= 6) return n;
-        if (n >= 0 && n <= 5) return n + 1;
-      }
-    }
-    if (lower.includes('bear')) return 1;
-    if (lower.includes('wolf')) return 2;
-    if (lower.includes('puppy') || lower.includes('dog')) return 3;
-    if (lower.includes('parrot')) return 4;
-    if (lower.includes('duck')) return 5;
-    if (lower.includes('penguin')) return 6;
-  }
+  // 필터 관련 상태 및 Ref
+  const [isFilterActive, setIsFilterActive] = useState(false);
+  const [useCameraKit, setUseCameraKit] = useState(false);
+  const [backgroundImages, setBackgroundImages] = useState([]);
+  const [selectedBackgroundImage, setSelectedBackgroundImage] = useState(null);
 
-  const n = Number(raw);
-  if (Number.isFinite(n)) {
-    if (n >= 1 && n <= 6) return n;     // 1~6 그대로
-    if (n >= 0 && n <= 5) return n + 1; // 0~5 → 1~6 보정
-  }
-  return 1; // 안전 기본값(곰)
-};
+  const selfieSegmentationRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const cameraKitRef = useRef(null);
+  const cameraKitSessionRef = useRef(null);
+  const containerRef = useRef(null);
 
-const getCharImg = (obj) => CHARACTER_IMAGES[resolveProfileId(obj)] || defaultAvatar;
+  const isFilterActiveRef = useRef(isFilterActive);
+  const selectedBackgroundImageRef = useRef(selectedBackgroundImage);
 
-function TherapistFeedbackPage() {
-  const { user } = useAuth();
-  const [clients, setClients] = useState([]);
-  const [clientDetailMap, setClientDetailMap] = useState({}); // { [clientId]: detail }
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  useEffect(() => {
+    isFilterActiveRef.current = isFilterActive;
+    selectedBackgroundImageRef.current = selectedBackgroundImage;
+  }, [isFilterActive, selectedBackgroundImage]);
 
-  const [pendingRequestCount, setPendingRequestCount] = useState(0); // ✨ 추가: 요청 수 상태
+  const [allToolBundles, setAllToolBundles] = useState([]); // 모든 도구 묶음 저장
+  const [allAacs, setAllAacs] = useState([]); // 모든 개별 AAC 저장
+  const [allFilters, setAllFilters] = useState([]); // 모든 개별 필터 저장
+  const [centralImageUrl, setCentralImageUrl] = useState(null);
+  useEffect(() => {
+    const fetchAndResolveTools = async () => {
+      if (!user || !user.accessToken) return;
 
-  // Feedback Modal
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [clientDetail, setClientDetail] = useState(null);
-  const [feedbackDates, setFeedbackDates] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [feedbackContent, setFeedbackContent] = useState(null);
-  const [modalView, setModalView] = useState('calendar');
+      const tools = queryParams.get('tools');
+      if (!tools) return;
 
-  // Chat Modal
-  const [showChatModal, setShowChatModal] = useState(false);
-  const [chatClient, setChatClient] = useState(null);
-  const [roomId, setRoomId] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
-  const [chatError, setChatError] = useState('');
-  const messagesEndRef = useRef(null);
+      try {
+        // Fetch tool bundle
+        const toolBundlesResponse = await api.get(`/tool-bundles/${tools}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        });
+        const toolBundle = toolBundlesResponse.data;
+        setAllToolBundles(toolBundle ? [toolBundle] : []);
 
-  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  useEffect(() => { scrollToBottom(); }, [messages]);
+        let aacs = [];
+        if (toolBundle && toolBundle.aacSetId) {
+            const aacSetContentResponse = await api.get(`/aacs/sets/my/${toolBundle.aacSetId}`, {
+              headers: { Authorization: `Bearer ${user.accessToken}` },
+            });
+            const aacSet = aacSetContentResponse.data || [];
+            const aacIds = aacSet.map(item => item.id);
 
-  // ✨ 추가: 대기 중인 요청 수를 가져오는 함수
-  const fetchPendingRequestsCount = async () => {
-    try {
-      const response = await axios.get('/schedule/pending', {
-        headers: { Authorization: `Bearer ${user.accessToken}` },
-      });
-      setPendingRequestCount(response.data?.length || 0);
-    } catch (err) {
-      console.error('대기 중인 요청 수 불러오기 실패:', err);
-      setPendingRequestCount(0);
-    }
-  };
+            const aacPromises = aacIds.map(id =>
+              api.get(`/aacs/${id}`, {
+                headers: { Authorization: `Bearer ${user.accessToken}` },
+              })
+            );
+            const aacResponses = await Promise.all(aacPromises);
+            aacs = aacResponses.map(response => response.data);
+        }
+        
 
-  // 1) 리스트 불러오기 + 뱃지 카운트
-  useEffect(() => {
-    const fetchClientsAndCount = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const response = await axios.get('/schedule/therapist/client', {
-          headers: { Authorization: `Bearer ${user.accessToken}` },
-        });
-        const list = response.data || [];
-        setClients(list);
 
-        // 2) 각 아동 상세에서 프로필만 추출해 map 구성 (동시에 요청)
-        const detailMap = {};
-        const tasks = list.map((c) =>
-          axios
-            .get(`/schedule/therapist/client/detail?clientId=${c.clientId}`, {
-              headers: { Authorization: `Bearer ${user.accessToken}` },
-            })
-            .then((res) => {
-              detailMap[c.clientId] = res.data || {};
-            })
-            .catch(() => {
-              // 실패해도 무시하고 진행 (곰 기본값)
-            })
-        );
-        await Promise.allSettled(tasks);
-        setClientDetailMap(detailMap);
-        
-        // ✨ 추가: 클라이언트 리스트와 함께 대기 중인 요청 수도 불러오기
-        await fetchPendingRequestsCount();
+        setAllAacs(aacs.map(item => ({ ...item, imageUrl: item.fileUrl })));
 
-      } catch (err) {
-        setError('아동 리스트를 불러오는 데 실패했습니다.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+        const filterResponse = await api.get('/filters', {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+          params: { page: 0, size: 100 }
+        });
+        const allFilters = filterResponse.data.filters.map(item => ({ ...item, imageUrl: item.fileUrl })) || [];
+        setAllFilters(allFilters);
 
-    if (user && user.userType === 'therapist') {
-      fetchClientsAndCount();
-    } else {
-      setLoading(false);
-      setError('치료사 계정으로 로그인해야 피드백을 볼 수 있습니다.');
-    }
-  }, [user]);
+        // Parse and resolve selected tools
+        const toolsParam = queryParams.get('tools');
+        const selectedToolIds = toolsParam ? toolsParam.split(',').map(id => id.trim()) : [];
 
-  // Feedback Modal handlers
-  const handleShowFeedbackModal = async (client) => {
-    setSelectedClient(client);
-    setShowFeedbackModal(true);
-    setModalView('calendar');
-    setClientDetail(null);
-    setFeedbackDates([]);
-    setFeedbackContent(null);
-    setSelectedDate(new Date());
+        let initialAacIds = [];
+        let initialFilterIds = [];
 
-    try {
-      const detailResponse = await axios.get(`/schedule/therapist/client/detail?clientId=${client.clientId}`, {
-        headers: { Authorization: `Bearer ${user.accessToken}` },
-      });
-      setClientDetail(detailResponse.data);
+        for (const toolId of selectedToolIds) {
+          const bundle = (toolBundle && String(toolBundle.toolBundleId) === toolId) ? toolBundle : null;
+          if (bundle) {
+            if (bundle.aacSetId) {
+              const aacSetContentResponse = await api.get(`/aacs/sets/my/${bundle.aacSetId}`, {
+                headers: { Authorization: `Bearer ${user.accessToken}` },
+              });
+              const aacsInSet = aacSetContentResponse.data;
+              initialAacIds = [...new Set([...initialAacIds, ...aacsInSet.map(item => String(item.id))])];
+            }
 
-      const datesResponse = await axios.get(`/session-feedback/dates?childId=${client.clientId}`, {
-        headers: { Authorization: `Bearer ${user.accessToken}` },
-      });
-      setFeedbackDates((datesResponse.data?.dates || []).map((s) => new Date(s)));
-    } catch (err) {
-      console.error(err);
-      setError('클라이언트 상세 정보 또는 피드백 날짜를 불러오는 데 실패했습니다.');
-    }
-  };
+            if (bundle.filterSetId) {
+              const filterSetContentResponse = await api.get(`/filters/sets/my/${bundle.filterSetId}`, {
+                headers: { Authorization: `Bearer ${user.accessToken}` },
+              });
+              const filtersInSet = filterSetContentResponse.data;
+              initialFilterIds = [...new Set([...initialFilterIds, ...filtersInSet.map(item => String(item.filterId))])];
+            }
+          } else {
+            // This part is for individual tools, not bundles
+            if (aacs.some(aac => String(aac.id) === toolId)) {
+              initialAacIds.push(toolId);
+            }
+            else if (allFilters.some(filter => String(filter.filterId) === toolId)) {
+              initialFilterIds.push(toolId);
+            }
+          }
+        }
+        setResolvedAacIds(initialAacIds);
+        setResolvedFilterIds(initialFilterIds);
 
-  const handleCloseFeedbackModal = () => {
-    setShowFeedbackModal(false);
-    setSelectedClient(null);
-    setClientDetail(null);
-    setFeedbackDates([]);
-    setFeedbackContent(null);
-    setModalView('calendar');
-  };
+      } catch (error) {
+        console.error('Error fetching and resolving tool data:', error);
+        setResolvedAacIds([]);
+        setResolvedFilterIds([]);
+      }
+    };
 
-  const handleDateChange = async (date) => {
-    setSelectedDate(date);
-    setFeedbackContent(null);
+    fetchAndResolveTools();
+  }, [user, location.search, queryParams]);
 
-    const y = date.getFullYear();
-    const m = (`0${date.getMonth() + 1}`).slice(-2);
-    const d = (`0${date.getDate()}`).slice(-2);
-    const dateStr = `${y}-${m}-${d}`;
+  const {
+    isMuted, setIsMuted, isVideoOff, setIsVideoOff, isRemoteVideoOff, setIsRemoteVideoOff,
+    rtcStatus, setRtcStatus, remoteVideoTrack, remoteAudioTrack,
+    localVideoRef, remoteVideoRef, remoteAudioRef, roomRef,
+    chatRoomId,
+    isLiveKitReady,
+    connectToLiveKit, toggleMute, endSession,
+    toggleVideo: liveKitToggleVideo,
+    finalChosenAacByClient
+  } = useLiveKitSession(user, navigate, clientId,
+    (sender, message) => setChatMessages(prevMessages => [...prevMessages, { sender, message }]),
+    (sentence) => setSelectedSentence(sentence),
+    (aacId) => handleAacSelection(aacId)
+  );
+  
 
-    const hasFeedback = feedbackDates.some((fd) => fd.toDateString() === date.toDateString());
-    if (hasFeedback && selectedClient) {
-      try {
-        const res = await axios.get(
-          `/session-feedback/detail?childId=${selectedClient.clientId}&date=${dateStr}`,
-          { headers: { Authorization: `Bearer ${user.accessToken}` } }
-        );
-        setFeedbackContent(res.data);
-        setModalView('feedbackDetail');
-      } catch (err) {
-        console.error(err);
-        setError('피드백 내용을 불러오는 데 실패했습니다.');
-      }
-    }
-  };
+  // 사용자가 선택한 AAC를 수신하여 화면 중앙에 표시하는 로직
+  const handleAacSelection = (aacId) => {
+    // 전체 AAC 목록에서 사용자가 선택한 ID를 기반으로 AAC 정보를 찾음
+    const chosenAac = allAacs.find(aac => aac.id === aacId.aacId);
+    console.log(chosenAac);
+    if (chosenAac && chosenAac.imageUrl) {
+        // 중앙에 이미지 표시
+        setTimeout(() => {
+        setCentralImageUrl(chosenAac.imageUrl);
+        // 3초 후에 이미지 숨김
+        setTimeout(() => {
+          setCentralImageUrl(null);
+        }, 3000);
+      speak(chosenAac.name)
+      },
+       1500);
+    }
+  };
+  const handleSendAacToLiveKit = useCallback(async (aacs) => {
+    if (!roomRef.current || !roomRef.current.localParticipant) {
+      console.warn("LiveKit room not ready to send AAC data.");
+      return;
+    }
+    try {
+      const payload = JSON.stringify({
+        type: 'AAC_OPTIONS',
+        data: aacs.map(aac => ({ id: aac.id, name: aac.name, imageUrl: aac.imageUrl }))
+      });
+      await roomRef.current.localParticipant.publishData(new TextEncoder().encode(payload), {
+        reliable: true,
+        topic: 'aac-options'
+      });
+      console.log("AAC options sent via LiveKit data channel:", aacs);
+    } catch (error) {
+      console.error("Failed to send AAC options via LiveKit:", error);
+    }
+  }, [roomRef]);
 
-  const handleBackToCalendar = () => {
-    setModalView('calendar');
-    setFeedbackContent(null);
-  };
+  const outputCanvasRef = useRef(null);
+  const outputCKCanvasRef = useRef(null);
 
-  // Chat
-  const handleShowChatModal = async (client) => {
-    setChatClient(client);
-    setShowChatModal(true);
-    setChatLoading(true);
-    setChatError('');
-    setMessages([]);
-    setRoomId(null);
+  const stopCameraKit = useCallback(async () => {
+    if (cameraKitSessionRef.current) {
+      await cameraKitSessionRef.current.destroy();
+      cameraKitSessionRef.current = null;
+    }
+    if (selfieSegmentationRef.current) {
+      selfieSegmentationRef.current.close();
+      selfieSegmentationRef.current = null;
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, []);
 
-    try {
-      const response = await axios.post(
-        '/chat/room',
-        {
-          roomName: `${user.name} and ${client.name}'s Chat`,
-          roomType: 'ONE_TO_ONE',
-          participantIds: [user.memberId, client.clientId],
-        },
-        { headers: { Authorization: `Bearer ${user.accessToken}` } }
-      );
-      setRoomId(response.data.roomId);
-    } catch (err) {
-      console.error(err);
-      setChatError('채팅방을 만들거나 가져오는 데 실패했습니다.');
-      setChatLoading(false);
-    }
-  };
+  const initializeCameraKit = useCallback(async () => {
+    await stopCameraKit();
+    if (!cameraKitRef.current) {
+        cameraKitRef.current = await bootstrapCameraKit({ apiToken: CAMERA_KIT_API_TOKEN });
+    }
 
-  const handleCloseChatModal = () => {
-    setShowChatModal(false);
-    setChatClient(null);
-    setRoomId(null);
-    setMessages([]);
-    setNewMessage('');
-    setChatError('');
-  };
+    if (outputCKCanvasRef.current) {
+      if (containerRef.current && outputCKCanvasRef.current && containerRef.current.contains(outputCKCanvasRef.current)) {
+        containerRef.current.removeChild(outputCKCanvasRef.current);
+      }
+    }
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !roomId) return;
+    const newCanvas = document.createElement('canvas');
+    outputCKCanvasRef.current = newCanvas;
+    if (containerRef.current) {
+      containerRef.current.appendChild(newCanvas);
+    }
 
-    try {
-      await axios.post(
-        '/chat/room/message',
-        { roomId, senderId: user.memberId, content: newMessage, messageType: 'TALK', sendAt: new Date().toISOString() },
-        { headers: { Authorization: `Bearer ${user.accessToken}` } }
-      );
-      setNewMessage('');
-      const response = await axios.get(`/chat/room/${roomId}/messages`, {
-        headers: { Authorization: `Bearer ${user.accessToken}` },
-      });
-      setMessages(response.data);
-    } catch (err) {
-      console.error(err);
-      setChatError('메시지 전송에 실패했습니다.');
-    }
-  };
+    const session = await cameraKitRef.current.createSession({ liveRenderTarget: newCanvas });
+    cameraKitSessionRef.current = session;
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!roomId) return;
-      try {
-        const response = await axios.get(`/chat/room/${roomId}/messages`, {
-          headers: { Authorization: `Bearer ${user.accessToken}` },
-        });
-        setMessages(response.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setChatLoading(false);
-      }
-    };
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    await session.setSource(stream);
+    await session.play();
 
-    if (showChatModal && roomId) {
-      fetchMessages();
-      const interval = setInterval(fetchMessages, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [showChatModal, roomId, user]);
+    const canvasStream = newCanvas.captureStream(25);
+    const videoTrack = new LocalVideoTrack(canvasStream.getVideoTracks()[0], { name: 'camera-kit' });
+    await roomRef.current.localParticipant.publishTrack(videoTrack);
 
-  const tileContent = ({ date, view }) => {
-    if (view === 'month') {
-      const hasFeedback = feedbackDates.some((fd) => fd.toDateString() === date.toDateString());
-      if (hasFeedback) {
-        return (
-          <div className="dot-marker-container">
-            <span className="dot-marker feedback-marker" title="피드백 있음"></span>
-          </div>
-        );
-      }
-    }
-    return null;
-  };
+    if (localVideoRef.current) localVideoRef.current.style.visibility = 'hidden';
+    if (outputCanvasRef.current) outputCanvasRef.current.style.visibility = 'hidden';
+    if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'visible';
 
-  const tileClassName = ({ date, view }) => {
-    if (view === 'month') {
-      const hasFeedback = feedbackDates.some((fd) => fd.toDateString() === date.toDateString());
-      return hasFeedback ? 'has-feedback' : null;
-    }
-    return null;
-  };
+  }, [stopCameraKit, roomRef]);
 
-  const formatMonthYear = (locale, date) => `${date.getFullYear()}년, ${date.getMonth() + 1}월`;
+  const removeBackgroundFilter = useCallback(() => {
+    if (cameraKitSessionRef.current) {
+        cameraKitSessionRef.current.pause();
+    }
+    setUseCameraKit(false);
+    setIsFilterActive(false);
+    setSelectedBackgroundImage(null);
+  }, []);
 
-  if (loading) {
-    return (
-      <Container className="my-5 text-center">
-        <p>아동 리스트를 불러오는 중입니다...</p>
-      </Container>
-    );
-  }
+  const applyLensById = useCallback(async (lensId) => {
+    setUseCameraKit(true);
+    setIsFilterActive(false);
+    await initializeCameraKit();
+    const lens = await cameraKitRef.current.lensRepository.loadLens(lensId, '1d348e19-0526-44d6-b5fb-cdc9f664b6bc');
+    await cameraKitSessionRef.current.applyLens(lens);
+  }, [initializeCameraKit]);
 
-  if (error) {
-    return (
-      <Container className="my-5 text-center">
-        <Alert variant="danger">{error}</Alert>
-      </Container>
-    );
-  }
+  const applyBackgroundFilter = useCallback((imageUrl) => {
+    if (cameraKitSessionRef.current) {
+        cameraKitSessionRef.current.pause();
+    }
+    if (!imageUrl) {
+      removeBackgroundFilter();
+      return;
+    }
+    setUseCameraKit(false);
+    setIsFilterActive(true);
+    setSelectedBackgroundImage(imageUrl);
+  }, [removeBackgroundFilter]);
 
-  if (!user || user.userType !== 'therapist') {
-    return (
-      <Container className="my-5 text-center">
-        <Alert variant="warning">치료사만 접근할 수 있는 페이지입니다.</Alert>
-      </Container>
-    );
-  }
+  const toggleVideo = useCallback(() => {
+    const newVideoOffState = !isVideoOff;
+    if (newVideoOffState) {
+      stopCameraKit();
+    }
+    liveKitToggleVideo();
+  }, [isVideoOff, stopCameraKit, liveKitToggleVideo]);
 
-  return (
-    <Container className="my-5 main-container">
-      <div className="page-inner">
-  <div className="page-header"> {/* 이 부분은 그대로 둡니다. */}
-    <h2 className="page-title">아동별 피드백 조회</h2>
-    <div className="page-header-actions">
-      <Button
-        as={Link}
-        to="/therapist/mypage/matching"
-        size="sm"
-        className="btn-soft-primary no-hover-btn"
-      >
-        매칭 요청 보기
-      </Button>
-      {pendingRequestCount > 0 && (
-        <Badge bg="danger" className="position-absolute badge-custom">
-          {pendingRequestCount}
-          <span className="visually-hidden">새로운 요청</span>
-        </Badge>
-      )}
-    </div>
-  </div>
+  const {
+    fairyTaleInfo, fairyTaleContent, currentFairyTalePage,
+    isRecording, setIsRecording,
+    handlePageChange, sendSentence, startRecording, stopRecording
+  } = useFairyTaleLogic(location, user, clientId, selectedSentence, roomRef);
 
-  <Row>
-    <Col md={12}>
-      <Card className="shadow-sm p-3 card-base no-lift">
-        <Card.Body>
-          {clients.length === 0 ? (
-            <Alert variant="info">현재 담당하는 아동이 없습니다.</Alert>
-          ) : (
-            <div>
-              {clients.map((client) => {
-                const avatarSource = clientDetailMap[client.clientId] || client;
-                return (
-                  <div key={client.clientId} className="mb-3 card-base matching-client-item no-lift">
-                    <Row className="align-items-center w-100">
-                      <Col md={8} className="matching-client-info">
-                        <div className="client-row">
-                          <img
-                            src={getCharImg(avatarSource)}
-                            alt="아동 캐릭터"
-                            className="avatar"
-                            draggable={false}
-                          />
-                          <div className="client-text">
-                            <h5>
-                              {client.name} ({client.age}세)
-                            </h5>
-                            <p className="mb-1">이메일: {client.email}</p>
-                            <p className="mb-1">전화: {client.telephone}</p>
-                          </div>
-                        </div>
-                      </Col>
-                      <Col md={4} className="text-md-end matching-client-actions">
-                        <Button className="btn-soft-primary no-hover-btn" onClick={() => handleShowFeedbackModal(client)}>
-                          피드백 보기
-                        </Button>
-                        <Button className="btn-soft-primary ms-2 no-hover-btn" onClick={() => handleShowChatModal(client)}>
-                          채팅
-                        </Button>
-                      </Col>
-                    </Row>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card.Body>
-      </Card>
-    </Col>
-  </Row>
-</div>
-
-      {/* Feedback Modal */}
-      <Modal show={showFeedbackModal} onHide={handleCloseFeedbackModal} centered size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>{selectedClient ? `${selectedClient.name} (${selectedClient.age}세) 피드백` : '피드백 조회'}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {clientDetail ? (
-            modalView === 'calendar' ? (
-              <Row>
-                <Col md={4}>
-                  <Card className="shadow-sm p-3 mb-3 no-lift">
-                    <div className="child-header">
-                      <img
-                        src={getCharImg(clientDetail)}
-                        alt="아동 캐릭터"
-                        className="avatar avatar-lg"
-                        draggable={false}
-                      />
-                      <div className="child-header-text">
-                        <div className="child-name">{clientDetail.name}</div>
-                        <div className="child-meta">
-                          {clientDetail.nickname ? `${clientDetail.nickname} · ` : ''}{selectedClient?.age}세
-                        </div>
-                      </div>
-                    </div>
-                    <hr className="soft-divider" />
-                    <Card.Title className="mb-3">아동 정보</Card.Title>
-                    <p><strong>이메일:</strong> {clientDetail.email}</p>
-                    <p><strong>생년월일:</strong> {clientDetail.birthDate}</p>
-                    <p><strong>연락처:</strong> {clientDetail.tel1}{clientDetail.tel2 ? ` / ${clientDetail.tel2}` : ''}</p>
-                    <p><strong>주소:</strong> {clientDetail.city} {clientDetail.district} {clientDetail.dong} {clientDetail.detail}</p>
-                  </Card>
-                </Col>
-                <Col md={8}>
-                  <Card className="shadow-sm p-3 no-lift">
-                    <Card.Title className="mb-3">피드백 달력</Card.Title>
-                    <Calendar
-                      onChange={handleDateChange}
-                      value={selectedDate}
-                      className="react-calendar-custom"
-                      formatMonthYear={formatMonthYear}
-                      prevLabel={<i className="bi bi-chevron-left"></i>}
-                      nextLabel={<i className="bi bi-chevron-right"></i>}
-                      prev2Label={null}
-                      next2Label={null}
-                      tileContent={tileContent}
-                      tileClassName={tileClassName}
-                      locale="ko-KR"
-                    />
-                    <div className="calendar-legend mt-3">
-                      <span className="dot-marker feedback-marker me-2"></span> 피드백 있음
-                    </div>
-                  </Card>
-                </Col>
-              </Row>
-            ) : (
-              <div className="feedback-detail-container">
-                {feedbackContent ? (
-                  <>
-                    <div className="d-flex justify-content-center align-items-center mb-4 position-relative">
-                      <Button
-                        onClick={handleBackToCalendar}
-                        variant="light"
-                        className="position-absolute start-0 border-0 bg-transparent p-0 no-hover-btn"
-                      >
-                        <i className="bi bi-arrow-left-circle" style={{ fontSize: '1.5rem', color: '#6c757d' }}></i>
-                      </Button>
-                      <h5 className="mb-0">{selectedDate.toLocaleDateString('ko-KR')} 피드백</h5>
-                    </div>
-
-                    <div className="feedback-grid">
-                      <div className="feedback-card">
-                        <h4><i className="bi bi-book"></i> 동화책 제목</h4>
-                        <p>{feedbackContent.storybookTitle}</p>
-                      </div>
-                      <div className="feedback-card">
-                        <h4><i className="bi bi-bullseye"></i> 정확도</h4>
-                        <p>{feedbackContent.accuracy}%</p>
-                      </div>
-                      <div className="feedback-card grid-col-span-2">
-                        <h4><i className="bi bi-clipboard-check"></i> 종합 평가</h4>
-                        <p>{feedbackContent.evaluation}</p>
-                      </div>
-                      <div className="feedback-card grid-col-span-2">
-                        <h4><i className="bi bi-trophy"></i> 강점</h4>
-                        <p>{feedbackContent.strengths}</p>
-                      </div>
-                      <div className="feedback-card grid-col-span-2">
-                        <h4><i className="bi bi-graph-up-arrow"></i> 개선점</h4>
-                        <p>{feedbackContent.improvements}</p>
-                      </div>
-                      <div className="feedback-card grid-col-span-2">
-                        <h4><i className="bi bi-lightbulb"></i> 추천</h4>
-                        <p>{feedbackContent.recommendations}</p>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <Alert variant="info" className="text-center">
-                    해당 날짜에 피드백이 없습니다.
-                  </Alert>
-                )}
-              </div>
-            )
-          ) : (
-            <div className="text-center">아동 상세 정보 및 피드백 날짜를 불러오는 중입니다...</div>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseFeedbackModal} className="no-hover-btn">
-            닫기
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Chat Modal */}
-      <Modal show={showChatModal} onHide={handleCloseChatModal} centered size="md">
-        <Modal.Header closeButton>
-          <Modal.Title>{chatClient ? `${chatClient.name}님과의 채팅` : '채팅'}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="chat-modal-body">
-          {chatLoading ? (
-            <div className="text-center">채팅방을 불러오는 중입니다...</div>
-          ) : chatError ? (
-            <Alert variant="danger">{chatError}</Alert>
-          ) : (
-            <div className="messages-area">
-              {messages.map((msg, i) => (
-                <div key={i} className={`message-bubble ${msg.senderId === user.memberId ? 'sent' : 'received'}`}>
-                  <div className="message-content">{msg.content}</div>
-                  <div className="message-time">{new Date(msg.sendAt).toLocaleTimeString()}</div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Form onSubmit={handleSendMessage} className="w-100">
-            <InputGroup>
-              <Form.Control
-                type="text"
-                placeholder="메시지를 입력하세요..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                disabled={chatLoading || !!chatError}
-              />
-              <Button variant="primary" type="submit" disabled={chatLoading || !!chatError} className="no-hover-btn">
-                전송
-              </Button>
-            </InputGroup>
-          </Form>
-        </Modal.Footer>
-      </Modal>
-    </Container>
-  );
+  const {
+    chatInput, setChatInput, sendChatMessage
+  } = useChatLogic(roomRef, user, chatRoomId, setChatMessages);
+  function speak(name) {
+  const utterance = new SpeechSynthesisUtterance(name);
+  utterance.lang = 'ko-KR';
+  speechSynthesis.speak(utterance);
 }
 
-export default TherapistFeedbackPage;
+  // --- START: 최종 수정된 필터 로직 ---
+  useEffect(() => {
+    let isCleaningUp = false;
+    // createObjectURL로 생성된 임시 URL을 관리하기 위한 변수
+    let objectUrl = null;
+
+    const unpublishAndHide = async (trackNamesToUnpublish, visibleVideo, hiddenCanvas1, hiddenCanvas2) => {
+      if (!roomRef.current || !roomRef.current.localParticipant) return;
+      const unpublishPromises = [];
+      roomRef.current.localParticipant.videoTrackPublications.forEach((publication) => {
+        if (publication.track && trackNamesToUnpublish.includes(publication.track.name)) {
+          unpublishPromises.push(roomRef.current.localParticipant.unpublishTrack(publication.track, true));
+        }
+      });
+      await Promise.all(unpublishPromises);
+
+      if (visibleVideo) visibleVideo.style.visibility = 'visible';
+      if (hiddenCanvas1) hiddenCanvas1.style.visibility = 'hidden';
+      if (hiddenCanvas2) hiddenCanvas2.style.visibility = 'hidden';
+    };
+
+    const manageTracks = async () => {
+      if (isCleaningUp || !isLiveKitReady || !roomRef.current || !roomRef.current.localParticipant) {
+        await stopCameraKit();
+        return;
+      }
+
+      if (useCameraKit) {
+        await unpublishAndHide(['canvas'], null, localVideoRef.current, outputCanvasRef.current);
+        if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'visible';
+        return;
+      }
+
+      if (isFilterActive && selectedBackgroundImage) {
+        await unpublishAndHide(['camera-kit'], null, localVideoRef.current, null);
+        const videoElement = localVideoRef.current;
+        const canvasElement = outputCanvasRef.current;
+        if (!videoElement || !canvasElement) return;
+
+        const canvasCtx = canvasElement.getContext('2d');
+        
+        // fetch를 사용하여 URL 변경 없이 캐시를 무시하고 이미지를 로드하는 함수
+        const loadImageWithFetch = (url) => {
+          return new Promise(async (resolve, reject) => {
+            try {
+              // cache: 'reload' 옵션으로 브라우저 캐시를 무시하고 새로 요청
+              const response = await fetch(url, { cache: 'reload' });
+              if (!response.ok) {
+                // response.status와 함께 에러를 던져서 원인을 명확히 함
+                throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+              }
+              const blob = await response.blob();
+              
+              // 메모리 누수 방지를 위해 이전 objectUrl 해제
+              if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+              }
+              // blob으로부터 새로운 임시 URL 생성
+              objectUrl = URL.createObjectURL(blob);
+
+              const img = new Image();
+              img.onload = () => resolve(img);
+              img.onerror = (err) => reject(err);
+              img.src = objectUrl;
+
+            } catch (error) {
+              reject(error);
+            }
+          });
+        };
+
+        try {
+          const backgroundImage = await loadImageWithFetch(selectedBackgroundImageRef.current);
+
+          if (!selfieSegmentationRef.current) {
+            const selfieSegmentation = new window.SelfieSegmentation({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}` });
+            selfieSegmentation.setOptions({ modelSelection: 1, selfieMode: false });
+            selfieSegmentationRef.current = selfieSegmentation;
+
+            selfieSegmentation.onResults((results) => {
+              if (isCleaningUp || !isFilterActiveRef.current) return;
+              canvasElement.width = videoElement.videoWidth;
+              canvasElement.height = videoElement.videoHeight;
+              canvasCtx.save();
+              canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+              canvasCtx.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
+              canvasCtx.globalCompositeOperation = 'source-out';
+              canvasCtx.drawImage(backgroundImage, 0, 0, canvasElement.width, canvasElement.height);
+              canvasCtx.globalCompositeOperation = 'destination-atop';
+              canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+              canvasCtx.restore();
+            });
+          }
+
+          const animate = async () => {
+            if (isCleaningUp || !isFilterActiveRef.current) {
+              if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+              animationFrameRef.current = null;
+              return;
+            }
+            if (videoElement.readyState >= 4) {
+              await selfieSegmentationRef.current.send({ image: videoElement });
+            }
+            animationFrameRef.current = requestAnimationFrame(animate);
+          };
+          animate();
+
+          const canvasStream = canvasElement.captureStream(25);
+          const canvasVideoTrack = new LocalVideoTrack(canvasStream.getVideoTracks()[0], { name: 'canvas' });
+          await roomRef.current.localParticipant.publishTrack(canvasVideoTrack);
+
+          if (outputCanvasRef.current) outputCanvasRef.current.style.visibility = 'visible';
+          if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'hidden';
+
+        } catch (error) {
+          console.error("배경 이미지 로드에 실패하여 필터를 중단합니다.", error);
+          setIsFilterActive(false);
+          setSelectedBackgroundImage(null);
+          await unpublishAndHide(['canvas', 'camera-kit'], localVideoRef.current, outputCanvasRef.current, outputCKCanvasRef.current);
+        }
+      } else {
+        // 필터 제거 로직: 모든 비디오 트랙을 정리하고 원본 카메라 트랙을 새로 게시합니다.
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+        if (selfieSegmentationRef.current) {
+            selfieSegmentationRef.current.close();
+            selfieSegmentationRef.current = null;
+        }
+
+        if (roomRef.current && roomRef.current.localParticipant) {
+          // 모든 기존 비디오 트랙(필터 및 원본) 발행 중단
+          const publications = Array.from(roomRef.current.localParticipant.videoTrackPublications.values());
+          const unpublishPromises = publications.map(pub => roomRef.current.localParticipant.unpublishTrack(pub.track, true).catch(e => console.error("Failed to unpublish track", e)));
+          await Promise.all(unpublishPromises);
+
+          // 비디오가 꺼져있지 않은 경우에만 새 트랙 생성 및 게시
+          if (!isVideoOff) {
+            try {
+              // 원본 비디오 트랙을 새로 생성
+              const newVideoTrack = await createLocalVideoTrack();
+              
+              // 로컬 비디오 요소에 연결
+              if (localVideoRef.current) {
+                // 이전 트랙이 있다면 분리
+                const oldTracks = localVideoRef.current.srcObject?.getVideoTracks();
+                if (oldTracks) {
+                  oldTracks.forEach(t => t.stop());
+                }
+                newVideoTrack.attach(localVideoRef.current);
+              }
+              
+              // 새 트랙을 게시
+              await roomRef.current.localParticipant.publishTrack(newVideoTrack);
+
+            } catch (error) {
+              console.error("필터 제거 후 새 비디오 트랙 생성에 실패했습니다:", error);
+              // 실패 시 비디오를 끈 것으로 상태 업데이트
+              setIsVideoOff(true);
+            }
+          }
+        }
+        // 캔버스 숨기고 비디오 보이기
+        if (localVideoRef.current) localVideoRef.current.style.visibility = 'visible';
+        if (outputCanvasRef.current) outputCanvasRef.current.style.visibility = 'hidden';
+        if (outputCKCanvasRef.current) outputCKCanvasRef.current.style.visibility = 'hidden';
+      }
+    };
+
+    manageTracks();
+
+    return () => {
+      isCleaningUp = true;
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+      // stopCameraKit() 호출을 useEffect 메인 로직으로 이동하여 레이스 컨디션 방지
+      if (selfieSegmentationRef.current) {
+          selfieSegmentationRef.current.close();
+          selfieSegmentationRef.current = null;
+      }
+      // 컴포넌트가 사라질 때 메모리 누수 방지
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [rtcStatus, useCameraKit, isVideoOff, stopCameraKit, isFilterActive, selectedBackgroundImage, isLiveKitReady]);
+  // --- END: 최종 수정된 필터 로직 ---
+
+
+  useEffect(() => {
+    const fetchBackgroundImages = async () => {
+      setBackgroundImages(allFilters.map(filter => ({
+        id: filter.filterId,
+        name: filter.name,
+        url: filter.imageUrl && !filter.imageUrl.startsWith('http') ? `${filter.imageUrl}` : filter.imageUrl,
+      })));
+    };
+    if (rtcStatus === 'connected' && allFilters.length > 0) fetchBackgroundImages();
+  }, [rtcStatus, allFilters]);
+
+  const toggleToolPanel = (toolType) => {
+    setShowToolPanel(prev => prev && activeToolTab === toolType ? false : true);
+    setActiveToolTab(toolType);
+  };
+
+  const filteredAacs = useMemo(() => {
+    return allAacs.filter(aac => resolvedAacIds.includes(String(aac.id)));
+  }, [allAacs, resolvedAacIds]);
+
+  const filteredFilters = useMemo(() => {
+    return allFilters.filter(filter => resolvedFilterIds.includes(String(filter.filterId)));
+  }, [allFilters, resolvedFilterIds]);
+
+  return (
+    <Container fluid className="session-room-container">
+      <SessionRoomContent
+        rtcStatus={rtcStatus}
+        connectToLiveKit={connectToLiveKit}
+        setRtcStatus={setRtcStatus}
+        localVideoRef={localVideoRef}
+        remoteVideoRef={remoteVideoRef}
+        remoteAudioRef={remoteAudioRef}
+        isRemoteVideoOff={isRemoteVideoOff}
+        isVideoOff={isVideoOff}
+        remoteAudioTrack={remoteAudioTrack}
+        selectedSentence={selectedSentence}
+        isMuted={isMuted}
+        toggleMute={toggleMute}
+        toggleVideo={toggleVideo}
+        activeToolTab={activeToolTab}
+        toggleToolPanel={toggleToolPanel}
+        fairyTaleInfo={fairyTaleInfo}
+        endSession={() => endSession(fairyTaleInfo?.title, currentFairyTalePage)}
+        showToolPanel={showToolPanel}
+        setShowToolPanel={setShowToolPanel}
+        chatMessages={chatMessages}
+        chatInput={chatInput}
+        setChatInput={setChatInput}
+        sendChatMessage={sendChatMessage}
+        fairyTaleContent={fairyTaleContent}
+        currentFairyTalePage={currentFairyTalePage}
+        setSelectedSentence={setSelectedSentence}
+        handlePageChange={handlePageChange}
+        sendSentence={sendSentence}
+        isRecording={isRecording}
+        startRecording={() => startRecording(remoteAudioTrack)}
+        stopRecording={stopRecording}
+        backgroundImages={backgroundImages}
+        selectedBackgroundImage={selectedBackgroundImage}
+        isFilterActive={isFilterActive}
+        applyBackgroundFilter={applyBackgroundFilter}
+        removeBackgroundFilter={removeBackgroundFilter}
+        applyLensById={applyLensById}
+        outputCanvasRef={outputCanvasRef}
+        outputCKCanvasRef={outputCKCanvasRef}
+        containerRef={containerRef}
+        // --- FIX START ---
+        // '조회'된 AAC 목록은 allAacs prop으로 전달하고,
+        // '초기 선택'은 빈 배열로 설정하여 아무것도 선택되지 않은 상태로 시작합니다.
+        initialSelectedAacIds={[]}
+        // --- FIX END ---
+        initialSelectedFilterIds={resolvedFilterIds}
+        allAacs={filteredAacs}
+        allFilters={filteredFilters}
+        availableAacs={allAacs} // 전체 AAC 목록을 전달
+        onSendAac={handleSendAacToLiveKit}
+        finalChosenAacByClient={finalChosenAacByClient}
+        roomRef={roomRef}
+      />
+      <CentralAacDisplay imageUrl={centralImageUrl} />
+    </Container>
+  );
+}
+
+export default TherapistSessionRoom;

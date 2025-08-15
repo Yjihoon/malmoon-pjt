@@ -23,6 +23,7 @@ function NavBar({ setCurrentCharacter, getRandomCharacter, onShowChat }) {
   const { isLoggedIn, userType, logout, user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMatched, setIsMatched] = useState(false);
   const profileRef = useRef(null);
 
   const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev);
@@ -37,6 +38,62 @@ function NavBar({ setCurrentCharacter, getRandomCharacter, onShowChat }) {
 
   const avatarSrc = getAvatarSrc(user);
   const nickname = pickNickname(user);
+
+  useEffect(() => {
+  if (isLoggedIn && userType === 'user') {
+    const checkMatchingStatus = async () => {
+      try {
+        // --- 수정된 토큰 추출 로직 ---
+        // 1. 'currentUser' 키로 저장된 사용자 정보 문자열을 가져옵니다.
+        const userInfoString = localStorage.getItem('currentUser');
+        
+        // 2. 사용자 정보가 없으면 함수를 중단합니다.
+        if (!userInfoString) {
+          console.error('로그인 정보를 찾을 수 없습니다.');
+          return;
+        }
+
+        // 3. 가져온 문자열을 JSON 객체로 변환합니다.
+        const userInfo = JSON.parse(userInfoString);
+
+        // 4. 객체에서 accessToken을 추출합니다.
+        const token = userInfo.accessToken;
+        
+        console.log('Successfully Retrieved Token from currentUser:', token);
+
+        // 5. 토큰이 유효한지 최종 확인합니다.
+        if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
+          console.error('currentUser 객체에 유효하지 않은 토큰이 있습니다:', token);
+          return;
+        }
+        
+        const response = await fetch('/api/v1/schedule/me/therapist/accepted', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          // 정상적으로 매칭 상태를 업데이트합니다.
+          setIsMatched(data.length > 0);
+          console.log('매칭 상태 확인 성공:', data.length > 0);
+        } else {
+          const errorBody = await response.text();
+          console.error('API 응답 실패:', response.status, errorBody);
+          setIsMatched(false);
+        }
+      } catch (error) {
+        console.error('매칭 상태 확인 중 오류 발생:', error);
+        setIsMatched(false);
+      }
+    };
+
+    checkMatchingStatus();
+  }
+}, [isLoggedIn, userType]);
 
   // 바깥 클릭/ESC로 프로필 드롭다운 닫기
   useEffect(() => {
@@ -72,12 +129,12 @@ function NavBar({ setCurrentCharacter, getRandomCharacter, onShowChat }) {
 
           {isLoggedIn && (
             <>
-              <Link
-                to={userType === 'therapist' ? "/therapist/feedback" : "/user/mypage/matching"}
-                onClick={handleLinkClick}
-              >
-                매칭
-              </Link>
+              {userType === 'user' && !isMatched &&(
+                <Link to="/user/mypage/matching" onClick={handleLinkClick}>매칭</Link>
+              )}
+              {userType === 'therapist' && (
+                <Link to="/therapist/feedback" onClick={handleLinkClick}>아동관리</Link>
+              )}
               <Link
                 to={userType === 'therapist' ? "/therapist/mypage/schedule" : "/user/mypage/schedule"}
                 onClick={handleLinkClick}
@@ -186,12 +243,12 @@ function NavBar({ setCurrentCharacter, getRandomCharacter, onShowChat }) {
               >
                 내 정보
               </Link>
-              <Link
-                to={userType === 'therapist' ? "/therapist/feedback" : "/user/mypage/matching"}
-                onClick={handleLinkClick}
-              >
-                매칭
-              </Link>
+              {userType === 'user' && !isMatched &&(
+                <Link to="/user/mypage/matching" onClick={handleLinkClick}>매칭</Link>
+              )}
+              {userType === 'therapist' && (
+                <Link to="/therapist/feedback" onClick={handleLinkClick}>아동관리</Link>
+              )}
               <Link
                 to={userType === 'therapist' ? "/therapist/mypage/schedule" : "/user/mypage/schedule"}
                 onClick={handleLinkClick}

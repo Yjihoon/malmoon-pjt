@@ -1,16 +1,12 @@
 package com.communet.malmoon.matching.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Builder
 public class MemberPendingRes {
     private Long scheduleId;
     private Long memberId;
@@ -18,4 +14,8 @@ public class MemberPendingRes {
     private String email;
     private String telephone;
     private LocalDateTime createDate;
+    private String evaluation;
+    private String improvements;
+    private String recommendations;
+    private String strengths;
 }
