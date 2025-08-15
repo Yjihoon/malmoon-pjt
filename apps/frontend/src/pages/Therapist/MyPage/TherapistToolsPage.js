@@ -171,7 +171,6 @@ function TherapistToolsPage() {
         }
     };
 
-    // --- (이하 다른 핸들러 함수들은 이전과 동일) ---
 
     // AAC 아이템 핸들러
     const handleSaveAacItem = async (itemToSave) => {
