@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Container, Row, Col, Card, Alert, Button, Modal, Form, InputGroup } from 'react-bootstrap';
+import { Container, Row, Col, Card, Alert, Button, Modal, Form, InputGroup, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import axios from '../../../api/axios';
@@ -9,11 +9,11 @@ import './TherapistFeedbackPage.css';
 
 /* === 캐릭터 이미지 매핑 === */
 import penguinImg from '../../../logoimage/penguin.png';
-import bearImg    from '../../../logoimage/bear.png';
-import duckImg    from '../../../logoimage/duck.png';
-import wolfImg    from '../../../logoimage/wolf.png';
-import puppyImg   from '../../../logoimage/puppy.png';
-import parrotImg  from '../../../logoimage/parrot.png';
+import bearImg from '../../../logoimage/bear.png';
+import duckImg from '../../../logoimage/duck.png';
+import wolfImg from '../../../logoimage/wolf.png';
+import puppyImg from '../../../logoimage/puppy.png';
+import parrotImg from '../../../logoimage/parrot.png';
 import defaultAvatar from '../../../assets/therapist.png'; // 없으면 기본 이미지
 
 const CHARACTER_IMAGES = {
@@ -107,6 +107,8 @@ function TherapistFeedbackPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [pendingRequestCount, setPendingRequestCount] = useState(0);
+
   // Feedback Modal
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -129,9 +131,20 @@ function TherapistFeedbackPage() {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(() => { scrollToBottom(); }, [messages]);
 
-  // 1) 리스트 불러오기
+  const fetchPendingRequestsCount = async () => {
+    try {
+      const response = await axios.get('/schedule/pending', {
+        headers: { Authorization: `Bearer ${user.accessToken}` },
+      });
+      setPendingRequestCount(response.data?.length || 0);
+    } catch (err) {
+      console.error('대기 중인 요청 수 불러오기 실패:', err);
+      setPendingRequestCount(0);
+    }
+  };
+
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchClientsAndCount = async () => {
       setLoading(true);
       setError('');
       try {
@@ -141,7 +154,6 @@ function TherapistFeedbackPage() {
         const list = response.data || [];
         setClients(list);
 
-        // 2) 각 아동 상세에서 프로필만 추출해 map 구성 (동시에 요청)
         const detailMap = {};
         const tasks = list.map((c) =>
           axios
@@ -157,6 +169,9 @@ function TherapistFeedbackPage() {
         );
         await Promise.allSettled(tasks);
         setClientDetailMap(detailMap);
+
+        await fetchPendingRequestsCount();
+
       } catch (err) {
         setError('아동 리스트를 불러오는 데 실패했습니다.');
         console.error(err);
@@ -166,7 +181,7 @@ function TherapistFeedbackPage() {
     };
 
     if (user && user.userType === 'therapist') {
-      fetchClients();
+      fetchClientsAndCount();
     } else {
       setLoading(false);
       setError('치료사 계정으로 로그인해야 피드백을 볼 수 있습니다.');
@@ -366,69 +381,84 @@ function TherapistFeedbackPage() {
   }
 
   return (
-    <Container className="my-5 main-container">
-      <div className="page-inner">
-        <div className="page-header">
-          <h2 className="page-title">아동별 피드백 조회</h2>
-            <Button
-            as={Link}
-            to="/therapist/mypage/matching"
-            size="sm"
-            className="btn-soft-primary no-hover-btn page-header-btn"
-            >
-            매칭 요청 보기
-            </Button>
-        </div>
+    // <React.Fragment> 또는 <>를 사용하여 여러 요소를 감쌀 수 있습니다.
+    <>
+      <Container className="my-5 main-container">
+        <div className="page-inner">
+          <div className="page-header">
+            <h2 className="page-title">아동별 피드백 조회</h2>
+            <div className="page-header-actions">
+              <Button
+                as={Link}
+                to="/therapist/mypage/matching"
+                size="sm"
+                className="btn-soft-primary no-hover-btn"
+              >
+                매칭 요청 보기
+              </Button>
+              {pendingRequestCount > 0 && (
+                <Badge bg="danger" className="position-absolute badge-custom">
+                  {pendingRequestCount}
+                  <span className="visually-hidden">새로운 요청</span>
+                </Badge>
+              )}
+            </div>
+          </div>
 
-        <Row>
-          <Col md={12}>
-            <Card className="shadow-sm p-3 card-base no-lift">
-              <Card.Body>
-                {clients.length === 0 ? (
-                  <Alert variant="info">현재 담당하는 아동이 없습니다.</Alert>
-                ) : (
-                  <div>
-                    {clients.map((client) => {
-                      const avatarSource = clientDetailMap[client.clientId] || client; // 상세가 있으면 그걸 우선 사용
-                      return (
-                        <div key={client.clientId} className="mb-3 card-base matching-client-item no-lift">
-                          <Row className="align-items-center w-100">
-                            <Col md={8} className="matching-client-info">
-                              <div className="client-row">
-                                <img
-                                  src={getCharImg(avatarSource)}
-                                  alt="아동 캐릭터"
-                                  className="avatar"
-                                  draggable={false}
-                                />
-                                <div className="client-text">
-                                  <h5>
-                                    {client.name} ({client.age}세)
-                                  </h5>
-                                  <p className="mb-1">이메일: {client.email}</p>
-                                  <p className="mb-1">전화: {client.telephone}</p>
+          <Row>
+            <Col md={12}>
+              <Card className="shadow-sm p-3 card-base no-lift">
+                <Card.Body>
+                  {clients.length === 0 ? (
+                    <Alert variant="info">현재 담당하는 아동이 없습니다.</Alert>
+                  ) : (
+                    <div>
+                      {clients.map((client) => {
+                        const avatarSource = clientDetailMap[client.clientId] || client;
+                        return (
+                          <div key={client.clientId} className="mb-3 card-base matching-client-item no-lift">
+                            <Row className="align-items-center w-100">
+                              <Col md={8} className="matching-client-info">
+                                <div className="client-row">
+                                  <img
+                                    src={getCharImg(avatarSource)}
+                                    alt="아동 캐릭터"
+                                    className="avatar"
+                                    draggable={false}
+                                  />
+                                  <div className="client-text">
+                                    <h5>
+                                      {client.name} ({client.age}세)
+                                    </h5>
+                                    <p className="mb-1">이메일: {client.email}</p>
+                                    <p className="mb-1">전화: {client.telephone}</p>
+                                  </div>
                                 </div>
-                              </div>
-                            </Col>
-                            <Col md={4} className="text-md-end matching-client-actions">
-                              <Button className="btn-soft-primary no-hover-btn" onClick={() => handleShowFeedbackModal(client)}>
-                                피드백 보기
-                              </Button>
-                              <Button className="btn-soft-primary ms-2 no-hover-btn" onClick={() => handleShowChatModal(client)}>
-                                채팅
-                              </Button>
-                            </Col>
-                          </Row>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </div>
+                              </Col>
+                              <Col md={4} className="text-md-end matching-client-actions">
+                                <Button className="btn-soft-primary no-hover-btn" onClick={() => handleShowFeedbackModal(client)}>
+                                  피드백 보기
+                                </Button>
+                                <Button className="btn-soft-primary ms-2 no-hover-btn" onClick={() => handleShowChatModal(client)}>
+                                  채팅
+                                </Button>
+                              </Col>
+                            </Row>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </div>
+      </Container>
+
+      {/* ============== MODALS ============== */}
+      {/* 모달들을 메인 컨테이너 밖, 최상단 레벨로 이동시켰습니다. */}
+      {/* 이렇게 하면 부모 요소의 CSS 스타일에 영향을 받지 않아 안정적입니다. */}
 
       {/* Feedback Modal */}
       <Modal show={showFeedbackModal} onHide={handleCloseFeedbackModal} centered size="lg">
@@ -584,7 +614,7 @@ function TherapistFeedbackPage() {
           </Form>
         </Modal.Footer>
       </Modal>
-    </Container>
+    </>
   );
 }
 
