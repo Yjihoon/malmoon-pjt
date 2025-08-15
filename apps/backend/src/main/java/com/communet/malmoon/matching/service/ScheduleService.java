@@ -195,22 +195,33 @@ public class ScheduleService {
     }
 
     // 윤지훈: 사용자와 이미 연결된 치료사를 제외하고 반환하도록 로직 수정
+    @Transactional(readOnly = true)
     public List<TherapistRes> getTherapists(Member member) {
-        // 현재 사용자가 요청했거나 수락된 스케줄에 연결된 치료사 ID 목록을 가져옴
-        List<Schedule> pendingSchedules = scheduleRepository.findByMemberAndStatus(member, StatusType.PENDING);
-        List<Schedule> acceptedSchedules = scheduleRepository.findByMemberAndStatus(member, StatusType.ACCEPTED);
+        // 1) 제외할 therapist id 집합 조회
+        Set<Long> excludedTherapistIds = scheduleRepository.findTherapistIdsByMemberAndStatuses(
+                member.getMemberId(),
+                List.of(StatusType.PENDING, StatusType.ACCEPTED)
+        );
 
-        Set<Long> excludedTherapistIds = Stream.concat(pendingSchedules.stream(), acceptedSchedules.stream())
-                .map(schedule -> schedule.getTherapist().getMemberId())
-                .collect(Collectors.toSet());
+        if (excludedTherapistIds == null) {
+            excludedTherapistIds = Collections.emptySet();
+        }
 
-        List<Member> allTherapists = memberRepository.findByRole(MemberType.ROLE_THERAPIST);
+        // 2) excludedIds가 비어있으면 별도 메서드 호출 (IN 빈 컬렉션 회피)
+        List<Therapist> therapists;
+        if (excludedTherapistIds.isEmpty()) {
+            therapists = therapistRepository.findAllByMember_role(MemberType.ROLE_THERAPIST);
+        } else {
+            therapists = therapistRepository.findAllByMember_roleAndMember_MemberIdNotIn(
+                    MemberType.ROLE_THERAPIST,
+                    excludedTherapistIds
+            );
+        }
 
-        return allTherapists.stream()
-                // 제외 목록에 없는 치료사만 필터링
-                .filter(therapistMember -> !excludedTherapistIds.contains(therapistMember.getMemberId()))
-                .map(therapistMember -> {
-                    Therapist therapist = therapistRepository.findById(therapistMember.getMemberId()).orElseThrow();
+        // 3) DTO 매핑 — therapist.getMember()로 Member 정보 사용
+        return therapists.stream()
+                .map(therapist -> {
+                    Member therapistMember = therapist.getMember(); // 1:1 매핑된 Member
                     List<CareerRes> careerResList = therapist.getCareers().stream()
                             .map(career -> CareerRes.builder()
                                     .company(career.getCompany())
