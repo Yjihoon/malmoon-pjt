@@ -13,7 +13,7 @@ import { useLiveKitSession } from '../../hooks/useLiveKitSession';
 import { useFairyTaleLogic } from '../../hooks/useFairyTaleLogic';
 import { useChatLogic } from '../../hooks/useChatLogic';
 
-const CAMERA_KIT_API_TOKEN = "eyJhbGciOiJIUzI1NiIsImtpZCI6IkNhbnZhc2MyU2hNQUNQcm9kIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjYW52YXMtY2FudmFzYXBpIiwiaXNzIjoiY2FudmFzLXMyc3Rva2VuIiwibmJmIjoxNzU0MDQ4MTI2LCJzdWIiOiJlODY4YTg3Ny1jYjVkLTQyMWEtOGE5Zi02MzlkZjExMDAyNTJ-U1RBR0lOR35hZGM0OWFjMy02NTU5LTRmNTctOWQ4Ny0yNTRjYzkwZjNhYzAifQ.EqNFYVSRYv7iEBCTBM-bxGvDEYOYernbf3ozbEhzB6g";
+const CAMERA_KIT_API_TOKEN = "eyJhbGciOiJIUzI1NiIsImtpZCI6IkNhbnZhc1MyU0hNQUNQcm9kIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjYW52YXMtY2FudmFzYXBpIiwiaXNzIjoiY2FudmFzLXMyc3Rva2VuIiwibmJmIjoxNzU0MDQ4MTI2LCJzdWIiOiJlODY4YTg3Ny1jYjVkLTQyMWEtOGE5Zi02MzlkZjExMDAyNTJ-U1RBR0lOR35hZGM0OWFjMy02NTU5LTRmNTctOWQ4Ny0yNTRjYzkwZjNhYzAifQ.EqNFYVSRYv7iEBCTBM-bxGvDEYOYernbf3ozbEhzB6g";
 
 function TherapistSessionRoom() {
   const { roomId } = useParams();
@@ -73,6 +73,7 @@ function TherapistSessionRoom() {
         const toolBundle = toolBundlesResponse.data;
         setAllToolBundles(toolBundle ? [toolBundle] : []);
 
+        console.log(toolBundle);
         let aacs = [];
         if (toolBundle && toolBundle.aacSetId) {
             const aacSetContentResponse = await api.get(`/aacs/sets/my/${toolBundle.aacSetId}`, {
@@ -94,12 +95,32 @@ function TherapistSessionRoom() {
 
         setAllAacs(aacs.map(item => ({ ...item, imageUrl: item.fileUrl })));
 
-        const filterResponse = await api.get('/filters', {
-          headers: { Authorization: `Bearer ${user.accessToken}` },
-          params: { page: 0, size: 100 }
-        });
-        const allFilters = filterResponse.data.filters.map(item => ({ ...item, imageUrl: item.fileUrl })) || [];
-        setAllFilters(allFilters);
+        let filters = [];
+        if (toolBundle && toolBundle.filterSetId) {
+          const filterSetContentResponse = await api.get(`/filters/sets/my/${toolBundle.filterSetId}`, {
+              headers: { Authorization: `Bearer ${user.accessToken}` },
+            });
+            const filterSet = filterSetContentResponse.data || [];
+            const filterIds = filterSet.map(item => item.filterId);
+
+            console.log(filterSet);
+            console.log(filterIds);
+
+            const params = new URLSearchParams();
+            filterIds.forEach(id => params.append('ids', id));
+
+            console.log(params.toString());
+
+            const filterResponse = await api.get(`/filters/by-ids?${params.toString()}`, {
+              headers: { Authorization: `Bearer ${user.accessToken}` },
+            });
+
+            const allFilters = filterResponse.data.filters.map(item => ({ ...item, imageUrl: item.fileUrl })) || [];
+
+            filters = allFilters;
+        }
+
+        setAllFilters(filters);
 
         // Parse and resolve selected tools
         const toolsParam = queryParams.get('tools');
