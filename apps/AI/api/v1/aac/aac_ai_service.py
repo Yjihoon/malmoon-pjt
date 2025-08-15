@@ -58,12 +58,12 @@ def build_prompt(req: AacImageRequest) -> str:
     reason = req.reason
 
     base_prompt = (
-        f"Create a simple 2D emoji-style illustration in a clear AAC symbol format. "
-        f"The background should visually represent the '{situation}' situation. "
-        f"A person should be shown clearly performing the action '{action}', "
-        f"with a facial expression that conveys the '{emotion}' emotion. "
-        "Use soft outlines, flat and clean colors, and a consistent illustration style inspired by Korean AAC symbols. "
-        "Avoid speech bubbles or text. The image should be intuitive and optimized for use in a real-time WebRTC speech therapy interface."
+        'Create a simple 2D emoji-style illustration in a clear AAC symbol format.'
+        f'The layout must always follow the same structure: a single person positioned in the center foreground, a background that visually represents the "{situation}" situation.' 
+        f'The person should be clearly performing the action "{action}" with a facial expression showing the "{emotion}" emotion.'
+        'Maintain the same proportions, perspective, and framing across all images. Use soft outlines, flat and clean colors, and a consistent style inspired by Korean AAC symbols.'
+        'Avoid speech bubbles or any text. Keep the design intuitive, with clear visual separation between the person, background, and symbolic objects.'
+        'The composition must be optimized for use in a real-time WebRTC speech therapy interface.'
     )
 
     if reason:
