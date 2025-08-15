@@ -11,6 +11,7 @@ import CentralAacDisplay from "../../components/common/CentralAacDisplay";
 
 const LIVEKIT_URL = "wss://i13c107.p.ssafy.io:8443";
 
+
 function UserSessionRoom() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -176,7 +177,11 @@ function UserSessionRoom() {
       navigate(-1);
     }
   }, [user, bookingId, navigate]);
-
+  function speak(name) {
+  const utterance = new SpeechSynthesisUtterance(name);
+  utterance.lang = 'ko-KR';
+  speechSynthesis.speak(utterance);
+  }
   useEffect(() => {
     if (isAuthReady && (!user || !user.accessToken)) {
       alert("로그인이 필요합니다. 예약 페이지로 돌아갑니다.");
@@ -208,7 +213,6 @@ function UserSessionRoom() {
       }
     };
   }, [remoteAudioTrack]);
-
   const handleAacSelectionForDisplay = (aacItem) => {
     if (aacItem && aacItem.fileUrl) {
       // 2초 뒤에 이미지를 표시합니다.
@@ -219,7 +223,9 @@ function UserSessionRoom() {
         setTimeout(() => {
           setCentralImageUrl(null);
         }, 3000);
+        speak(aacItem.name)
       }, 1500);
+
     }
   };
 

@@ -178,7 +178,9 @@ function TherapistSessionRoom() {
         setTimeout(() => {
           setCentralImageUrl(null);
         }, 3000);
-      }, 1500);
+      speak(chosenAac.name)
+      },
+       1500);
     }
   };
   const handleSendAacToLiveKit = useCallback(async (aacs) => {
@@ -301,6 +303,11 @@ function TherapistSessionRoom() {
   const {
     chatInput, setChatInput, sendChatMessage
   } = useChatLogic(roomRef, user, chatRoomId, setChatMessages);
+  function speak(name) {
+  const utterance = new SpeechSynthesisUtterance(name);
+  utterance.lang = 'ko-KR';
+  speechSynthesis.speak(utterance);
+}
 
   // --- START: 최종 수정된 필터 로직 ---
   useEffect(() => {
