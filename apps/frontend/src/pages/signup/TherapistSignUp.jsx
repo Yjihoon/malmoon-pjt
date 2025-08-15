@@ -133,11 +133,21 @@ function TherapistSignUp() {
     if (!f.qualification_image_file) err.qualification_image_file = '자격증 이미지를 등록해주세요.';
     if (f.careerYears === '' || f.careerYears < 0) err.careerYears = '총 경력 연차를 입력해주세요.';
 
+    const totalCareerYears = Number(f.careerYears) || 0;
+
+    if (totalCareerYears > 0) {
     f.careerHistory.forEach((career, idx) => {
-      if (!career.company) err[`career-${idx}-company`] = '기관명을 입력해주세요.';
-      if (!career.position) err[`career-${idx}-position`] = '직책을 입력해주세요.';
-      if (!career.startDate) err[`career-${idx}-startDate`] = '시작일을 입력해주세요.';
+      if (!career.company || career.company.trim() === '') {
+        err[`career-${idx}-company`] = '기관명을 입력해주세요.';
+      }
+      if (!career.position || career.position.trim() === '') {
+        err[`career-${idx}-position`] = '직책을 입력해주세요.';
+      }
+      if (!career.startDate) {
+        err[`career-${idx}-startDate`] = '시작일을 입력해주세요.';
+      }
     });
+  }
 
     setErrors(err);
     return Object.keys(err).length === 0;
@@ -180,7 +190,7 @@ function TherapistSignUp() {
         dong: formData.dong,
         detail: formData.detail,
         careerYears: formData.careerYears,
-        careers: formData.careerHistory,
+        careers: Number(formData.careerYears) > 0 ? formData.careerHistory : [],
       };
 
       // ✅ therapistJoinReq를 JSON Blob으로 추가
