@@ -7,46 +7,41 @@ import exec from 'k6/execution';
 const BASE_URL   = __ENV.BASE_URL || 'http://localhost:8080';
 const RUN_ID     = __ENV.RUN_ID || `local-${Date.now()}`;
 const TOKEN_MODE = (__ENV.TOKEN_MODE || 'reuse').toLowerCase(); // 'reuse' | 'distinct'
-const SMALL      = Number(__ENV.USER_POOL_SMALL || 5);    // reuse 모드에서 로그인할 실제 계정 수
-const LARGE      = Number(__ENV.USER_POOL_LARGE || 50);   // 필요 시 사용
+const SMALL      = Number(__ENV.USER_POOL_SMALL || 5);
+const LARGE      = Number(__ENV.USER_POOL_LARGE || 50);
 
 // 램핑 단계(STAGES): "users:duration,users:duration,..."
 const STAGES_RAW = (__ENV.STAGES || '5:1m,50:1m,200:3m,350:3m,500:4m')
-  .split(',')
-  .map(s => s.trim())
-  .filter(Boolean);
+  .split(',').map(s => s.trim()).filter(Boolean);
 
 const STAGES = STAGES_RAW.map(pair => {
   const [u, d] = pair.split(':');
   const users = Number(u);
   const duration = d;
-  if (!Number.isFinite(users) || !duration) {
-    throw new Error(`STAGES 형식 오류: "${pair}" (예: "200:3m")`);
-  }
+  if (!Number.isFinite(users) || !duration) throw new Error(`STAGES 형식 오류: "${pair}" (예: "200:3m")`);
   return { users, duration };
 });
 
 /* ===================== 테스트 데이터 ===================== */
-const situations = ['첫 만남', '목마를 때', '수업 시작 전', '피곤할 때', '수업 후', '조용한 시간'];
-const actions    = ['인사하기', '물 달라', '앉기', '쉬기', '게임 하자', '책 읽기'];
-const emotions   = ['기쁨', '간절함', '차분함', '피곤함', '흥분', '평온'];
+const situations = ['감정', '달력', '동작', '사람', '상태', '식사', '신체', '장소', '질문'];
+const actions  = ['(미사용)'];
+const emotions = ['(미사용)'];
 
 /* ===================== 유틸 ===================== */
 function users(n) {
-  return Array.from({ length: n }, (_, i) => ({
-    email: `therapist${i + 1}@example.com`,
-    password: 'qwer1234',
-  }));
+  return Array.from({ length: n }, (_, i) => ({ email: `therapist${i + 1}@example.com`, password: 'qwer1234' }));
 }
 function jsonParseSafe(str, fallback = null) { try { return JSON.parse(str); } catch { return fallback; } }
 function logIfFail(label, res, ok = [200, 204]) { if (!ok.includes(res.status)) console.error(`❌ ${label} 실패: status=${res.status} body=${res.body}`); }
 function randOf(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function rangeInclusive(a,b){const lo=Math.min(a,b),hi=Math.max(a,b);return Array.from({length:hi-lo+1},(_,i)=>lo+i);}
+
 function extractContentArray(body){
   if (Array.isArray(body)) return body;
   if (Array.isArray(body?.content)) return body.content;
   if (Array.isArray(body?.data?.content)) return body.data.content;
   if (Array.isArray(body?.page?.content)) return body.page.content;
+  if (Array.isArray(body?.data)) return body.data; // data 자체가 배열인 경우
   const keys = body && typeof body === 'object' ? Object.keys(body) : [];
   console.warn(`⚠️ 목록 응답에서 content 배열을 찾지 못함. top-level keys=${keys.join(',')}`);
   return [];
@@ -56,22 +51,15 @@ function extractId(item){ return item?.aacId ?? item?.id ?? item?.aac_id ?? null
 /* ===================== 토큰 파서 & 로그인 ===================== */
 function pickTokenFrom(body) {
   const b = jsonParseSafe(body, {});
-  return b?.accessToken
-    ?? b?.token
-    ?? b?.data?.accessToken
-    ?? b?.data?.token
-    ?? b?.result?.accessToken
-    ?? b?.result?.token
-    ?? null;
+  return b?.accessToken ?? b?.token ?? b?.data?.accessToken ?? b?.data?.token ?? b?.result?.accessToken ?? b?.result?.token ?? null;
 }
 
 function loginAll(list) {
   return list.map(u => {
     const r = http.post(`${BASE_URL}/api/v1/auth/login`, JSON.stringify(u), {
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      responseType: 'text'
+      responseType: 'text', // 바디 보존
     });
-
     if (r.status < 200 || r.status >= 300) {
       console.error(`❌ 로그인 HTTP 실패: ${u.email} status=${r.status} body=${r.body}`);
       throw new Error('로그인 실패(HTTP)');
@@ -92,6 +80,7 @@ function fetchSomeAacIds(token, want = 200) {
     const r = http.get(`${BASE_URL}/api/v1/aacs?page=${page}&size=20`, {
       headers: { Authorization: `Bearer ${token}` },
       tags: { endpoint: 'aacs_list_bootstrap' },
+      responseType: 'text', // 바디 보존
     });
     if (r.status !== 200) { console.warn(`⚠️ 부트스트랩 목록 status=${r.status} page=${page}`); break; }
     const content = extractContentArray(jsonParseSafe(r.body, {}));
@@ -105,11 +94,9 @@ function fetchSomeAacIds(token, want = 200) {
 }
 
 /* ===================== RPS 산정 & VU 캡 ===================== */
-// 50명 기준: 목록 60 rps, 상세 40 rps, CRUD 10 rps
 const BASE_RATES = { list: 60, detail: 40, crud: 10 };
 const toRate = (users, base) => Math.max(1, Math.floor((users / 50) * base));
 
-// 각 시나리오별 스테이지를 RPS로 변환
 const listStages   = STAGES.map(s => ({ target: toRate(s.users, BASE_RATES.list),   duration: s.duration }));
 const detailStages = STAGES.map(s => ({ target: toRate(s.users, BASE_RATES.detail), duration: s.duration }));
 const crudStages   = STAGES.map(s => ({ target: toRate(s.users, BASE_RATES.crud),   duration: s.duration }));
@@ -126,40 +113,13 @@ const capCrud   = cap(crudStages);
 
 /* ===================== k6 옵션 ===================== */
 export const options = {
-  discardResponseBodies: true,
+  discardResponseBodies: true, // 필요 요청은 개별 responseType으로 보존
   summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)'],
   tags: { run_id: RUN_ID, env: (__ENV.ENV || 'local') },
   scenarios: {
-    aacs_list: {
-      executor: 'ramping-arrival-rate',
-      timeUnit: '1s',
-      preAllocatedVUs: capList.pre,
-      maxVUs: capList.max,
-      startRate: capList.startRate,
-      stages: listStages,
-      exec: 'listAacs',
-      gracefulStop: '30s',
-    },
-    aacs_detail: {
-      executor: 'ramping-arrival-rate',
-      timeUnit: '1s',
-      preAllocatedVUs: capDetail.pre,
-      maxVUs: capDetail.max,
-      startRate: capDetail.startRate,
-      stages: detailStages,
-      exec: 'getAacDetail',
-      gracefulStop: '30s',
-    },
-    aac_set_crud: {
-      executor: 'ramping-arrival-rate',
-      timeUnit: '1s',
-      preAllocatedVUs: capCrud.pre,
-      maxVUs: capCrud.max,
-      startRate: capCrud.startRate,
-      stages: crudStages,
-      exec: 'setCrud',
-      gracefulStop: '30s',
-    },
+    aacs_list:   { executor: 'ramping-arrival-rate', timeUnit: '1s', preAllocatedVUs: capList.pre,   maxVUs: capList.max,   startRate: capList.startRate,   stages: listStages,   exec: 'listAacs',   gracefulStop: '30s' },
+    aacs_detail: { executor: 'ramping-arrival-rate', timeUnit: '1s', preAllocatedVUs: capDetail.pre, maxVUs: capDetail.max, startRate: capDetail.startRate, stages: detailStages, exec: 'getAacDetail', gracefulStop: '30s' },
+    aac_set_crud:{ executor: 'ramping-arrival-rate', timeUnit: '1s', preAllocatedVUs: capCrud.pre,   maxVUs: capCrud.max,   startRate: capCrud.startRate,   stages: crudStages,   exec: 'setCrud',    gracefulStop: '30s' },
   },
   thresholds: {
     'http_req_duration{endpoint:aacs_list}': ['p(95)<800'],
@@ -186,16 +146,12 @@ export function setup() {
     console.log(`👥 TOKEN_MODE=reuse / 실제 로그인 ${SMALL}명으로 램핑 트래픽 대표`);
   }
 
-  // 목록에서 샘플 ID 확보
   const bootstrapToken = tokens[0];
   let ids = fetchSomeAacIds(bootstrapToken, 200);
 
   if (ids.length < 3) {
-    const FIXED_IDS = (__ENV.FIXED_IDS || '')
-      .split(',').map(s => parseInt(s.trim(), 10)).filter(n => Number.isFinite(n));
-    const FALLBACK_ID_RANGE = (__ENV.FALLBACK_ID_RANGE || '1-50')
-      .split('-').map(s => parseInt(s.trim(), 10));
-
+    const FIXED_IDS = (__ENV.FIXED_IDS || '').split(',').map(s => parseInt(s.trim(), 10)).filter(Number.isFinite);
+    const FALLBACK_ID_RANGE = (__ENV.FALLBACK_ID_RANGE || '1-50').split('-').map(s => parseInt(s.trim(), 10));
     if (FIXED_IDS.length >= 3) { console.warn('⚠️ sampleIds 부족 → FIXED_IDS 사용'); ids = FIXED_IDS; }
     else if (FALLBACK_ID_RANGE.length === 2 && Number.isFinite(FALLBACK_ID_RANGE[0]) && Number.isFinite(FALLBACK_ID_RANGE[1])) {
       console.warn('⚠️ sampleIds 부족 → FALLBACK_ID_RANGE 사용'); ids = rangeInclusive(FALLBACK_ID_RANGE[0], FALLBACK_ID_RANGE[1]);
@@ -219,14 +175,12 @@ export function listAacs(data) {
   const token = pickToken(data);
   if (!token) return;
 
-  const noFilter = Math.random() < 0.3;
+  const useFilter = Math.random() < 0.7;
   const situation = encodeURIComponent(randOf(situations));
-  const action    = encodeURIComponent(randOf(actions));
-  const emotion   = encodeURIComponent(randOf(emotions));
   const page = Math.floor(Math.random() * 5);
 
-  const query = noFilter ? `?page=${page}&size=10`
-    : `?page=${page}&size=10&situation=${situation}&action=${action}&emotion=${emotion}`;
+  const base = `?page=${page}&size=10`;
+  const query = useFilter ? `${base}&situation=${situation}` : base;
 
   const res = http.get(`${BASE_URL}/api/v1/aacs${query}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -250,6 +204,45 @@ export function getAacDetail(data) {
   });
   logIfFail('aacs detail', res, [200]);
   check(res, { 'aacs detail 200': r => r.status === 200 });
+}
+
+/* ========== 생성 응답에서 setId 추출(바디 또는 Location 헤더) ========== */
+function pickSetIdFrom(res) {
+  const body = jsonParseSafe(res.body, null);
+  const cand = body?.aacSetId ?? body?.setId ?? body?.id ?? body?.data?.aacSetId ?? body?.data?.setId ?? body?.data?.id ?? null;
+  if (cand != null) return cand;
+  const loc = res.headers?.Location || res.headers?.location;
+  if (loc) {
+    const m = String(loc).match(/\/(\d+)(?:\D*)?$/);
+    if (m) return Number(m[1]);
+  }
+  return null;
+}
+
+/* ========== Fallback: 목록에서 이름으로 setId 역검색 ========== */
+function findSetIdByName(token, name) {
+  const endpoints = [
+    `${BASE_URL}/api/v1/aacs/sets/my?page=0&size=20`,
+    `${BASE_URL}/api/v1/aacs/sets?page=0&size=20&mine=true`,
+    `${BASE_URL}/api/v1/aacs/sets?page=0&size=20`,
+  ];
+
+  for (const url of endpoints) {
+    const r = http.get(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      responseType: 'text',
+      tags: { endpoint: 'aac_set_list_fallback' },
+    });
+    if (r.status !== 200) continue;
+    const list = extractContentArray(jsonParseSafe(r.body, {}));
+    for (const it of list) {
+      if (it?.name === name) {
+        const id = extractId(it);
+        if (id != null) return id;
+      }
+    }
+  }
+  return null;
 }
 
 /* ===================== 3) 세트 CRUD ===================== */
@@ -276,29 +269,39 @@ export function setCrud(data) {
   let created, setId = null;
   for (let attempt = 0; attempt < 2 && !setId; attempt++) {
     const initialIds = pick3Unique(uniq);
-    const createReq = { name: `k6-set-${Date.now()}-${attempt}`, description: 'k6 load test set', aacIds: initialIds };
+    const setName = `k6-set-${Date.now()}-${attempt}`;
+    const createReq = { name: setName, description: 'k6 load test set', aacIds: initialIds };
 
     created = http.post(`${BASE_URL}/api/v1/aacs/sets/create`, JSON.stringify(createReq), {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       tags: { endpoint: 'aac_set_crud_create' },
+      responseType: 'text', // 바디 보존
     });
 
-    if (created.status === 200) {
-      const createdBody = jsonParseSafe(created.body, {});
-      setId = createdBody?.aacSetId ?? createdBody?.setId ?? createdBody?.id ?? null;
-      break;
+    if (created.status === 200 || created.status === 201) {
+      setId = pickSetIdFrom(created);
+      if (!setId) {
+        // 최후 수단: 방금 만든 name으로 목록에서 역검색
+        setId = findSetIdByName(token, setName);
+      }
+      if (setId) break;
     }
-    if (created.status !== 400) break;
+    if (created.status !== 400) break; // 400만 재시도, 그 외는 중단
   }
 
-  logIfFail('set create', created, [200]);
-  check(created, { 'set create 200': (r) => r.status === 200 });
-  if (!setId) { console.warn('⚠️ setId 추출 실패 → update/delete 스킵'); return; }
+  logIfFail('set create', created, [200, 201]);
+  check(created, { 'set create 200/201': (r) => r.status === 200 || r.status === 201 });
+
+  if (!setId) {
+    console.warn(`⚠️ setId 추출 실패. status=${created?.status} body=${created?.body} location=${created?.headers?.Location || created?.headers?.location}`);
+    return;
+  }
 
   sleep(0.2);
   const detail = http.get(`${BASE_URL}/api/v1/aacs/sets/my/${setId}`, {
     headers: { Authorization: `Bearer ${token}` },
     tags: { endpoint: 'aac_set_crud_detail' },
+    responseType: 'text',
   });
   logIfFail('set detail', detail, [200]);
   check(detail, { 'set detail 200': r => r.status === 200 });
@@ -314,7 +317,8 @@ export function setCrud(data) {
   const updateReq = {
     name: `k6-set-upd-${Date.now()}`,
     description: 'k6 load test set updated',
-    aacItemIds: updateIds,
+    aacItemIds: updateIds, // 스펙 A
+    aacIds: updateIds,     // 스펙 B
   };
 
   const upd = http.patch(`${BASE_URL}/api/v1/aacs/sets/${setId}`, JSON.stringify(updateReq), {
