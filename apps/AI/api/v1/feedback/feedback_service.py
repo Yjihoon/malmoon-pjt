@@ -25,6 +25,7 @@ def _build_messages(prompt: str):
                 "새로운 예시나 임의 문장을 만들어 내지 마. "
                 "전체 문장을 그대로 복사/붙여넣기 하지 말고, 인용이 필요하면 6글자 이내의 짧은 부분만 따옴표로 표시해. "
                 "불필요한 머리말/코드블록/라벨을 덧붙이지 마."
+                "Do not use bullet points, numbered lists, dashes, emojis, or line breaks. Write in full sentences."
             ),
         },
         {"role": "user", "content": prompt},
