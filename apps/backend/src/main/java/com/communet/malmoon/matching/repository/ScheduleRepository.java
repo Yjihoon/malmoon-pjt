@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
@@ -23,6 +24,11 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
             Long therapistId,
             StatusType status
     );
+
+    @Query("select s.therapist.memberId from Schedule s " +
+            "where s.member.memberId = :memberId and s.status in :statuses")
+    Set<Long> findTherapistIdsByMemberAndStatuses(@Param("memberId") Long memberId,
+                                                  @Param("statuses") List<StatusType> statuses);
 
     List<Schedule> findByMemberAndStatus(Member member, StatusType status);
 

@@ -27,6 +27,11 @@ public class Therapist {
 	@Column(name = "file_id", columnDefinition = "bigint",  nullable = false)
 	private Long fileId;
 
+	@OneToOne
+	@MapsId
+	@JoinColumn(name = "member_id")
+	private Member member;
+
 	@OneToMany(mappedBy = "therapist", cascade = CascadeType.ALL)
 	@Builder.Default
 	private List<Career> careers = new ArrayList<>();
