@@ -452,7 +452,7 @@
 }
 
 .modal-footer .btn-primary {
-    background-color: var(--calendar-selected-day-bg); /* primary 버튼 색상 */
+    background-color: blue; /* primary 버튼 색상 */
     border-color: var(--calendar-selected-day-bg);
 }
 

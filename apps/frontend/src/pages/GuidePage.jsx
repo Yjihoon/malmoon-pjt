@@ -26,11 +26,11 @@ function GuidePage() {
         <div className="feature-list">
           <div className="feature-item card-base">
             <h3>언어치료 전문가 매칭</h3>
-            <p>언어치료사와 1:1 매칭으로 나의 훈련 및 스케줄에 대한 주기적인 피드백을 제공합니다.</p>
+            <p>언어치료사와 1:1 매칭으로 나의 치료 및 스케줄에 대한 주기적인 피드백을 제공합니다.</p>
           </div>
           <div className="feature-item card-base">
             <h3>비대면 화상 치료 수업</h3>
-            <p>Zoom을 활용한 화상 미팅을 통해 대면 치료의 어려움을 극복합니다.</p>
+            <p>웹 RTC을 활용한 화상 미팅을 통해 대면 치료의 어려움을 극복합니다.</p>
           </div>
           <div className="feature-item card-base">
             <h3>AI 언어훈련 서비스</h3>
@@ -38,7 +38,7 @@ function GuidePage() {
           </div>
           <div className="feature-item card-base">
             <h3>다양한 언어훈련 콘텐츠</h3>
-            <p>한국어 조음 훈련 및 흥미를 유도하는 다양한 콘텐츠를 제공합니다.</p>
+            <p>AAC 그림카드 활용, 동화 문장 읽기, 필터 효과 적용 등의 콘텐츠를 통해 아이들의 집중력을 높입니다.</p>
           </div>
         </div>
       </section>
@@ -65,7 +65,7 @@ function GuidePage() {
         <h2 className="section-title">자주 묻는 질문 (Q&A)</h2>
         <div className="qa-item">
           <h4>Q. 꼭 전문가와 매칭해야 하나요?</h4>
-          <p>A. 개인 연습도 가능하며, 전문가 매칭 시 더 체계적인 피드백을 받을 수 있습니다.</p>
+          <p>A. 전문가 매칭하여 더 체계적인 피드백을 받을 수 있습니다.</p>
         </div>
         <div className="qa-item">
           <h4>Q. 기기나 앱 설치가 필요한가요?</h4>

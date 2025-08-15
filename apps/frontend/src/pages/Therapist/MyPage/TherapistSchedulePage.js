@@ -539,7 +539,7 @@ function TherapistSchedulePage() {
                     </div>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowToolSelectionModal(false)}>
+                    <Button variant="danger" onClick={() => setShowToolSelectionModal(false)}>
                         취소
                     </Button>
                     <Button variant="primary" onClick={handleCreateSessionRoom} disabled={selectedToolsForSession.length === 0 && !selectedFairyTaleInfo}>
