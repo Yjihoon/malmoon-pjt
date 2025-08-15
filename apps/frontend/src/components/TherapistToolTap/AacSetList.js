@@ -1,6 +1,6 @@
 import React from 'react';
 import { ListGroup, Button } from 'react-bootstrap';
-import './AacSetList.css'; // Import the new CSS file
+import './AacSetList.css'; 
 
 const AacSetList = ({ aacSets, onEdit, onDelete }) => {
     if (!aacSets || aacSets.length === 0) {
@@ -12,19 +12,30 @@ const AacSetList = ({ aacSets, onEdit, onDelete }) => {
         );
     }
 
+    const SetIcon = () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-collection item-title-icon" viewBox="0 0 16 16">
+            <path d="M2.5 3.5a.5.5 0 0 1 0-1h11a.5.5 0 0 1 0 1h-11zm2-2a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1h-7zM0 13a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 16 13V6a1.5 1.5 0 0 0-1.5-1.5h-13A1.5 1.5 0 0 0 0 6v7zm1.5.5A.5.5 0 0 1 1 13V6a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-13z"/>
+        </svg>
+    );
+
     return (
         <div className="aac-set-list-container">
             <ListGroup className="aac-set-list-group">
                 {aacSets.map(set => (
                     <ListGroup.Item key={set.id} className="aac-set-list-item">
-                        <div className="aac-set-text-content"> {/* New class for text content */}
-                        <h5 className="aac-set-item-title">{set.name}</h5>
-                        <p className="aac-set-item-description">{set.description}</p>
-                    </div>
-                    <div className="aac-set-actions">
-                        <Button className="aac-set-edit-btn" onClick={() => onEdit(set)}>편집</Button>
-                        <Button className="aac-set-delete-btn" onClick={() => onDelete(set.id)}>삭제</Button>
-                    </div>
+                        <div className="list-item-content">
+                            <div className="aac-set-text-content">
+                                <div className="item-title-container">
+                                    <SetIcon />
+                                    <h5 className="aac-set-item-title">{set.name}</h5>
+                                </div>
+                                <p className="aac-set-item-description">{set.description}</p>
+                            </div>
+                            <div className="aac-set-actions">
+                                <Button className="btn-tool-edit" onClick={() => onEdit(set)}>편집</Button>
+                                <Button className="btn-tool-delete" onClick={() => onDelete(set.id)}>삭제</Button>
+                            </div>
+                        </div>
                     </ListGroup.Item>
                 ))}
             </ListGroup>

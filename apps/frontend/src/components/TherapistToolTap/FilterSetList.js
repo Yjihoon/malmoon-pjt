@@ -1,11 +1,7 @@
 import React from 'react';
 import { ListGroup, Button } from 'react-bootstrap';
-import './FilterSetList.css'; // Import the new CSS file
+import './FilterSetList.css';
 
-/**
- * 필터 묶음 목록을 표시하는 컴포넌트입니다.
- * @param {object} props - filterSets, onEdit, onDelete를 포함하는 객체
- */
 const FilterSetList = ({ filterSets, onEdit, onDelete }) => {
     if (!filterSets || filterSets.length === 0) {
         return (
@@ -16,20 +12,31 @@ const FilterSetList = ({ filterSets, onEdit, onDelete }) => {
         );
     }
 
+    const SetIcon = () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-collection item-title-icon" viewBox="0 0 16 16">
+            <path d="M2.5 3.5a.5.5 0 0 1 0-1h11a.5.5 0 0 1 0 1h-11zm2-2a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1h-7zM0 13a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 16 13V6a1.5 1.5 0 0 0-1.5-1.5h-13A1.5 1.5 0 0 0 0 6v7zm1.5.5A.5.5 0 0 1 1 13V6a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-13z"/>
+        </svg>
+    );
+
     return (
         <div className="filter-set-list-container">
             <ListGroup className="filter-set-list-group">
                 {filterSets.map(set => (
                     <ListGroup.Item key={set.filterSetId} className="filter-set-list-item">
-                    <div className="filter-set-text-content"> {/* New class for text content */}
-                        <h5 className="filter-set-item-title">{set.name}</h5>
-                        <p className="filter-set-item-description">{set.description}</p>
-                    </div>
-                    <div className="filter-set-actions">
-                        <Button className="filter-set-edit-btn" onClick={() => onEdit(set)}>편집</Button>
-                        <Button className="filter-set-delete-btn" onClick={() => onDelete(set.filterSetId)}>삭제</Button>
-                    </div>
-                </ListGroup.Item>
+                        <div className="list-item-content">
+                            <div className="filter-set-text-content">
+                                <div className="item-title-container">
+                                    <SetIcon />
+                                    <h5 className="filter-set-item-title">{set.name}</h5>
+                                </div>
+                                <p className="filter-set-item-description">{set.description}</p>
+                            </div>
+                            <div className="filter-set-actions">
+                                <Button className="btn-tool-edit" onClick={() => onEdit(set)}>편집</Button>
+                                <Button className="btn-tool-delete" onClick={() => onDelete(set.filterSetId)}>삭제</Button>
+                            </div>
+                        </div>
+                    </ListGroup.Item>
                 ))}
             </ListGroup>
         </div>
