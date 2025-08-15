@@ -215,8 +215,8 @@ function TherapistSchedulePage() {
     const handleToolSelectionInModal = (toolId) => {
         setSelectedToolsForSession(prev =>
             prev.includes(toolId)
-                ? prev.filter(id => id !== toolId)
-                : [...prev, toolId]
+                ? [] // 이미 선택된 항목이면 선택 해제
+                : [toolId] // 아니면 단독으로 선택
         );
     };
 
@@ -516,13 +516,16 @@ function TherapistSchedulePage() {
                             ) : (
                                 <>
                                     {selectedToolsForSession.map(toolId => {
-                                        const tool = allIndividualTools.find(t => t.id === toolId);
-                                        return tool ? (
-                                            <Badge key={toolId} bg={tool.type === 'AAC' ? 'primary' : 'success'} className="me-2 mb-2">
-                                                {tool.name}
-                                                <Button variant="link" className="p-0 ms-2 text-decoration-none" style={{ color: 'white', fontSize: '0.8em' }} onClick={() => handleToolSelectionInModal(toolId)}>&times;</Button>
-                                            </Badge>
-                                        ) : null;
+                                        const toolSet = allToolSets.find(set => String(set.toolBundleId) === toolId);
+                                        if (toolSet) {
+                                            return (
+                                                <Badge key={toolId} bg="primary" className="me-2 mb-2">
+                                                    {toolSet.name}
+                                                    <Button variant="link" className="p-0 ms-2 text-decoration-none" style={{ color: 'white', fontSize: '0.8em' }} onClick={() => handleToolSelectionInModal(toolId)}>&times;</Button>
+                                                </Badge>
+                                            );
+                                        }
+                                        return null;
                                     })}
                                     {selectedFairyTaleInfo && (
                                         <Badge bg="info" className="me-2 mb-2">
