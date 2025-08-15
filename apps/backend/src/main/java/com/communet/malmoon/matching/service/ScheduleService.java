@@ -1,5 +1,9 @@
 package com.communet.malmoon.matching.service;
 
+import com.communet.malmoon.diagnostic.domain.InitialTestAttempt;
+import com.communet.malmoon.diagnostic.domain.InitialTestResult;
+import com.communet.malmoon.diagnostic.repository.InitialTestAttemptRepository;
+import com.communet.malmoon.diagnostic.repository.InitialTestResultRepository;
 import com.communet.malmoon.matching.domain.*;
 import com.communet.malmoon.matching.dto.request.DayTimeReq;
 import com.communet.malmoon.matching.dto.request.SchedulePostReq;
@@ -34,6 +38,8 @@ public class ScheduleService {
     private final TherapistRepository therapistRepository;
     private final TreatmentTimeService treatmentTimeService;
     private final ScheduleRepository scheduleRepository;
+    private final InitialTestAttemptRepository initialTestAttemptRepository;
+    private final InitialTestResultRepository initialTestResultRepository;
 
     /**
      * 치료사 ID와 기간을 기준으로 겹치는 스케줄 목록을 조회
@@ -136,6 +142,8 @@ public class ScheduleService {
 
         List<Schedule> schedules = scheduleRepository.findAllByTherapist_MemberIdAndStatus(therapistId, StatusType.PENDING);
 
+
+
         return schedules.stream()
                 .map(schedule -> {
                     Member member = schedule.getMember();
@@ -144,14 +152,43 @@ public class ScheduleService {
                         return null;
                     }
 
-                    return new MemberPendingRes(
-                            schedule.getScheduleId(),
-                            member.getMemberId(),
-                            member.getName(),
-                            member.getEmail(),
-                            member.getTel1(),
-                            member.getCreatedAt()
-                    );
+                    List<InitialTestAttempt> initialTestAttemptList = initialTestAttemptRepository.findByChildId(member.getMemberId());
+                    if (initialTestAttemptList.isEmpty()) {
+                        return MemberPendingRes.builder()
+                                .scheduleId(schedule.getScheduleId())
+                                .memberId(member.getMemberId())
+                                .name(member.getName())
+                                .email(member.getEmail())
+                                .telephone(member.getTel1())
+                                .createDate(schedule.getCreatedAt())
+                                .build();
+                    }
+
+                    Optional<InitialTestResult> initialTestResultOptional = initialTestResultRepository.findById(initialTestAttemptList.get(0).getAttemptId());
+                    if (initialTestResultOptional.isEmpty()) {
+                        return MemberPendingRes.builder()
+                                .scheduleId(schedule.getScheduleId())
+                                .memberId(member.getMemberId())
+                                .name(member.getName())
+                                .email(member.getEmail())
+                                .telephone(member.getTel1())
+                                .createDate(schedule.getCreatedAt())
+                                .build();
+                    }
+                    InitialTestResult initialTestResult = initialTestResultOptional.get();
+
+                    return MemberPendingRes.builder()
+                            .scheduleId(schedule.getScheduleId())
+                            .memberId(member.getMemberId())
+                            .name(member.getName())
+                            .email(member.getEmail())
+                            .telephone(member.getTel1())
+                            .createDate(schedule.getCreatedAt())
+                            .evaluation(initialTestResult.getEvaluation())
+                            .improvements(initialTestResult.getImprovements())
+                            .recommendations(initialTestResult.getRecommendations())
+                            .strengths(initialTestResult.getStrengths())
+                            .build();
                 })
                 .filter(Objects::nonNull)
                 .toList();
