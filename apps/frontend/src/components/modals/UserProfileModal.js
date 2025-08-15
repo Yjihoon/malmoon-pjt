@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Button, ListGroup, Card } from 'react-bootstrap';
+import { Modal, Button, ListGroup, Card, Tabs, Tab } from 'react-bootstrap';
 
 function UserProfileModal({ show, handleClose, userProfile }) {
   if (!userProfile) {
@@ -25,9 +25,26 @@ function UserProfileModal({ show, handleClose, userProfile }) {
         <Card className="mb-3">
           <Card.Header as="h5">간이 언어 평가 정보</Card.Header>
           <Card.Body>
-            <p className="text-muted">
-              현재는 간이 언어 평가 정보가 제공되지 않습니다.
-            </p>
+            {userProfile.evaluation ? (
+              <Tabs defaultActiveKey="evaluation" id="evaluation-tabs" className="mb-3">
+                <Tab eventKey="evaluation" title="종합 평가">
+                  <Card.Text className="p-2">{userProfile.evaluation}</Card.Text>
+                </Tab>
+                <Tab eventKey="strengths" title="강점">
+                  <Card.Text className="p-2">{userProfile.strengths}</Card.Text>
+                </Tab>
+                <Tab eventKey="improvements" title="개선점">
+                  <Card.Text className="p-2">{userProfile.improvements}</Card.Text>
+                </Tab>
+                <Tab eventKey="recommendations" title="추천 사항">
+                  <Card.Text className="p-2">{userProfile.recommendations}</Card.Text>
+                </Tab>
+              </Tabs>
+            ) : (
+              <p className="text-muted">
+                현재는 간이 언어 평가 정보가 제공되지 않습니다.
+              </p>
+            )}
           </Card.Body>
         </Card>
       </Modal.Body>
