@@ -2,7 +2,11 @@ package com.communet.malmoon.file.service;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import com.communet.malmoon.file.dto.request.PresignPutReq;
+import com.communet.malmoon.file.dto.request.UploadConfirmReq;
 import com.communet.malmoon.file.dto.response.FileUploadRes;
+import com.communet.malmoon.file.dto.response.PresignPutRes;
+import com.communet.malmoon.file.dto.response.UploadConfirmRes;
 
 /**
  * 파일 관련 기능을 정의하는 인터페이스입니다.
@@ -33,4 +37,8 @@ public interface FileService {
 	 * @return Presigned URL (일정 시간만 접근 가능)
 	 */
 	String getPresignedFileUrl(Long fileId);
+
+	// 신규: Pre-Signed 방식
+	PresignPutRes presignPut(PresignPutReq req, Long uploaderId);
+	UploadConfirmRes confirmUpload(UploadConfirmReq req, Long uploaderId);
 }
