@@ -53,7 +53,7 @@ public class FileServiceImpl implements FileService {
 	@Value("${cloud.aws.s3.bucket}")
 	private String bucket;
 	@Value("${cloud.aws.s3.presign-exp-seconds}") private int expSec;
-	@Value("${cloud.aws.s3.key-prefix}") private String keyPrefix;
+	@Value("${cloud.aws.s3.key-prefix:}") private String keyPrefix;
 
 	@Value("${file.max-size-bytes}") private long maxSizeBytes;
 	@Value("#{'${file.allowed-content-types}'.split(',')}") private List<String> allowed;
@@ -155,21 +155,20 @@ public class FileServiceImpl implements FileService {
 	public PresignPutRes presignPut(PresignPutReq req, Long uploaderId) {
 		validate(req.getContentType(), req.getSize());
 
-		String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM"));
 		String ext = guessExt(req.getContentType(), req.getOriginalFileName());
-		String key = "%s/%s/%s/%s.%s".formatted(
-			keyPrefix,
-			req.getFileType().name(),
-			datePath,
-			UUID.randomUUID(),
-			ext
-		);
+		String safeOriginal = sanitizeOriginalName(req.getOriginalFileName(), ext);
+
+		String dir = (req.getFileType() != null) ? req.getFileType().name() : "MISC";
+
+		String fileName = UUID.randomUUID() + "_" + safeOriginal;
+
+		String key = joinKey(keyPrefix, dir, fileName);
 
 		PutObjectRequest.Builder put = PutObjectRequest.builder()
 			.bucket(bucket)
 			.key(key)
 			.contentType(req.getContentType())
-			.serverSideEncryption("AES256"); // SSE-S3
+			.serverSideEncryption("AES256");
 
 		// 체크섬(옵션)
 		if (req.getChecksumSha256Base64() != null && !req.getChecksumSha256Base64().isBlank()) {
@@ -197,9 +196,15 @@ public class FileServiceImpl implements FileService {
 			if (req.getSize() != null && head.contentLength() != req.getSize()) {
 				log.warn("사이즈 불일치: client={}, s3={}", req.getSize(), head.contentLength());
 			}
+			if (req.getEtag() != null) {
+				String got = head.eTag(); // 보통 "..." 형태
+				String want = req.getEtag();
+				if (!want.equals(got) && !want.equals(got.replace("\"",""))) {
+					throw new IllegalStateException("ETag 불일치");
+				}
+			}
 		} catch (Exception e) {
-			log.warn("HEAD 검증 실패(key:{}) - 계속 진행하거나 정책에 따라 실패 처리", req.getKey(), e);
-			// 정책상 필수라면 throw
+			throw new IllegalStateException("S3 업로드 확인 실패(HEAD 실패): key=" + req.getKey(), e);
 		}
 
 		// DB 저장 (기존 구조 재사용: filename=key)
@@ -217,6 +222,20 @@ public class FileServiceImpl implements FileService {
 			.fileId(saved.getId())
 			.viewUrl(viewUrl)
 			.build();
+	}
+
+	private String sanitizeOriginalName(String original, String ext) {
+		if (original == null || original.isBlank()) return "file." + ext;
+		// 경로구분자 제거, 공백 -> _
+		return original.replaceAll("[\\\\/]+", "_").replaceAll("\\s+", "_");
+	}
+
+	private String joinKey(String... parts) {
+		return java.util.Arrays.stream(parts)
+			.filter(p -> p != null && !p.isBlank())
+			.map(p -> p.replaceAll("^/+", "").replaceAll("/+$", "")) // 앞/뒤 슬래시 제거
+			.reduce((a, b) -> a + "/" + b)
+			.orElse("");
 	}
 
 	private String guessExt(String contentType, String originalName) {
@@ -259,11 +278,14 @@ public class FileServiceImpl implements FileService {
 	}
 
 	private FileType guessTypeFromKey(String key) {
-		// key 예: files/2025/08/AAC/uuid.jpg
+		// 대소문자 섞여 들어와도 잡히게 방어
+		String kLower = key.toLowerCase();
 		for (FileType t : FileType.values()) {
-			if (key.contains("/" + t.name() + "/")) return t;
+			if (key.contains("/" + t.name() + "/")        // 대문자 디렉터리
+				|| kLower.contains("/" + t.name().toLowerCase() + "/")) {
+				return t;
+			}
 		}
-		// fallback
 		return FileType.AAC;
 	}
 

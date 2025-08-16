@@ -27,4 +27,6 @@ public class UploadConfirmReq {
 	@NotNull @Positive
 	@Schema(description = "파일 크기(byte)", example = "1048576", requiredMode = Schema.RequiredMode.REQUIRED)
 	private Long size;
+
+	private String etag;
 }
