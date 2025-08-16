@@ -87,7 +87,6 @@
 		@PostMapping("/presign")
 		public ResponseEntity<PresignPutRes> presignPut(@RequestBody @jakarta.validation.Valid PresignPutReq req,
 			@CurrentMember Member me) {
-			System.out.println(me.getMemberId());
 			return ResponseEntity.ok(fileService.presignPut(req, me.getMemberId()));
 		}
 
