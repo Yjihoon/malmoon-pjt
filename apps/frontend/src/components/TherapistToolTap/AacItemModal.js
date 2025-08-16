@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col, Spinner, Card, Image } from 'react-bootstrap';
+import { Modal, Button, Form, Row, Col, Spinner, Card, Image, ProgressBar } from 'react-bootstrap';
 import './AacItemModal.css'; // Import the new CSS file
+import api from '../../api/axios';
 
 const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
     const [form, setForm] = useState({ name: '', description: '', situation: '', action: '', emotion: '', status: 'PUBLIC' });
@@ -10,6 +11,25 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
     
     const [isGenerating, setIsGenerating] = useState(false);
     const [aiGeneratedImage, setAiGeneratedImage] = useState(null);
+
+    // Pre-signed 테스트용 상태
+    const [psBusy, setPsBusy] = useState(false);
+    const [psProgress, setPsProgress] = useState(0);
+    const [psResult, setPsResult] = useState(null);
+
+    // SHA-256 → Base64 (지원 불가하면 null)
+    const sha256Base64 = async (file) => {
+        try {
+        const buf = await file.arrayBuffer();
+        const hash = await crypto.subtle.digest('SHA-256', buf);
+        const bytes = new Uint8Array(hash);
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return btoa(bin);
+        } catch {
+        return null;
+        }
+    };
 
     useEffect(() => {
         if (itemData) {
@@ -73,6 +93,63 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
         console.log("handleSaveClick - aiGeneratedImage:", aiGeneratedImage);
         onSave(payloadToSave); // 수정된 payloadToSave 객체 전달
     };
+
+    // ✅ Pre-signed 업로드 테스트용
+   const handlePresignedTest = async () => {
+     try {
+       if (!imageFile) {
+         alert('테스트할 이미지를 먼저 선택/생성하세요.');
+         return;
+       }
+       setPsBusy(true);
+       setPsProgress(0);
+       setPsResult(null);
+ 
+       const checksum = await sha256Base64(imageFile); // 없으면 null
+ 
+       // 1) presign 발급
+       const { data: presign } = await api.post('/files/presign', {
+            fileType: 'AAC',
+            originalFileName: imageFile.name,
+            contentType: imageFile.type,
+            size: imageFile.size,
+            ...(checksum ? { checksumSha256Base64: checksum } : {})
+        });
+
+       // 2) S3로 XHR PUT (진행률)
+       await new Promise((resolve, reject) => {
+         const xhr = new XMLHttpRequest();
+         xhr.open('PUT', presign.uploadUrl, true);
+         xhr.setRequestHeader('Content-Type', imageFile.type);
+         if (checksum) xhr.setRequestHeader('x-amz-checksum-sha256', checksum);
+         xhr.upload.onprogress = (e) => {
+           if (e.lengthComputable) setPsProgress(Math.round((e.loaded / e.total) * 100));
+         };
+         xhr.onload = () =>
+           (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`S3 오류 ${xhr.status}`));
+         xhr.onerror = () => reject(new Error('네트워크 오류'));
+         xhr.send(imageFile);
+       });
+ 
+       // 3) 업로드 확정 → DB 저장 + 짧은 조회 URL
+        const { data: confirmed } = await api.post('/files/confirm', {
+            key: presign.key,
+            contentType: imageFile.type,
+            size: imageFile.size
+        });
+ 
+       setPsResult(confirmed);
+       // 테스트 편의를 위해 미리보기에 확인 URL 표시(유효기간 짧음)
+       setImagePreview(confirmed.viewUrl || imagePreview);
+       alert(`Pre-signed 업로드 성공!\nfileId: ${confirmed.fileId}`);
+     } catch (e) {
+       console.error(e);
+       alert(e.message || 'Pre-signed 업로드 실패');
+     } finally {
+       setPsBusy(false);
+     }
+   };
+
 
     const handleAiGenerate = async () => {
         const { situation, action, emotion, description } = form;
@@ -185,6 +262,19 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
                                             imagePreview ? <Image src={imagePreview} fluid thumbnail /> : <div className="text-muted"> 생성된 AI 이미지 </div> // aiGeneratedImage 대신 imagePreview 사용
                                         )}
                                     </Card>
+                                    {psBusy && (
+                                        <div className="mt-2">
+                                          <ProgressBar now={psProgress} label={`${psProgress}%`} striped animated />
+                                        </div>
+                                      )}
+                                      {psResult && !psBusy && (
+                                        <div className="mt-2 small text-muted">
+                                          업로드 완료 · fileId: {psResult.fileId}{' '}
+                                          {psResult.viewUrl && (
+                                            <a href={psResult.viewUrl} target="_blank" rel="noreferrer">미리보기(10분)</a>
+                                          )}
+                                        </div>
+                                      )}
                                 </Col>
                             </Row>
                             <hr className="my-4" />
@@ -216,6 +306,9 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
             </Modal.Body>
             <Modal.Footer>
                 <Button className="btn-cancel" onClick={onHide}>취소</Button>
+                <Button variant="secondary" onClick={handlePresignedTest} disabled={psBusy || (!itemData && !imageFile)}>
+                    {psBusy ? '테스트 업로드 중…' : 'Pre-signed 테스트'}
+                </Button>
                 <Button className="btn-save-add" onClick={handleSaveClick}>
                     {itemData ? '저장' : '추가'}
                 </Button>
