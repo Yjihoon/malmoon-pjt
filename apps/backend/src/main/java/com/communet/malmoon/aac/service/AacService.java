@@ -14,14 +14,17 @@ import org.springframework.stereotype.Service;
 import com.communet.malmoon.aac.domain.Aac;
 import com.communet.malmoon.aac.dto.request.AacConfirmReq;
 import com.communet.malmoon.aac.dto.request.AacCreateReq;
+import com.communet.malmoon.aac.dto.request.AacCustomPresignReq;
 import com.communet.malmoon.aac.dto.request.AacCustomReq;
 import com.communet.malmoon.aac.dto.request.AacGetReq;
+import com.communet.malmoon.aac.dto.response.AacCreateRes;
 import com.communet.malmoon.aac.dto.response.AacGetRes;
 import com.communet.malmoon.aac.exception.AacErrorCode;
 import com.communet.malmoon.aac.exception.AacException;
 import com.communet.malmoon.aac.repository.AacRepository;
 import com.communet.malmoon.aac.repository.AacSpecification;
 import com.communet.malmoon.external.fastapi.FastApiClient;
+import com.communet.malmoon.file.domain.File;
 import com.communet.malmoon.file.domain.FileType;
 import com.communet.malmoon.file.dto.response.FileUploadRes;
 import com.communet.malmoon.file.repository.FileRepository;
@@ -210,5 +213,39 @@ public class AacService {
 			log.error("AAC 삭제 실패 - aacId: {}", aacId, e);
 			throw new AacException(AacErrorCode.AAC_DELETE_FAILED);
 		}
+	}
+
+	@Transactional
+	public AacCreateRes createFromFileId(AacCustomPresignReq request, Long therapistId) {
+		// 1) 파일 존재/상태 검증
+		File file = fileRepository.findById(request.getFileId())
+			.orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다. id=" + request.getFileId()));
+		if (file.isDeleted()) {
+			throw new IllegalStateException("삭제된 파일은 사용할 수 없습니다. id=" + request.getFileId());
+		}
+		if (file.getFileType() != FileType.AAC) {
+			// AAC만 허용(정책에 따라 완화 가능)
+			throw new IllegalArgumentException("AAC 파일만 허용됩니다. 실제 타입=" + file.getFileType());
+		}
+
+		// 2) AAC 저장
+		Aac aac = Aac.builder()
+			.name(request.getName())
+			.situation(request.getSituation())
+			.action(request.getAction())
+			.emotion(request.getEmotion())
+			.description(request.getDescription())
+			.fileId(request.getFileId())
+			.therapistId(therapistId)
+			.status(request.getStatus())
+			.build();
+
+		Aac saved = aacRepository.save(aac);
+
+		// 3) (선택) 미리보기 URL(짧은 pre-signed GET) 생성
+		String previewUrl = fileService.getPresignedFileUrl(request.getFileId());
+
+		// 현재 AacCreateRes가 previewUrl만 담고 있다면:
+		return AacCreateRes.of(previewUrl);
 	}
 }
