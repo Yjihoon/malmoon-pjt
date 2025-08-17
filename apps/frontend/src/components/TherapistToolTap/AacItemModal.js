@@ -1,11 +1,22 @@
+// src/components/AacItemModal/AacItemModal.jsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Modal, Button, Form, Row, Col, Spinner, Card, Image, ProgressBar } from 'react-bootstrap';
 import './AacItemModal.css';
 import api from '../../api/axios';
+import { pickSmallestVariant  } from '../../utils/convertSmart';
+
+const AVIF_THRESHOLD = 1 * 1024 * 1024; // 1MB
 
 const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
-  const [form, setForm] = useState({ name: '', description: '', situation: '', action: '', emotion: '', status: 'PUBLIC' });
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    situation: '',
+    action: '',
+    emotion: '',
+    status: 'PUBLIC',
+  });
   const [creationMethod, setCreationMethod] = useState('direct');
   const [imagePreview, setImagePreview] = useState('');
   const [imageFile, setImageFile] = useState(null);
@@ -50,12 +61,17 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
     }
   }, [itemData, show]);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImagePreview(URL.createObjectURL(file));
-      setImageFile(file);
-    }
+  /** 파일 선택 핸들러: 1MB 이상 이미지는 AVIF 변환 */
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const finalFile = (file.type.startsWith('image/') && file.size >= AVIF_THRESHOLD)
+   ? await pickSmallestVariant(file, { maxDim: 2048 })
+   : file;
+
+    setImageFile(finalFile);
+    setImagePreview(URL.createObjectURL(finalFile));
   };
 
   const handleFormChange = (e) => {
@@ -63,7 +79,7 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // AI 이미지 생성 (기존 로직 유지)
+  /** AI 이미지 생성 → 1MB 이상이면 AVIF 변환 동일 적용 */
   const handleAiGenerate = async () => {
     const { situation, action, emotion, description } = form;
     if (!situation || !action || !emotion) {
@@ -79,14 +95,23 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
       if (typeof generatedUrl !== 'string' || !generatedUrl) {
         throw new Error('유효하지 않은 미리보기 URL입니다.');
       }
+
+      // AI 프리뷰 다운로드
       const absoluteUrl = new URL(generatedUrl, window.location.origin).toString();
       const res = await fetch(absoluteUrl);
       if (!res.ok) throw new Error('이미지 다운로드 실패');
+
       const blob = await res.blob();
       const pathname = new URL(absoluteUrl).pathname;
       const fallbackName = `aac_preview_${Date.now()}.png`;
       const filename = pathname.split('/').pop() || fallbackName;
-      const aiImageFile = new File([blob], filename, { type: blob.type || 'image/png' });
+
+      let aiImageFile = new File([blob], filename, { type: blob.type || 'image/png' });
+
+      // 동일 정책: 1MB 이상 이미지라면 AVIF 변환
+      if (aiImageFile.type.startsWith('image/') && aiImageFile.size >= AVIF_THRESHOLD) {
+        aiImageFile = await pickSmallestVariant(aiImageFile, { maxDim: 2048 });
+      }
 
       setImageFile(aiImageFile);
       setImagePreview(URL.createObjectURL(aiImageFile));
@@ -98,7 +123,7 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
     }
   };
 
-  // ✅ 최종: "추가" 버튼에서 presigned 업로드 + confirm + AAC 생성
+  /** Presign → S3 PUT → Complete → AAC 생성 */
   const handleCreateViaPresign = async () => {
     try {
       // 필수 검증
@@ -121,31 +146,34 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
       const contentType = imageFile.type || 'application/octet-stream';
       const checksum = await sha256Base64(imageFile);
 
-      // 1) presign 발급 (AAC 고정)
+      // 1) Presigned URL 발급 (백엔드가 key를 생성/반환한다고 가정: uploadUrl, key)
       const { data: presign } = await api.post(
         '/aacs/presign-upload',
         {
-          originalFileName: imageFile.name,
-          contentType,
+          originalFileName: imageFile.name, // 서버가 키를 만들 때 참고
+          contentType,                      // 변환되었으면 image/avif
           size: imageFile.size,
           ...(checksum ? { checksumSha256Base64: checksum } : {}),
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // 2) S3로 PUT (진행률 표시)
+      // 2) S3로 PUT (진행률 표시 + ETag 추출)
       const etag = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', presign.uploadUrl, true);
         xhr.setRequestHeader('Content-Type', contentType);
         if (checksum) xhr.setRequestHeader('x-amz-checksum-sha256', checksum);
+        // 서버측에서 SSE-KMS가 아니라면 AES256 또는 미설정. 정책에 맞춰 수정 가능.
         xhr.setRequestHeader('x-amz-server-side-encryption', 'AES256');
+
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
         };
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(xhr.getResponseHeader('ETag')); // S3 CORS에 ExposeHeaders: ETag 필요
+            // S3 CORS: ExposeHeaders에 ETag 필요
+            resolve(xhr.getResponseHeader('ETag'));
           } else {
             reject(new Error(`S3 오류 ${xhr.status}`));
           }
@@ -156,7 +184,7 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
 
       // 3) 업로드 확정 + AAC 저장(서버에서 File/ AAC 모두 저장)
       const completeBody = {
-        key: presign.key,
+        key: presign.key, // 서버가 presign 단계에서 내려준 최종 키
         size: imageFile.size,
         contentType,
         etag,
@@ -177,7 +205,7 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
       // 미리보기 URL 있으면 갱신
       if (created?.previewUrl) setImagePreview(created.previewUrl);
 
-      // ✅ 부모 목록 새로고침 트리거 (예전 onSave를 "리프레시 신호"로 재사용)
+      // 부모 목록 새로고침 트리거
       if (typeof onSave === 'function') {
         onSave({ refreshed: true });
       }
@@ -185,7 +213,7 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
       alert('AAC가 생성되었습니다.');
       onHide?.();
 
-      // 폼 초기화(선택)
+      // 폼 초기화
       setForm({ name: '', description: '', situation: '', action: '', emotion: '', status: 'PUBLIC' });
       setImageFile(null);
       setProgress(0);
@@ -367,24 +395,17 @@ const AacItemModal = ({ show, onHide, onSave, itemData, onGenerate }) => {
         <Button className="btn-cancel" onClick={onHide} disabled={busy}>
           취소
         </Button>
-        {/* <Button className="btn-save-add" onClick={handleCreateViaPresign} disabled={busy || (!isCreateMode && !imageFile && !form.name)}>
-          {busy ? '업로드 중…' : itemData ? '저장' : '추가'}
-        </Button> */}
-         {isCreateMode ? (
-        // 생성 모드: presign → PUT → complete
-        <Button
-        className="btn-save-add"
-        onClick={handleCreateViaPresign}
-        disabled={busy}
-        >
-        {busy ? '업로드 중…' : '추가'}
-        </Button>
-    ) : (
-        // 편집 모드: 아직 업데이트 API 없으면 비활성/미구현 표시(선택)
-        <Button className="btn-save-add" disabled>
-        저장 (곧 지원)
-        </Button>
-    )}
+        {isCreateMode ? (
+          // 생성 모드: presign → PUT → complete
+          <Button className="btn-save-add" onClick={handleCreateViaPresign} disabled={busy}>
+            {busy ? '업로드 중…' : '추가'}
+          </Button>
+        ) : (
+          // 편집 모드: 업데이트 API 준비 전 비활성 처리(선택)
+          <Button className="btn-save-add" disabled>
+            저장 (곧 지원)
+          </Button>
+        )}
       </Modal.Footer>
     </Modal>
   );
