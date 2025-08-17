@@ -103,7 +103,7 @@ function AacTool({ roomRef, availableAacs }) {
 
       {userSelection && (
         <div className="user-selection-feedback">
-          대상자가 '{userSelection.selectedId}'을(를) 선택했습니다.
+          대상자가 '{userSelection.aacName}'을(를) 선택했습니다.
         </div>
       )}
     </div>
