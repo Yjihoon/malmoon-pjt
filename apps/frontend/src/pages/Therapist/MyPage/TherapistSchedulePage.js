@@ -241,7 +241,6 @@ function TherapistSchedulePage() {
         setIsSessionActive(true);
 
         setShowToolSelectionModal(false);
-        alert(`'${currentSessionSchedule.name}'님과의 수업방이 생성되었습니다!\n방 ID: ${roomId}`);
 
         let navPath = `/session/${roomId}?clientId=${currentSessionSchedule.memberId}&tools=${selectedToolsForSession.join(',')}`;
         if (selectedFairyTaleInfo) {
