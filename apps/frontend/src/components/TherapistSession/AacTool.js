@@ -62,6 +62,7 @@ function AacTool({ roomRef, availableAacs }) {
       try {
         await room.localParticipant.publishData(new TextEncoder().encode(payload), { reliable: true });
         console.log('AAC 질문 전송 성공:', payload);
+        setSelectedIds(new Set()); // 전송 후 선택 해제
       } catch (error) {
         console.error('AAC 질문 전송 실패:', error);
         alert('AAC 질문 전송에 실패했습니다.');
@@ -77,12 +78,11 @@ function AacTool({ roomRef, availableAacs }) {
       <h5>AAC 교육 도구</h5>
       <ul className="aac-list">
         {availableAacs.map(aac => (
-          <li key={aac.id} className="aac-list-item">
-            <Form.Check 
-              type="checkbox"
-              checked={selectedIds.has(aac.id)}
-              onChange={() => handleSelectionChange(aac.id)}
-            />
+          <li 
+            key={aac.id} 
+            className={`aac-list-item ${selectedIds.has(aac.id) ? 'selected' : ''}`}
+            onClick={() => handleSelectionChange(aac.id)}
+          >
             <img src={aac.imageUrl} alt={aac.name} />
             <span>{aac.name}</span>
           </li>
@@ -103,7 +103,7 @@ function AacTool({ roomRef, availableAacs }) {
 
       {userSelection && (
         <div className="user-selection-feedback">
-          대상자가 '{userSelection.selectedId}'을(를) 선택했습니다.
+          대상자가 '{userSelection.aacName}'을(를) 선택했습니다.
         </div>
       )}
     </div>
