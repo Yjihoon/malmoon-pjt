@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Row, Col, Card, Button, InputGroup, Form, Pagination, Accordion, ListGroup } from "react-bootstrap";
+import "./AacItemList.css";
 
 // [수정] 절대/상대 경로를 모두 처리하는 최종 URL 보정 함수
 const getCorrectedUrl = (imageUrl) => {
@@ -142,27 +143,29 @@ const AacItemList = ({ aacItems, currentUser, onEdit, onDelete, onViewDetails })
         <Button variant="outline-secondary" size="sm" className="w-100 mb-2" onClick={clearCategory}>
           전체 보기
         </Button>
-        <Accordion activeKey={activeKey} onSelect={handleAccordionSelect}>
-          {Object.keys(categories).map((situation, index) => (
-            <Accordion.Item eventKey={index.toString()} key={situation}>
-              <Accordion.Header>{situation}</Accordion.Header>
-              <Accordion.Body>
-                <ListGroup variant="flush">
-                  {categories[situation].map((action) => (
-                    <ListGroup.Item
-                      key={action}
-                      action
-                      active={selectedSituation === situation && selectedAction === action}
-                      onClick={() => handleActionSelect(action)}
-                    >
-                      {action}
-                    </ListGroup.Item>
-                  ))}
-                </ListGroup>
-              </Accordion.Body>
-            </Accordion.Item>
-          ))}
-        </Accordion>
+        <div className="category-list-container">
+          <Accordion activeKey={activeKey} onSelect={handleAccordionSelect}>
+            {Object.keys(categories).map((situation, index) => (
+              <Accordion.Item eventKey={index.toString()} key={situation}>
+                <Accordion.Header>{situation}</Accordion.Header>
+                <Accordion.Body>
+                  <ListGroup variant="flush">
+                    {categories[situation].map((action) => (
+                      <ListGroup.Item
+                        key={action}
+                        action
+                        active={selectedSituation === situation && selectedAction === action}
+                        onClick={() => handleActionSelect(action)}
+                      >
+                        {action}
+                      </ListGroup.Item>
+                    ))}
+                  </ListGroup>
+                </Accordion.Body>
+              </Accordion.Item>
+            ))}
+          </Accordion>
+        </div>
       </Col>
       <Col md={9}>
         <InputGroup className="mb-3">
@@ -179,29 +182,16 @@ const AacItemList = ({ aacItems, currentUser, onEdit, onDelete, onViewDetails })
           <Row xs={2} md={3} lg={4} className="g-3">
             {currentItems.map((item) => (
               <Col key={item.id}>
-                <Card className="h-100" onClick={() => onViewDetails(item)} style={{ cursor: 'pointer' }}>
+                <Card className="h-100 item-card" onClick={() => onViewDetails(item)} style={{ cursor: 'pointer' }}>
                   <Card.Img
                     variant="top"
                     src={getCorrectedUrl(item.imageUrl) || "https://placehold.co/150x120?text=No+Image"}
                     onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/150x120?text=Error"; }}
-                    style={{ height: "120px", objectFit: "cover" }}
                   />
-                  <Card.Body className="p-2 d-flex flex-column">
+                  <Card.Body className="d-flex flex-column">
                     <Card.Title as="h6" className="flex-grow-1" style={{ fontSize: "0.9rem" }}>
                       {item.name}
                     </Card.Title>
-                    <div className="mt-auto text-center">
-                      {canModify(item) && (
-                        <>
-                          <Button variant="outline-secondary" size="sm" className="me-1" onClick={(e) => handleEditClick(e, item)}>
-                            편집
-                          </Button>
-                          <Button variant="outline-danger" size="sm" onClick={(e) => handleDeleteClick(e, item.id)}>
-                            삭제
-                          </Button>
-                        </>
-                      )}
-                    </div>
                   </Card.Body>
                 </Card>
               </Col>
@@ -213,7 +203,7 @@ const AacItemList = ({ aacItems, currentUser, onEdit, onDelete, onViewDetails })
           </div>
         )}
         {totalPages > 1 && (
-          <Pagination className="justify-content-center mt-4">
+          <Pagination className="justify-content-center mt-4 custom-pagination">
             <Pagination.Prev onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} />
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
               <Pagination.Item key={num} active={num === currentPage} onClick={() => setCurrentPage(num)}>
