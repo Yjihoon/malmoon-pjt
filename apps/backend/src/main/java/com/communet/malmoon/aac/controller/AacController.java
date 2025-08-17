@@ -2,6 +2,7 @@ package com.communet.malmoon.aac.controller;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -11,19 +12,28 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.communet.malmoon.aac.dto.request.AacCompleteReq;
 import com.communet.malmoon.aac.dto.request.AacConfirmReq;
 import com.communet.malmoon.aac.dto.request.AacCreateReq;
+import com.communet.malmoon.aac.dto.request.AacCustomPresignReq;
 import com.communet.malmoon.aac.dto.request.AacCustomReq;
 import com.communet.malmoon.aac.dto.request.AacGetReq;
 import com.communet.malmoon.aac.dto.response.AacCreateRes;
 import com.communet.malmoon.aac.dto.response.AacGetRes;
 import com.communet.malmoon.aac.service.AacService;
 import com.communet.malmoon.common.auth.CurrentMember;
+import com.communet.malmoon.file.domain.FileType;
+import com.communet.malmoon.file.dto.request.PresignPutReq;
+import com.communet.malmoon.file.dto.request.UploadConfirmReq;
+import com.communet.malmoon.file.dto.response.PresignPutRes;
+import com.communet.malmoon.file.dto.response.UploadConfirmRes;
+import com.communet.malmoon.file.service.FileService;
 import com.communet.malmoon.member.domain.Member;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,6 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AacController {
 
 	private final AacService aacService;
+	private final FileService fileService;
 
 	/**
 	 * 로그인한 사용자만 접근 가능한 AAC 목록 조회 API입니다.
@@ -134,4 +145,41 @@ public class AacController {
 		aacService.softDeleteCustomAac(aacId, member.getMemberId());
 		return ResponseEntity.ok().build();
 	}
+
+	@PostMapping("/presign-upload")
+	public ResponseEntity<PresignPutRes> init(@RequestBody @Valid PresignPutReq req,
+		@CurrentMember Member me) {
+		req.setFileType(FileType.AAC);
+		PresignPutRes presign = fileService.presignPut(req, me.getMemberId());
+		return ResponseEntity.ok(presign);
+	}
+
+	@PostMapping("/presign-complete")
+	public ResponseEntity<AacCreateRes> complete(@RequestBody @Valid AacCompleteReq req,
+		@CurrentMember Member me) {
+		// 1) 파일 확정(HEAD 검증 + File 저장)
+		UploadConfirmReq ureq = UploadConfirmReq.builder()
+			.key(req.getKey())
+			.contentType(req.getContentType())
+			.size(req.getSize())
+			.etag(req.getEtag())
+			.build();
+
+		UploadConfirmRes confirmed = fileService.confirmUpload(ureq, me.getMemberId());
+
+		// 2) Aac 생성 (FileId 사용)
+		AacCustomPresignReq aacCustomReq = new AacCustomPresignReq();
+		aacCustomReq.setName(req.getName());
+		aacCustomReq.setSituation(req.getSituation());
+		aacCustomReq.setAction(req.getAction());
+		aacCustomReq.setEmotion(req.getEmotion());
+		aacCustomReq.setDescription(req.getDescription());
+		aacCustomReq.setStatus(req.getStatus());
+		aacCustomReq.setFileId(confirmed.getFileId());
+
+		aacService.createFromFileId(aacCustomReq, me.getMemberId());
+
+		return ResponseEntity.ok(AacCreateRes.of(confirmed.getViewUrl()));
+	}
+
 }
