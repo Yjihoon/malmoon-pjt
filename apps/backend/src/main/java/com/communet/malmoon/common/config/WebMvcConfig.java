@@ -29,7 +29,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 	      registry.addMapping("/**")
 	          .allowedOrigins("http://localhost:3000") // React 개발 서버 주소
 	          .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH")
-	          .allowedHeaders("*");
-	          //.allowCredentials(true);
+	          .allowedHeaders("*")
+	          .allowCredentials(true);
 	  }
 }

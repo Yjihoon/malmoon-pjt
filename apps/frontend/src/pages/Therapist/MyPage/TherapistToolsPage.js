@@ -173,20 +173,30 @@ function TherapistToolsPage() {
 
 
     // AAC 아이템 핸들러
-    const handleSaveAacItem = async (itemToSave) => {
-        try {
-            const formData = new FormData();
-            Object.keys(itemToSave).forEach(key => {
-                if (key === 'imageFile' && itemToSave[key]) {
-                    formData.append('file', itemToSave[key]);
-                } else if (key !== 'imageFile' && itemToSave[key] !== null) {
-                    formData.append(key, itemToSave[key]);
-                }
-            });
-            await apiRequest('/api/v1/aacs/custom', 'POST', formData, true);
-            closeModal();
-            forceRefresh();
-        } catch (e) { setError(e.message); }
+    // const handleSaveAacItem = async (itemToSave) => {
+    //     try {
+    //         const formData = new FormData();
+    //         Object.keys(itemToSave).forEach(key => {
+    //             if (key === 'imageFile' && itemToSave[key]) {
+    //                 formData.append('file', itemToSave[key]);
+    //             } else if (key !== 'imageFile' && itemToSave[key] !== null) {
+    //                 formData.append(key, itemToSave[key]);
+    //             }
+    //         });
+    //         await apiRequest('/api/v1/aacs/custom', 'POST', formData, true);
+    //         closeModal();
+    //         forceRefresh();
+    //     } catch (e) { setError(e.message); }
+    // };
+
+    // AAC 아이템 핸들러 (모달이 생성까지 끝내고 '호출'만 해줌)
+    const handleSaveAacItem = async () => {
+    try {
+        closeModal();     // 모달 닫고
+        forceRefresh();   // 목록 새로고침 트리거
+    } catch (e) {
+        setError(e.message);
+    }
     };
 
     const handleDeleteAacItem = async (itemId) => {
