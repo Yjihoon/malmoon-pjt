@@ -124,6 +124,7 @@ public class MemberService {
 			.therapistId(member.getMemberId())
 			.careerYears(therapistJoinReq.getCareerYears())
 			.fileId(fileUploadRes.getFileId())
+			.member(member)
 			.build();
 
 		for (CareerReq careerDto : therapistJoinReq.getCareers()) {

@@ -28,7 +28,6 @@ public class Therapist {
 	private Long fileId;
 
 	@OneToOne
-	@MapsId
 	@JoinColumn(name = "member_id")
 	private Member member;
 
