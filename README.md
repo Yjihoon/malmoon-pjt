@@ -1,6 +1,6 @@
 # 🗣️ 말문 (Malmoon) - WebRTC 기반 언어치료 플랫폼
 
-#### SSAFY 13기 2학기 광주 1반 communE.T (25.07.07 ~ 25.08.18)
+#### communE.T (25.07.07 ~ 25.08.18)
 
 ![](/README_img/메인페이지.png)
 
